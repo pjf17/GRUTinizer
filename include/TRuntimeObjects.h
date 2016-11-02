@@ -11,6 +11,8 @@
 
 #include "TUnpackedEvent.h"
 
+#include "TRuntimeValue.h"
+
 class TH1;
 class TH2;
 class TFile;
@@ -19,6 +21,13 @@ class TProfile;
 class GH1D;
 class GH2D;
 class TDetector;
+
+struct histkey {
+  TH1 *hist;
+  TRuntimeValue<TDetector*> x;
+  TRuntimeValue<TDetector*> y;
+};
+
 
 /// Object passed to the online histograms.
 /**
@@ -33,12 +42,12 @@ public:
                   TList* gates,
                   std::vector<TFile*>& cut_files,
                   TDirectory* directory=NULL,
-                  const char *name="default");
+                  const char *name="default_objects");
   TRuntimeObjects(TList* objects,
                   TList* gates,
                   std::vector<TFile*>& cut_files,
                   TDirectory* directory=NULL,
-                  const char *name="default");
+                  const char *name="default_objects");
 
   /// Returns a pointer to the detector of type T
   template<typename T>
@@ -56,6 +65,13 @@ public:
 
   TList* GetObjectsPtr()    { return objects;   }
   TList* GetGatesPtr()      { return gates;     }
+
+
+  //TH1 *InitHistogram(const char *name,const char *title
+  //                   int bins, double low, double high,
+  //                   TRuntimeValue value);
+
+
 
 
   TH1* FillHistogram(const char* name,
@@ -179,8 +195,6 @@ private:
   std::vector<TFile*>& cut_files;
 
   TDirectory* directory;
-
-
 
   ClassDef(TRuntimeObjects, 0);
 };

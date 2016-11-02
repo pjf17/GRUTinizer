@@ -9,7 +9,18 @@
 
 #pragma link C++ class TCompiledHistograms+;
 #pragma link C++ class TCompiledFilter+;
-#pragma link C++ class TRuntimeObjects+;
+
+#pragma link C++ class TRuntimeObjects;
+
+//#pragma link C++ class TRuntimeValue<TDetector*>;
+//#pragma link C++ class TRuntimeValue<TGretina*>;
+//#pragma link C++ class TRuntimeValue<TBank29*>;
+//#pragma link C++ class TRuntimeValue<TS800*>;
+//#pragma link C++ class TRuntimeValue<TLenda*>;
+
+
+
+
 #pragma link C++ class THistogramLoop+;
 
 #endif

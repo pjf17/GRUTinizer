@@ -18,7 +18,7 @@ public:
 
   template<typename T>
   T* GetDetector(bool make_if_not_found = false);
-  TDetector* GetDetector(std::string) const;
+  TDetector* GetDetector(TClass*) const;
 
   std::vector<TDetector*>& GetDetectors() { return detectors; }
   void AddDetector(TDetector* det) { detectors.push_back(det); }
