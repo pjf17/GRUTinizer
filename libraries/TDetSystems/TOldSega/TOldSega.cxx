@@ -41,8 +41,49 @@ void TOldSega::Print(Option_t *opt) const {
 
 TVector3 TOldSega::GetGlobalSegmentPosition(int det,int seg) {
   double distance = 230;
-  int layer = seg/4;
-  int quad  = seg%4; 
+  //int layer = seg/4;
+  //int quad  = seg%4; 
+  int layer;
+  int quad;
+  seg = seg + 1;
+
+  if(seg%8==4){
+    layer = 0;
+  }
+  if(seg%8==5){
+    layer = 1;
+  }
+  if(seg%8==3){
+    layer = 2;
+  }
+  if(seg%8==6){
+    layer = 3;
+  }
+  if(seg%8==2){
+    layer = 4;
+  }
+  if(seg%8==7){
+    layer = 5;
+  }
+  if(seg%8==1){
+    layer = 6;
+  }
+  if(seg%8==0){
+    layer = 7;
+  }
+
+  if(seg<=8){
+    quad = 0;
+  }
+  if(seg>8 && seg<=16){
+    quad = 1;
+  }
+  if(seg>16 && seg<=24){
+    quad = 2;
+  }
+  if(seg>24){
+    quad = 3;
+  }
 
   double theta[] = {
     37.0,
@@ -104,10 +145,12 @@ TVector3 TOldSega::GetGlobalSegmentPosition(int det,int seg) {
       z-= 17.5;
       break;
   };    
-  x = (35.0 - layer*10.0);
+  //x = (35.0 - layer*10.0);
+  x = (layer*10.0 - 35.0);
   TVector3 vec(x,y,z);
   TVector3 unit(0,0,1);
-  unit.SetMagThetaPhi(1,theta[det]*TMath::RadToDeg(),phi[det]*TMath::RadToDeg());
+  //unit.SetMagThetaPhi(1,theta[det]*TMath::RadToDeg(),phi[det]*TMath::RadToDeg());
+  unit.SetMagThetaPhi(1,theta[det]*TMath::DegToRad(),phi[det]*TMath::DegToRad());
   vec.RotateUz(unit.Unit());
   return vec;
 }

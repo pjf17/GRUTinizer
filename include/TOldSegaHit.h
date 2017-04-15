@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <TMath.h>
+#include <TOldSega.h>
+
 
 class TOldSegaHit : public TDetectorHit {
 
@@ -34,7 +36,7 @@ class TOldSegaHit : public TDetectorHit {
 
     TVector3 GetPosition() const;
 
-    double GetDoppler(double beta,const TVector3 *vec=0) const {
+    double GetDoppler(double beta, const TVector3 *vec=0) const {
       if(Size()<1)
         return 0.0;
       if(vec==0) {
@@ -42,7 +44,7 @@ class TOldSegaHit : public TDetectorHit {
       }
       double tmp = 0.0;
       double gamma = 1/(sqrt(1-pow(beta,2)));
-      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(GetPosition().Angle(*vec)));
+      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(TOldSegaHit::GetPosition().Angle(*vec)));
       return tmp;
     }
     

@@ -112,6 +112,13 @@ int HandleUngatedOldSega(TRuntimeObjects& obj) {
     obj.FillHistogram("Ungated","Charge_Energy",
                     4096,0,4096,hit.GetEnergy(),
                     30,0,30,hit.GetDetId());
+
+    if(hit.Size()>0){
+      histname = Form("SegDoppler_Det%02i",hit.GetDetId());
+      obj.FillHistogram("Ungated",histname,
+                        4096,0,4096,hit.GetDoppler(0.4),
+                        40,0,40,hit.GetSegId(0));
+    } 
     
     for(int j=0; j<hit.Size(); j++) {
       histname = Form("SegCharge_Det%02i",hit.GetDetId());
@@ -157,6 +164,22 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
     obj.FillHistogram(dirname,"Doppler_Det",
                     4096,0,4096,hit.GetDoppler(beta),
                     30,0,30,hit.GetDetId());
+
+    obj.FillHistogram(dirname,"Energy_Det",
+                    4096,0,4096,hit.GetEnergy(),
+                    30,0,30,hit.GetDetId());
+
+    //for(int j=0; j<hit.Size(); j++) {
+    if(hit.Size()>0){
+      histname = Form("SegDoppler_Det%02i",hit.GetDetId());
+      obj.FillHistogram(dirname,histname,
+                        4096,0,4096,hit.GetDoppler(beta),
+                        40,0,40,hit.GetSegId(0));
+      histname = Form("SegEnergy_Det%02i",hit.GetDetId());
+      obj.FillHistogram(dirname,histname,
+                        4096,0,4096,hit.GetEnergy(),
+                        40,0,40,hit.GetSegId(0));
+    } 
   }  
 
   return 0;
