@@ -35,16 +35,17 @@ class TOldSegaHit : public TDetectorHit {
     void Sort() { std::sort(segments.begin(),segments.end()); }
 
     TVector3 GetPosition() const;
+    //TVector3 GetPosition(double z_shift) const;
 
-    double GetDoppler(double beta, const TVector3 *vec=0) const {
+    double GetDoppler(double beta, const TVector3 *track=0) const {
       if(Size()<1)
         return 0.0;
-      if(vec==0) {
-        vec = &BeamUnitVec;
+      if(track==0) {
+        track = &BeamUnitVec;
       }
       double tmp = 0.0;
       double gamma = 1/(sqrt(1-pow(beta,2)));
-      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(TOldSegaHit::GetPosition().Angle(*vec)));
+      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(TOldSegaHit::GetPosition().Angle(*track)));
       return tmp;
     }
     

@@ -46,6 +46,7 @@ class TOldSega : public TDetector {
     unsigned short rf;
 
   public:
+    //static TVector3 GetGlobalSegmentPosition(int det,int seg,double z_shift);
     static TVector3 GetGlobalSegmentPosition(int det,int seg);
 
   ClassDef(TOldSega,2)

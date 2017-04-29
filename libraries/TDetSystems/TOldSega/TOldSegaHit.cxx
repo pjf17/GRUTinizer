@@ -43,10 +43,19 @@ void TOldSegaHit::AddSegment(int id, float charge) {
 }
 
 
-TVector3 TOldSegaHit::GetPosition() const {
-  
-  return TOldSega::GetGlobalSegmentPosition(GetDetNum(),GetSegId());
+//TVector3 TOldSegaHit::GetPosition() const {
+//  return TOldSega::GetGlobalSegmentPosition(GetDetNum(),GetSegId());
+//}
 
+TVector3 TOldSegaHit::GetPosition() const {  //double z_shift) const {
+  TVector3 offset;
+  TChannel *chan = TChannel::GetChannel(Address());
+  if(chan && chan->UsePositionOffsets()) {
+    offset.SetXYZ(chan->XOffset(),chan->YOffset(),chan->ZOffset());
+  } else {
+    offset.SetXYZ(0,0,0);
+  }
+  return TOldSega::GetGlobalSegmentPosition(GetDetNum(),GetSegId()) + offset;
 }
 
 

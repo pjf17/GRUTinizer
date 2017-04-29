@@ -77,6 +77,11 @@ public:
   void ClearEfficiencyCoeff();
   double CalEfficiency(double energy) const;
 
+  double XOffset() const { if(position_offsets.size()>0) return position_offsets.at(0); return 0;}
+  double YOffset() const { if(position_offsets.size()>1) return position_offsets.at(1); return 0;}
+  double ZOffset() const { if(position_offsets.size()>2) return position_offsets.at(2); return 0;}
+  
+  bool UsePositionOffsets() const { return position_offsets.size(); }
 
   bool AppendChannel(TChannel*);
   bool ReplaceChannel(TChannel*);
@@ -124,6 +129,7 @@ public:
   std::vector<CoefficientTimes> energy_coeff;
   std::vector<CoefficientTimes> time_coeff;
   std::vector<double> efficiency_coeff;
+  std::vector<double> position_offsets;
   int pedestal;
   //name and title held by TNamed.
 
