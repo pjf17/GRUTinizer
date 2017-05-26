@@ -3,7 +3,7 @@
 #include "TF1.h"
 
 #include <Math/Math.h>
-#include <Math/SpecFuncMathMore.h>
+//#include <Math/SpecFuncMathMore.h>
 
 
 NamespaceImp(GRootFunctions)
