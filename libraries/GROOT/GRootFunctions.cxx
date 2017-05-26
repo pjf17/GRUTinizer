@@ -253,6 +253,8 @@ Double_t GRootFunctions::GammaEff(Double_t *x,Double_t *par) {
 
 }
 
+/*
+
 Double_t GRootFunctions::AlignedAD(Double_t *x,Double_t *par) {
   double p2 = ::ROOT::Math::legendre(2,TMath::Cos(TMath::DegToRad()*x[0]));
   double p4 = ::ROOT::Math::legendre(4,TMath::Cos(TMath::DegToRad()*x[0]));
@@ -690,5 +692,5 @@ Double_t GRootFunctions::PolarizationAsymmetry(Double_t *x,Double_t *par) {
   return par[0] * Polarization(&x[0],&(par[1])) * TMath::Cos(2*TMath::DegToRad()*x[1]);
 
 }
-
+*/
 
