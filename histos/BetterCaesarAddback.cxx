@@ -111,6 +111,104 @@ bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
   return true;
 }
 
+int HandleUngated(TRuntimeObjects& obj) {
+
+  TCaesar  *caesar  = obj.GetDetector<TCaesar>();
+  TCaesar  *caesar_ab = new TCaesar();//will be used to do addback correction 
+                                      //only for the hits inside the time cut
+
+  std::string histname;
+  std::string dirname;
+
+  const int SINGLES_ENERGY_THRESHOLD = 150;
+  const int AB_ENERGY_THRESHOLD = 0;
+
+  std::vector<double> energies_singles;
+  std::vector<double> energies_addback;
+  std::vector<double> energies_addback_n0;
+  std::vector<double> energies_addback_n1;
+  std::vector<double> energies_addback_n2;
+  std::vector<double> energies_addback_ng;
+  energies_singles.clear();
+  energies_addback.clear();
+
+  for(unsigned int y=0;y<caesar->Size();y++) {
+      TCaesarHit &hit = caesar->GetCaesarHit(y);
+
+      if(hit.IsOverflow())
+        continue;
+
+      double energy = hit.GetEnergy(); 
+
+      caesar_ab->InsertHit(hit);
+        if (energy > SINGLES_ENERGY_THRESHOLD){              
+               energies_singles.push_back(energy);
+        }
+
+        dirname = "Ungated";
+        histname = "energy";
+        obj.FillHistogram(dirname,histname,
+                          2048,0,8192,energy);
+         
+        histname = "detnum_vs_energy";
+        obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
+                                           2048,0,8192,energy);
+
+  }//for loop over singles hits
+
+  //Now loop over addback hits
+  int num_addback_hits = caesar_ab->AddbackSize();
+  for (int y=0; y < num_addback_hits; y++){
+      TCaesarHit &hit = caesar_ab->GetAddbackHit(y);
+
+      double energy = hit.GetEnergy();
+                  
+      if (energy > AB_ENERGY_THRESHOLD){    
+        energies_addback.push_back(energy);       
+      }//For multiplicity purposes
+
+      dirname = "Ungated";
+      histname = "energy_addback";
+      obj.FillHistogram(dirname,histname,
+                        2048,0,8192,energy);
+              
+      if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
+        histname = "energy_addback_n0";
+        obj.FillHistogram(dirname,histname,
+                          2048,0,8192,energy);
+        energies_addback_n0.push_back(energy);
+
+      }
+      else if (hit.GetNumHitsContained() == 2 && !hit.is_garbage_addback){
+        histname = "energy_addback_n1";
+        obj.FillHistogram(dirname,histname,
+                          2048,0,8192,energy);
+        energies_addback_n1.push_back(energy);
+
+      }
+      else if (hit.GetNumHitsContained() == 3 && !hit.is_garbage_addback){
+        histname = "energy_addback_n2";
+        obj.FillHistogram(dirname,histname,
+                          2048,0,8192,energy);
+        energies_addback_n2.push_back(energy);
+      }
+      else if(hit.is_garbage_addback){
+        histname = "energy_addback_ng";
+        obj.FillHistogram(dirname,histname,
+                          2048,0,8192,energy);
+        energies_addback_ng.push_back(energy);
+
+      }
+      else {
+        std::cout << "Weird event not meeting any criteria for addback" << std::endl;
+        std::cout << "hit.is_garbage_addback    = " << hit.is_garbage_addback << std::endl;
+        std::cout << "hit.GetNumHitsContained() = " << hit.GetNumHitsContained() << std::endl;
+      }
+      
+  }//end for loop over addback hits
+
+}//end HandleUngated
+
 int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
    
   TS800    *s800    = obj.GetDetector<TS800>();
@@ -145,6 +243,7 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
 
  
   double beta    = GValue::Value(Form("BETA_%s",outgoing->GetTitle()));
+  double gamma   = 1/(sqrt(1-pow(beta,2)));
   double z_shift = GValue::Value("TARGET_SHIFT_Z");
   TVector3 track = s800->Track(); 
 
@@ -771,6 +870,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList *list  = &(obj.GetObjects());
   TList *gates = &(obj.GetGates());
   int numobj = list->GetSize();
+
+  HandleUngated(obj);
 
   if(gates_loaded!=gates->GetSize()) {
     TIter iter(gates);

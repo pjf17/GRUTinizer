@@ -43,9 +43,17 @@ class TOldSegaHit : public TDetectorHit {
       if(track==0) {
         track = &BeamUnitVec;
       }
+      TChannel *chan = TChannel::GetChannel(Address());
+      double theta;
+      if(chan && chan->UseThetaOffset()) {
+        theta = chan->ThetaOffset();
+        //printf("using theta = %f\n ",theta);
+      } else {
+        theta = 0.0;
+      }
       double tmp = 0.0;
       double gamma = 1/(sqrt(1-pow(beta,2)));
-      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(TOldSegaHit::GetPosition().Angle(*track)));
+      tmp = GetEnergy()*gamma *(1 - beta*TMath::Cos(TOldSegaHit::GetPosition().Angle(*track) + theta));
       return tmp;
     }
     
