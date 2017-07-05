@@ -4,7 +4,6 @@
 #include <sstream>
 #include <set>
 
-
 #include "TGretina.h"
 //#include "GRootCommands.h"
 //#include <TPad.h>
@@ -14,6 +13,7 @@
 //#include "GH2I.h"
 //#include "TGRUTOptions.h"
 //#include "GCanvas.h"
+#include <TCutG.h>
 
 #include "TGEBEvent.h"
 
@@ -436,6 +436,67 @@ void TGretina::DrawCoreSummary(Option_t *gate,Option_t *opt,Long_t nentries,TCha
 
 }
 */
+
+
+int TGretina::CleanHits(int i) {
+  for(auto x=gretina_hits.begin();x!=gretina_hits.end();) { //x++) {
+    if(x->GetPad()==0) {
+      x->TrimSegments(0);   // 0: drop multiple ident int pnts.  
+      if(i>=0)              // 1: make into wedge "data"
+        x->SetCoreEnergy(x->GetCoreEnergy(i));
+      x++;
+    } else {
+      x = gretina_hits.erase(x);
+    }
+  }
+  //std::cout << "done cleaning hits!!\n\n" << std::endl;
+  return Size();
+}
+
+int TGretina::CleanHits(TCutG *timecut) {
+  CleanHits(-1);
+  if(Size()<2 || !timecut) 
+    return Size();
+  SortHits();
+  std::set<size_t> passed;
+  for(size_t x=0;x<Size();x++) {
+    for(size_t y=x+1;y<Size();y++) {
+      TGretinaHit hitx = GetGretinaHit(x);
+      TGretinaHit hity = GetGretinaHit(y);
+      if(timecut->IsInside(hitx.GetTime()-hity.GetTime(),hity.GetCoreEnergy())) {
+        passed.insert(x);
+        passed.insert(y);
+      }
+    }
+  }
+  //std::cout << "\t\t erasing " << Size()-passed.size() << " hits. " << std::endl;
+  if(passed.size()!=Size()) {
+    for(int x=Size()-1;x>=0;x--) {
+      //std::cout << "\t\t\t " << x << ":  count: " << passed.count(x) << std::endl;
+      if(passed.count(x)) { 
+        continue;
+      } else {
+        gretina_hits.erase(gretina_hits.begin()+x);
+      }
+    }
+  }
+  //std::cout << "\t\t new size: " << Size() << std::endl;
+  return Size();
+}
+
+
+int TGretina::CleanHits(double low,double high) {
+  for(auto x=gretina_hits.begin();x!=gretina_hits.end();) { //x++) {
+    if((x->GetCoreEnergy()>=low) &&  
+       (x->GetCoreEnergy()<=high)) { 
+      x++;
+    } else {
+      x = gretina_hits.erase(x);
+    }
+  }
+  //std::cout << "done cleaning hits!!\n\n" << std::endl;
+  return Size();
+}
 
 
 

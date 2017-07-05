@@ -147,13 +147,12 @@ GH1D operator-(const GH1D &h1,const GH1D &h2) {
 
 
 
-//Int_t GH1D::Write(const char *name,Int_t option,Int_t bufsize) const {
-//  TH1D hist;
-  //hist.Copy(*this);
-//  this->Copy(hist);
-//  hist.SetNameTitle(this->GetName(),this->GetTitle());
-//  return hist.Write();
-//}
+Int_t GH1D::Write(const char *name,Int_t option,Int_t bufsize) const {
+  TH1D hist;
+  this->Copy(hist);
+  hist.SetNameTitle(this->GetName(),this->GetTitle());
+  return hist.Write(name,option);
+}
 
 
 

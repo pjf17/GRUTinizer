@@ -123,17 +123,20 @@ class GH2 : public GH1 {
  ////////////////////////////
 
   public:
-    GH1D            *ProjectionX_BG(const char *name="_bg_px", Int_t ylowbin=0,Int_t yhighbin=-1, 
-                                                               Int_t ylowbgbin=0,Int_t yhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
-    GH1D            *ProjectionY_BG(const char *name="_bg_px", Int_t xlowbin=0,Int_t xhighbin=-1, 
-                                                               Int_t xlowbgbin=0,Int_t xhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
-    enum { kForward = 1, kBackward = -1 };
-    GH1D            *SummaryProjection(GH1 *hist,int axis,int direction,bool show_empty) const;
- 
-    GH1  *GetNext(TObject *obj=0,int direction=GH2::kForward) const;
-
+    GH1D  *ProjectionX_BG(const char *name="_bg_px", Int_t ylowbin=0,Int_t yhighbin=-1, 
+                                                     Int_t ylowbgbin=0,Int_t yhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
+    GH1D  *ProjectionY_BG(const char *name="_bg_px", Int_t xlowbin=0,Int_t xhighbin=-1, 
+                                                     Int_t xlowbgbin=0,Int_t xhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
+    GH1D  *SummaryProjection(GH1 *hist,int axis,int direction,bool show_empty) const;
+    GH1   *GetNext(TObject *obj=0,int direction=GH2::kForward) const;
     TList *GetProjections() const { return &fProjections; }
+    
 
+
+    enum { 
+      kForward = 1, 
+      kBackward = -1 
+    };
     std::map<int,double> FitSummary(double low,double high,int axis=1,Option_t *opt="PhotoPeak") const;
 
   private:

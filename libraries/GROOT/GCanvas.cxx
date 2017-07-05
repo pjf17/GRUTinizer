@@ -48,10 +48,23 @@
 #include "TBuffer.h"
 #include "TGRUTint.h"
 
+#include "GObject.h"
+
 #ifndef kArrowKeyPress
 #define kArrowKeyPress 25
 #define kArrowKeyRelease 26
 #endif
+
+#ifndef kButton1Ctrl
+#define kButton1Ctrl 9
+#define kButton1CtrlMotion 10
+#endif
+
+//#ifndef kButton1Alt
+//#define kButton1Alt 15
+//#define kButton1AltMotion 16
+//#endif
+
 
 enum MyArrowPress{
   kMyArrowLeft  = 0x1012,
@@ -411,23 +424,35 @@ GCanvas *GCanvas::MakeDefCanvas() {
 void GCanvas::HandleInput(Int_t event,Int_t x,Int_t y) {
   //If the below switch breaks. You need to upgrade your version of ROOT
   //Version 5.34.24 works. //older version should work now too pcb (8/2015)
+
+ 
   bool used = false;
   //printf("event = 0x%08x\t x = 0x%08x\t y = 0x%08x \n",event,x,y);
   switch(event) {
     case 0x00000001: //single click
     case 0x0000003d: //double click
+      //printf("normal click\t");
       used = HandleMousePress(event,x,y);
       break;
     case 0x00000007: //shift-click
+      //printf("shift click\t");
       used = HandleMouseShiftPress(event,x,y);
       break;
     case 0x0000009:  //control-click
+      //printf("ctrl click\tsending[0x%08x]\t",event);
       used = HandleMouseControlPress(event,x,y);
       break;
-
+    //case 0x0000015:  //control-click
+    //  printf("alt click\n");
+    //  //used = HandleMouseControlPress(event,x,y);
+    //  break;
   };
-  if(!used)
+  
+  if(!used) {
+    if(GetSelected() && GetSelected()->InheritsFrom("GSpectrum")) 
+      GetSelected()->ExecuteEvent(event,x,y);
     TCanvas::HandleInput((EEventType)event,x,y);
+  }
   return;
 }
 
@@ -453,6 +478,19 @@ std::vector<TH1*> GCanvas::FindHists(int dim) {
   }
   return tempvec;
 }
+
+std::vector<GObject*> GCanvas::FindGRootObjs() {
+  std::vector<GObject*> tempvec;
+  TIter iter(gPad->GetListOfPrimitives());
+  while(TObject *obj = iter.Next()) {
+    if( obj->InheritsFrom("GObject") ) {
+      tempvec.push_back((GObject*)obj);
+    }
+  }
+  return tempvec;
+
+}
+
 
 std::vector<TH1*> GCanvas::FindAllHists() {
   std::vector<TH1*> tempvec;
@@ -493,6 +531,13 @@ bool GCanvas::HandleKeyboardPress(Event_t *event,UInt_t *keysym) {
   hists = FindHists(2);
   if(hists.size()>0 && !edited){
     edited = Process2DKeyboardPress(event,keysym);
+  }
+
+  if(!edited) {
+    std::vector<GObject*> gobjs = FindGRootObjs();
+    for(size_t i=0;i<gobjs.size();i++) {
+      edited =gobjs.at(i)->HandleKeyEvent(event,keysym);
+    }
   }
 
   if(edited) {
@@ -590,8 +635,9 @@ bool GCanvas::HandleMouseControlPress(Int_t event,Int_t x,Int_t y) {
     GetSelected()->SetBit(ISPID);
     if(TRuntimeObjects::Get())
       TRuntimeObjects::Get()->GetGates().Add(GetSelected());
+    return true;
   }
-  return true;
+  return false;
 }
 
 
@@ -1343,7 +1389,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
             toremove.push_back(mylist->At(i)->GetName());
           }
         }
-        for(int i=0;i<toremove.size();i++) {
+        for(size_t i=0;i<toremove.size();i++) {
           mylist->Remove(mylist->FindObject(toremove.at(i).c_str()));
         }
       }

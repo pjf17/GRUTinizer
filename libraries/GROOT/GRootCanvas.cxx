@@ -156,6 +156,10 @@ enum ERootCanvasCommands {
 #define kButton1Ctrl 9
 #define kButton1CtrlMotion 10
 
+#define kButton1Alt 15
+#define kButton1AltMotion 16
+
+
 
 static const char *gOpenTypes[] = { "ROOT files",   "*.root",
                                     "All files",    "*",
@@ -1725,7 +1729,7 @@ void GRootCanvas::AdjustSize()
 Bool_t GRootCanvas::HandleContainerButton(Event_t *event)
 {
    // Handle mouse button events in the canvas container.
-
+   // printf("%s called\n",__PRETTY_FUNCTION__);
 
    Int_t button = event->fCode;
    Int_t x = event->fX;
@@ -1740,12 +1744,19 @@ Bool_t GRootCanvas::HandleContainerButton(Event_t *event)
       fButton = button;
       //printf("Event_t::State = 0x%08x\n",event->fState);
       if (button == kButton1) {
-         if (event->fState & kKeyShiftMask)
+         if (event->fState & kKeyShiftMask) {
+            //printf("SHIFT Event_t::State = 0x%08x\n",event->fState);
             ((GCanvas*)fCanvas)->HandleInput(kButton1Shift, x, y);
-         else if(event->fState & kKeyControlMask)
+         } else if(event->fState & kKeyControlMask) {
+            //printf("CTRL  Event_t::State = 0x%08x\n",event->fState);
             ((GCanvas*)fCanvas)->HandleInput(kButton1Ctrl, x, y);
-         else
+         } else if(event->fState & kKeyMod1Mask) {
+            //printf("ALT   Event_t::State = 0x%08x\n",event->fState);
+            ((GCanvas*)fCanvas)->HandleInput(kButton1Alt, x, y);
+         } else {
+            //printf("NONE  Event_t::State = 0x%08x\n",event->fState);
             ((GCanvas*)fCanvas)->HandleInput(kButton1Down, x, y);
+         }
       }
       if (button == kButton2)
          ((GCanvas*)fCanvas)->HandleInput(kButton2Down, x, y);

@@ -11,7 +11,7 @@
 //#include <TFrame.h>
 
 //#include <GH2Base.h>
-//class GH1D;
+class GH1D;
 
 #include <GH2.h>
 
@@ -42,13 +42,13 @@ public:
   virtual void SetBinsLength(int n=-1);
 
 
-  //Int_t Write(const char *name="",Int_t option=0,Int_t bufsize=0) const;  
+  Int_t Write(const char *name="",Int_t option=0,Int_t bufsize=0) const;  
 
 protected:
   virtual double RetrieveBinContent(int bin) const { return double (fArray[bin]); }
   virtual void   UpdateBinContent(int bin,double content) { fArray[bin] = float(content); }
 
-  ClassDef(GH2D,3)
+  ClassDef(GH2D,5)
 };
 
 GH2D operator*(float c1,const GH2D &h1);

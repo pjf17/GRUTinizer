@@ -13,6 +13,8 @@
 #include "TDetector.h"
 #include "TGretinaHit.h"
 
+class TCutG;
+
 class TGretina : public TDetector {
 
 public:
@@ -53,19 +55,13 @@ public:
 
   void  SortHits();
 
-  void  CleanHits(int i=-1) { 
-    for(auto x=gretina_hits.begin();x!=gretina_hits.end();) { //x++) {
-      if(x->GetPad()==0) {
-        x->TrimSegments(1);
-        if(i>=0) 
-          x->SetCoreEnergy(x->GetCoreEnergy(i));
-        x++;
-      } else {
-        x = gretina_hits.erase(x);
-      }
-    }
-  }
- 
+  ///// messy business. 
+  int CleanHits(int i=-1);  // cleans by pad and segment "number" i.e multi segment hits.
+  int CleanHits(TCutG *);   // gretina timing cuts;  needs at least to gammas.
+  int CleanHits(double low,double high);   // gretina energy gates, removes hits which do not fall inbetween..
+
+
+
   double SumHits(bool clean=true) { 
     double sum =0.0;
     for(auto x=gretina_hits.begin();x!=gretina_hits.end();x++) {

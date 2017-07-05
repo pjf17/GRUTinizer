@@ -297,6 +297,9 @@ Bool_t GGaus::Fit(TH1 *fithist,Option_t *opt) {
   Copy(*fithist->GetListOfFunctions()->FindObject(GetName()));
   fithist->GetListOfFunctions()->Add(fBGFit.Clone());
 
+  fChi2 = TF1::GetChisquare();
+  fNdf  = TF1::GetNDF();
+  printf ("chi2:  %.03f \t ndf: %.1f\n",fChi2,fNdf);
 
   //delete tmppeak;
   return true;

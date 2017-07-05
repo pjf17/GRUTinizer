@@ -14,6 +14,7 @@ class TH1;
 class GH1;
 class GH2;
 
+class GObject;
 
 class GMarker : public TObject{
 public:
@@ -114,6 +115,8 @@ private:
 
   std::vector<TH1*> FindHists(int dim=1);
   std::vector<TH1*> FindAllHists();
+
+  std::vector<GObject*> FindGRootObjs();
 
 public:
   bool HandleArrowKeyPress(Event_t *event,UInt_t *keysym);

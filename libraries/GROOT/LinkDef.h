@@ -1,4 +1,4 @@
-// GRootGuiFactory.h GRootFunctions.h GRootCommands.h GRootCanvas.h GRootBrowser.h GCanvas.h  GH2I.h GH2D.h  GPeak.h GGaus.h GValue.h GH1D.h GrutNotifier.h  GSnapshot.h GCutG.h GH1.h GH2.h GPopup.h GHistPopup.h TF1Sum.h  GGraph.h GGraph2D.h
+// GRootGuiFactory.h GRootFunctions.h GRootCommands.h GRootCanvas.h GRootBrowser.h GCanvas.h  GH2I.h GH2D.h  GPeak.h GGaus.h GValue.h GH1D.h GrutNotifier.h  GSnapshot.h GCutG.h GH1.h GH2.h GPopup.h GHistPopup.h TF1Sum.h  GGraph.h GGraph2D.h GSpectrum.h GSpectrum2.h GObject.h 
 
 
 #ifdef __CINT__
@@ -68,6 +68,10 @@
 #pragma link C++ class GH1D+;
 #pragma link C++ class GH2I+;
 #pragma link C++ class GH2D+;
+
+#pragma link C++ class GObject+;
+#pragma link C++ class GSpectrum+;
+#pragma link C++ class GSpectrum2+;
 
 //#pragma link C++ class GEfficiency+;
 #pragma link C++ class GGraph+;
