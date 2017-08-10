@@ -29,11 +29,13 @@ int gates_loaded=0;
 
 bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   TS800    *s800    = obj.GetDetector<TS800>();
+
   if(!s800)
     return false;
 
   std::string histname;
   std::string dirname;
+
   if(incoming)
     dirname = Form("outgoing_%s",incoming->GetName());
   else
@@ -51,8 +53,6 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   double objtac_corr    = s800->GetCorrTOF_OBJTAC();
   double afp            = s800->GetAFP();
   double xfp_focalplane = s800->GetXFP(0);
-  //TVector3 track        = s800->Track();
-  //double corr_time      = caesar->GetCorrTime(hit,s800);
 
 
   histname = "AFP_vs_OBJTOF";
@@ -111,103 +111,108 @@ bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
   return true;
 }
 
-int HandleUngated(TRuntimeObjects& obj) {
-
-  TCaesar  *caesar  = obj.GetDetector<TCaesar>();
-  TCaesar  *caesar_ab = new TCaesar();//will be used to do addback correction 
-                                      //only for the hits inside the time cut
-
-  std::string histname;
-  std::string dirname;
-
-  const int SINGLES_ENERGY_THRESHOLD = 150;
-  const int AB_ENERGY_THRESHOLD = 0;
-
-  std::vector<double> energies_singles;
-  std::vector<double> energies_addback;
-  std::vector<double> energies_addback_n0;
-  std::vector<double> energies_addback_n1;
-  std::vector<double> energies_addback_n2;
-  std::vector<double> energies_addback_ng;
-  energies_singles.clear();
-  energies_addback.clear();
-
-  for(unsigned int y=0;y<caesar->Size();y++) {
-      TCaesarHit &hit = caesar->GetCaesarHit(y);
-
-      if(hit.IsOverflow())
-        continue;
-
-      double energy = hit.GetEnergy(); 
-
-      caesar_ab->InsertHit(hit);
-        if (energy > SINGLES_ENERGY_THRESHOLD){              
-               energies_singles.push_back(energy);
-        }
-
-        dirname = "Ungated";
-        histname = "energy";
-        obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energy);
-         
-        histname = "detnum_vs_energy";
-        obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
-                                           2048,0,8192,energy);
-
-  }//for loop over singles hits
-
-  //Now loop over addback hits
-  int num_addback_hits = caesar_ab->AddbackSize();
-  for (int y=0; y < num_addback_hits; y++){
-      TCaesarHit &hit = caesar_ab->GetAddbackHit(y);
-
-      double energy = hit.GetEnergy();
-                  
-      if (energy > AB_ENERGY_THRESHOLD){    
-        energies_addback.push_back(energy);       
-      }//For multiplicity purposes
-
-      dirname = "Ungated";
-      histname = "energy_addback";
-      obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energy);
-              
-      if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
-        histname = "energy_addback_n0";
-        obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energy);
-        energies_addback_n0.push_back(energy);
-
-      }
-      else if (hit.GetNumHitsContained() == 2 && !hit.is_garbage_addback){
-        histname = "energy_addback_n1";
-        obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energy);
-        energies_addback_n1.push_back(energy);
-
-      }
-      else if (hit.GetNumHitsContained() == 3 && !hit.is_garbage_addback){
-        histname = "energy_addback_n2";
-        obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energy);
-        energies_addback_n2.push_back(energy);
-      }
-      else if(hit.is_garbage_addback){
-        histname = "energy_addback_ng";
-        obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energy);
-        energies_addback_ng.push_back(energy);
-
-      }
-      else {
-        std::cout << "Weird event not meeting any criteria for addback" << std::endl;
-        std::cout << "hit.is_garbage_addback    = " << hit.is_garbage_addback << std::endl;
-        std::cout << "hit.GetNumHitsContained() = " << hit.GetNumHitsContained() << std::endl;
-      }
-      
-  }//end for loop over addback hits
-
-}//end HandleUngated
+//int HandleUngated(TRuntimeObjects& obj) {
+//
+//  TCaesar  *caesar  = obj.GetDetector<TCaesar>();
+//  TCaesar  *caesar_ab = new TCaesar();//will be used to do addback correction 
+//                                      //only for the hits inside the time cut
+//
+//  if(!caesar)
+//    return false;
+//
+//  std::string histname;
+//  std::string dirname;
+//
+//  const int SINGLES_ENERGY_THRESHOLD = 150;
+//  const int AB_ENERGY_THRESHOLD = 0;
+//
+//  std::vector<double> energies_singles;
+//  std::vector<double> energies_addback;
+//  std::vector<double> energies_addback_n0;
+//  std::vector<double> energies_addback_n1;
+//  std::vector<double> energies_addback_n2;
+//  std::vector<double> energies_addback_ng;
+//  energies_singles.clear();
+//  energies_addback.clear();
+//
+//  for(unsigned int y=0;y<caesar->Size();y++) {
+//      TCaesarHit &hit = caesar->GetCaesarHit(y);
+//
+//      if(hit.IsOverflow())
+//        continue;
+//
+//      double energy = hit.GetEnergy(); 
+//
+//      caesar_ab->InsertHit(hit);
+//        if (energy > SINGLES_ENERGY_THRESHOLD){              
+//               energies_singles.push_back(energy);
+//        }
+//
+//        dirname = "Ungated";
+//        histname = "energy";
+//        obj.FillHistogram(dirname,histname,
+//                          1024,0,8192,energy);
+//         
+//        histname = "detnum_vs_energy";
+//        obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
+//                                           1024,0,8192,energy);
+//
+//  }//for loop over singles hits
+//
+//  //Now loop over addback hits
+//  int num_addback_hits = caesar_ab->AddbackSize();
+//  for (int y=0; y < num_addback_hits; y++){
+//      TCaesarHit &hit = caesar_ab->GetAddbackHit(y);
+//
+//      double energy = hit.GetEnergy();
+//                  
+//      if (energy > AB_ENERGY_THRESHOLD){    
+//        energies_addback.push_back(energy);       
+//      }//For multiplicity purposes
+//
+//      dirname = "Ungated";
+//      histname = "energy_addback";
+//      obj.FillHistogram(dirname,histname,
+//                        1024,0,8192,energy);
+//              
+//      if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
+//        histname = "energy_addback_n0";
+//        obj.FillHistogram(dirname,histname,
+//                          1024,0,8192,energy);
+//        energies_addback_n0.push_back(energy);
+//
+//      }
+//      else if (hit.GetNumHitsContained() == 2 && !hit.is_garbage_addback){
+//        histname = "energy_addback_n1";
+//        obj.FillHistogram(dirname,histname,
+//                          1024,0,8192,energy);
+//        energies_addback_n1.push_back(energy);
+//
+//      }
+//      else if (hit.GetNumHitsContained() == 3 && !hit.is_garbage_addback){
+//        histname = "energy_addback_n2";
+//        obj.FillHistogram(dirname,histname,
+//                          1024,0,8192,energy);
+//        energies_addback_n2.push_back(energy);
+//      }
+//      else if(hit.is_garbage_addback){
+//        histname = "energy_addback_ng";
+//        obj.FillHistogram(dirname,histname,
+//                          1024,0,8192,energy);
+//        energies_addback_ng.push_back(energy);
+//
+//      }
+//      else {
+//        std::cout << "Weird event not meeting any criteria for addback" << std::endl;
+//        std::cout << "hit.is_garbage_addback    = " << hit.is_garbage_addback << std::endl;
+//        std::cout << "hit.GetNumHitsContained() = " << hit.GetNumHitsContained() << std::endl;
+//      }
+//      
+//  }//end for loop over addback hits
+//
+//  return 0;
+//
+//}//end HandleUngated
 
 int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
    
@@ -217,17 +222,14 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                                       //only for the hits inside the time cut
   TCaesar  *caesar_ab_te = new TCaesar();
 
-  if(!s800 || !caesar)
-    return false;
-
+  std::string dirname; 
   std::string histname;
-  std::string dirname;
   std::string dirname2="";
   int cut=-1;
 
   //this loads the time-energy cut with the same title as the outgoing PID blob
   for(unsigned int x=0;x<timeenergy_cuts.size();x++) {
-    if(strcmp(timeenergy_cuts.at(x)->GetTitle(),outgoing->GetTitle()) == 0){
+    if(strcmp(timeenergy_cuts.at(x)->GetTitle(),outgoing->GetName()) == 0){
       dirname2 = Form("caesar_%s_timeenergygated",outgoing->GetName());
       cut = x;
     }
@@ -241,9 +243,16 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
   if(strcmp(outgoing_name,incoming->GetName()) != 0)
     return false;
 
+  dirname = Form("caesar_%s",outgoing->GetName());
+  if(s800){
+    obj.FillHistogram(dirname,"DTA_for_all_S800_hits",512,-0.2,0.2,s800->GetDta());
+  }
+
+  if(!s800 || !caesar)
+    return false;
  
   double beta    = GValue::Value(Form("BETA_%s",outgoing->GetTitle()));
-  double gamma   = 1/(sqrt(1-pow(beta,2)));
+  //double gamma   = 1/(sqrt(1-pow(beta,2)));
   double z_shift = GValue::Value("TARGET_SHIFT_Z");
   TVector3 track = s800->Track(); 
 
@@ -252,6 +261,8 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
 
   std::vector<double> energies_singles;
   std::vector<double> energies_singles_te;
+  std::vector<double> energies_singles_nondop;
+  std::vector<double> energies_singles_nondop_te;
   std::vector<double> energies_addback;
   std::vector<double> energies_addback_te;
   std::vector<double> energies_addback_n0;
@@ -286,20 +297,26 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
           caesar_ab->InsertHit(hit);
           if (energy_dc > SINGLES_ENERGY_THRESHOLD){              
                  energies_singles.push_back(energy_dc);
+                 energies_singles_nondop.push_back(hit.GetEnergy());
                  time_singles.push_back(hit.Time());
-                 pos_singles.push_back(hit.GetPosition());
+                 pos_singles.push_back(hit.GetPosition(z_shift));
                 
           }//No time-energy gate
 
           dirname = Form("caesar_%s",outgoing->GetName());
           histname = "energy_dc_pid_in_tcut";
           obj.FillHistogram(dirname,histname,
-                            2048,0,8192,energy_dc);
+                            1024,0,8192,energy_dc);
           obj.FillHistogram(dirname,"DTA_energy_dc_pid_in_tcut",
-			     500,-0.2,0.2,s800->GetDta(),
+			     512,-0.2,0.2,s800->GetDta(),
                              1024,0,8192,energy_dc);
+          
           obj.FillHistogram(dirname,"corrtime_vs_doppler",2000,-2000,2000,corr_time,
                                                          1024,0,8192,energy_dc);
+
+          obj.FillHistogram(dirname,"angle_vs_energy",180,0,180,TMath::RadToDeg()*hit.GetPosition(z_shift).Angle(track),
+                                                         1024,0,8192,hit.GetEnergy());
+
           histname = "detnum_vs_doppler";
           obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
 			                     1024,0,8192,energy_dc);
@@ -311,20 +328,26 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
               if (energy_dc > SINGLES_ENERGY_THRESHOLD){
            
                  energies_singles_te.push_back(energy_dc);
+                 energies_singles_nondop_te.push_back(hit.GetEnergy());
                  time_singles_te.push_back(hit.Time());
-                 pos_singles_te.push_back(hit.GetPosition());
+                 pos_singles_te.push_back(hit.GetPosition(z_shift));
                 
               }//For multiplicity purposes
 
               dirname = Form("caesar_te_%s",outgoing->GetName());
               histname = "energy_dc_pid_in_tcut";
               obj.FillHistogram(dirname,histname,
-                                2048,0,8192,energy_dc);
-              obj.FillHistogram(dirname,"DTA_energy_dc_pid_in_tcut",
-			        500,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energy_dc);
+              obj.FillHistogram(dirname,"DTA_energy_dc_pid_in_tcut",
+			        512,-0.2,0.2,s800->GetDta(),
+                                1024,0,8192,energy_dc);
+
               obj.FillHistogram(dirname,"corrtime_vs_doppler",2000,-2000,2000,corr_time,
                                                               1024,0,8192,energy_dc);
+
+              obj.FillHistogram(dirname,"angle_vs_energy",180,0,180,TMath::RadToDeg()*hit.GetPosition(z_shift).Angle(track),
+                                                         1024,0,8192,hit.GetEnergy());
+              
               histname = "detnum_vs_doppler";
               obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
 			                         1024,0,8192,energy_dc);
@@ -356,17 +379,17 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
               dirname = Form("caesar_addback_%s",outgoing->GetName());
               histname = "ab_energy_dc_pid_in_tcut";
               obj.FillHistogram(dirname,histname,
-                                2048,0,8192,energy_dc);
+                                1024,0,8192,energy_dc);
               
               obj.FillHistogram(dirname,"DTA_ab_energy_dc_pid_in_tcut",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energy_dc);
 
               if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
                 dirname = Form("caesar_addback_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n0";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n0.push_back(energy_dc);
 
               }
@@ -374,7 +397,7 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                 dirname = Form("caesar_addback_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n1";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n1.push_back(energy_dc);
 
               }
@@ -382,14 +405,14 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                 dirname = Form("caesar_addback_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n2";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n2.push_back(energy_dc);
               }
               else if(hit.is_garbage_addback){
                 dirname = Form("caesar_addback_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_ng";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_ng.push_back(energy_dc);
 
               }
@@ -408,23 +431,25 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       dirname = Form("caesar_%s",outgoing->GetName());
       histname = "energy_dc_mult_one";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles.at(0));
+                        1024,0,8192,energies_singles.at(0));
+      obj.FillHistogram(dirname,"angle_vs_energy_mult_one",180,0,180,TMath::RadToDeg()*pos_singles.at(0).Angle(track),
+                                                         1024,0,8192,energies_singles_nondop.at(0));
       obj.FillHistogram(dirname,"DTA_energy_dc_mult_one",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_singles.at(0));
   }
   else if (num_hits_singles == 2){
       dirname = Form("caesar_%s",outgoing->GetName());
       histname = "energy_dc_mult_two";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles.at(0));
+                        1024,0,8192,energies_singles.at(0));
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles.at(1));
-       obj.FillHistogram(dirname,"DTA_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+                        1024,0,8192,energies_singles.at(1));
+      obj.FillHistogram(dirname,"DTA_energy_dc_mult_two",
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_singles.at(0));
-      obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+      obj.FillHistogram(dirname,"DTA_energy_dc_mult_two",
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_singles.at(1));
   }
   for (unsigned int i = 0; i < num_hits_singles; i++){
@@ -432,25 +457,37 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
         dirname = Form("caesar_%s",outgoing->GetName());
         histname = "energy_dc_coincidence_matrix";
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_singles.at(i),
-                          1024,0,4096, energies_singles.at(j));
+                          1024,0,8192, energies_singles.at(i),
+                          1024,0,8192, energies_singles.at(j));
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_singles.at(j),
-                          1024,0,4096, energies_singles.at(i));
+                          1024,0,8192, energies_singles.at(j),
+                          1024,0,8192, energies_singles.at(i));
         histname = "poss_diff";
         obj.FillHistogram(dirname, histname,
-                          2000,-1000,1000,  (pos_singles.at(i)-pos_singles.at(j)).Mag());
+                          500,0,1000,  (pos_singles.at(i)-pos_singles.at(j)).Mag());
 
         histname = "time_diff";
         obj.FillHistogram(dirname, histname,
-                          2000,-1000,1000, time_singles.at(i)-time_singles.at(j));
+                          1000,-1000,1000, time_singles.at(i)-time_singles.at(j));
       }
+
+    dirname = Form("caesar_%s",outgoing->GetName());
+    histname = "multiplicity_energydc";
+    obj.FillHistogram(dirname, histname,
+                      192, 0, 192, num_hits_singles,
+                      1024,0,8192, energies_singles.at(i));
   }
 
   dirname = Form("caesar_%s",outgoing->GetName());
   histname = "multiplicity";
   obj.FillHistogram(dirname, histname,
                       192, 0, 192, num_hits_singles);
+
+  if(num_hits_singles>0){  
+    obj.FillHistogram(dirname,"DTA_energy_dc_first_hit_only",
+		      512,-0.2,0.2,s800->GetDta(),
+                      1024,0,8192,energies_singles.at(0));
+  }
 
   //addback_mult == multiplicity in gates
   int addback_mult = energies_addback.size();
@@ -462,77 +499,77 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       dirname = Form("caesar_addback_%s",outgoing->GetName());
       histname = "ab_energy_dc_mult_one";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback.at(0));
+                        1024,0,8192,energies_addback.at(0));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_one",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback.at(0));
       if (n0_mult ==1){
         histname = "ab_energy_dc_mult_one_n0";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n0.at(0));
+                          1024,0,8192,energies_addback_n0.at(0));
       }
       else if (n1_mult ==1){
         histname = "ab_energy_dc_mult_one_n1";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n1.at(0));
+                          1024,0,8192,energies_addback_n1.at(0));
       }
       else if (n2_mult ==1){
         histname = "ab_energy_dc_mult_one_n2";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n2.at(0));
+                          1024,0,8192,energies_addback_n2.at(0));
       }
   }//end addback_mult == 1
   else if (addback_mult == 2){
       dirname = Form("caesar_addback_%s",outgoing->GetName());
       histname = "ab_energy_dc_mult_two";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback.at(0));
+                        1024,0,8192,energies_addback.at(0));
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback.at(1));
+                        1024,0,8192,energies_addback.at(1));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback.at(0));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback.at(1));
       for (int i = 0; i < addback_mult; i++){
         for (int j = i+1; j < addback_mult; j++){
           dirname = Form("caesar_addback_%s",outgoing->GetName());
           histname = "ab_energy_dc_coincidence_matrix_multtwo";
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback.at(i),
-              1024,0,4096, energies_addback.at(j));
+              1024,0,8192, energies_addback.at(i),
+              1024,0,8192, energies_addback.at(j));
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback.at(j),
-              1024,0,4096, energies_addback.at(i));
+              1024,0,8192, energies_addback.at(j),
+              1024,0,8192, energies_addback.at(i));
 
           if (n0_mult + n1_mult + n2_mult == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_nogarbage";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(i),
-                1024,0,4096, energies_addback.at(j));
+                1024,0,8192, energies_addback.at(i),
+                1024,0,8192, energies_addback.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(j),
-                1024,0,4096, energies_addback.at(i));
+                1024,0,8192, energies_addback.at(j),
+                1024,0,8192, energies_addback.at(i));
           }
 
           if (n0_mult == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_n0";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(i),
-                1024,0,4096, energies_addback.at(j));
+                1024,0,8192, energies_addback.at(i),
+                1024,0,8192, energies_addback.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(j),
-                1024,0,4096, energies_addback.at(i));
+                1024,0,8192, energies_addback.at(j),
+                1024,0,8192, energies_addback.at(i));
           }
           if (n0_mult + n1_mult == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_n0n1";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(i),
-                1024,0,4096, energies_addback.at(j));
+                1024,0,8192, energies_addback.at(i),
+                1024,0,8192, energies_addback.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback.at(j),
-                1024,0,4096, energies_addback.at(i));
+                1024,0,8192, energies_addback.at(j),
+                1024,0,8192, energies_addback.at(i));
           }
         }//end for
       }//end for
@@ -540,31 +577,31 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       if (n0_mult + n1_mult + n2_mult == 2){
         histname = "ab_energy_dc_multtwo_nogarbage";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback.at(0));
+                          1024,0,8192,energies_addback.at(0));
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback.at(1));
+                          1024,0,8192,energies_addback.at(1));
         if (n2_mult ==0){
           if (n1_mult == 0){
             histname = "ab_energy_dc_multtwo_n0";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(0));
+                              1024,0,8192,energies_addback.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(1));
+                              1024,0,8192,energies_addback.at(1));
           }//pure n0
           else{
             histname = "ab_energy_dc_multtwo_n1";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(0));
+                              1024,0,8192,energies_addback.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(1));
+                              1024,0,8192,energies_addback.at(1));
           }
         }//no n2 events
         else{
             histname = "ab_energy_dc_multtwo_n2";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(0));
+                              1024,0,8192,energies_addback.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback.at(1));
+                              1024,0,8192,energies_addback.at(1));
         }
       } 
   }//addback_mult == 2
@@ -574,28 +611,38 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
         dirname = Form("caesar_addback_%s",outgoing->GetName());
         histname = "ab_energy_dc_coincidence_matrix";
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_addback.at(i),
-                          1024,0,4096, energies_addback.at(j));
+                          1024,0,8192, energies_addback.at(i),
+                          1024,0,8192, energies_addback.at(j));
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_addback.at(j),
-                          1024,0,4096, energies_addback.at(i));
+                          1024,0,8192, energies_addback.at(j),
+                          1024,0,8192, energies_addback.at(i));
         if (ng_mult == 0){
           histname = "ab_energy_dc_coincidence_matrix_nogarbage";
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback.at(i),
-              1024,0,4096, energies_addback.at(j));
+              1024,0,8192, energies_addback.at(i),
+              1024,0,8192, energies_addback.at(j));
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback.at(j),
-              1024,0,4096, energies_addback.at(i));
+              1024,0,8192, energies_addback.at(j),
+              1024,0,8192, energies_addback.at(i));
         }
       }
+
+    dirname = Form("caesar_addback_%s",outgoing->GetName());
+    histname = "ab_multiplicity_energydc";
+    obj.FillHistogram(dirname, histname,
+                      192, 0, 192, addback_mult,
+                      1024,0,8192, energies_addback.at(i));
   }
 
   dirname = Form("caesar_addback_%s",outgoing->GetName());
   histname = "ab_multiplicity";
   obj.FillHistogram(dirname, histname,
                     192, 0, 192, addback_mult);
-
+  if(addback_mult>0){
+    obj.FillHistogram(dirname,"DTA_energy_dc_first_hit_only",
+                      512,-0.2,0.2,s800->GetDta(),
+                      1024,0,8192,energies_addback.at(0));
+  }
 
   //Now loop over addback_te hits
   int num_addback_hits_te = caesar_ab_te->AddbackSize();
@@ -622,17 +669,17 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
               dirname = Form("caesar_addback_te_%s",outgoing->GetName());
               histname = "ab_energy_dc_pid_in_tcut";
               obj.FillHistogram(dirname,histname,
-                                2048,0,8192,energy_dc);
+                                1024,0,8192,energy_dc);
               
               obj.FillHistogram(dirname,"DTA_ab_energy_dc_pid_in_tcut",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energy_dc);
 
               if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
                 dirname = Form("caesar_addback_te_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n0";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n0_te.push_back(energy_dc);
 
               }
@@ -640,7 +687,7 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                 dirname = Form("caesar_addback_te_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n1";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n1_te.push_back(energy_dc);
 
               }
@@ -648,14 +695,14 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                 dirname = Form("caesar_addback_te_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_n2";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_n2_te.push_back(energy_dc);
               }
               else if(hit.is_garbage_addback){
                 dirname = Form("caesar_addback_te_%s",outgoing->GetName());
                 histname = "ab_energy_dc_pid_in_tcut_ng";
                 obj.FillHistogram(dirname,histname,
-                                  2048,0,8192,energy_dc);
+                                  1024,0,8192,energy_dc);
                 energies_addback_ng_te.push_back(energy_dc);
 
               }
@@ -674,34 +721,42 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       dirname = Form("caesar_te_%s",outgoing->GetName());
       histname = "energy_dc_mult_one";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles_te.at(0));
+                        1024,0,8192,energies_singles_te.at(0));
+      obj.FillHistogram(dirname,"angle_vs_energy_mult_one",180,0,180,TMath::RadToDeg()*pos_singles_te.at(0).Angle(track),
+                                                         1024,0,8192,energies_singles_nondop_te.at(0));
   }
   else if (num_hits_singles_te == 2){
       dirname = Form("caesar_te_%s",outgoing->GetName());
       histname = "energy_dc_mult_two";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles_te.at(0));
+                        1024,0,8192,energies_singles_te.at(0));
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_singles_te.at(1));
+                        1024,0,8192,energies_singles_te.at(1));
   }
   for (unsigned int i = 0; i < num_hits_singles_te; i++){
       for (unsigned int j = i+1; j < num_hits_singles_te; j++){
         dirname = Form("caesar_te_%s",outgoing->GetName());
         histname = "energy_dc_coincidence_matrix";
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_singles_te.at(i),
-                          1024,0,4096, energies_singles_te.at(j));
+                          1024,0,8192, energies_singles_te.at(i),
+                          1024,0,8192, energies_singles_te.at(j));
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_singles_te.at(j),
-                          1024,0,4096, energies_singles_te.at(i));
+                          1024,0,8192, energies_singles_te.at(j),
+                          1024,0,8192, energies_singles_te.at(i));
         histname = "poss_diff";
         obj.FillHistogram(dirname, histname,
-                          2000,-1000,1000,  (pos_singles_te.at(i)-pos_singles_te.at(j)).Mag());
+                          500,0,1000,  (pos_singles_te.at(i)-pos_singles_te.at(j)).Mag());
 
         histname = "time_diff";
         obj.FillHistogram(dirname, histname,
-                          2000,-1000,1000, time_singles_te.at(i)-time_singles_te.at(j));
+                          1000,-1000,1000, time_singles_te.at(i)-time_singles_te.at(j));
       }
+
+    dirname = Form("caesar_te_%s",outgoing->GetName());
+    histname = "multiplicity_energydc";
+    obj.FillHistogram(dirname, histname,
+                      192, 0, 192, num_hits_singles_te,
+                      1024,0,8192, energies_singles_te.at(i));
   }
 
   dirname = Form("caesar_te_%s",outgoing->GetName());
@@ -709,6 +764,11 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
   obj.FillHistogram(dirname, histname,
                     192, 0, 192, num_hits_singles_te);
 
+  if(num_hits_singles_te>0){
+    obj.FillHistogram(dirname,"DTA_energy_dc_first_hit_only",
+		      512,-0.2,0.2,s800->GetDta(),
+                      1024,0,8192,energies_singles_te.at(0));
+  }
 
   //addback_mult_te == multiplicity in gates with time-energy cut
   int addback_mult_te = energies_addback_te.size();
@@ -720,108 +780,108 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       dirname = Form("caesar_addback_te_%s",outgoing->GetName());
       histname = "ab_energy_dc_mult_one";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback_te.at(0));
+                        1024,0,8192,energies_addback_te.at(0));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_one",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback_te.at(0));
       if (n0_mult_te ==1){
         histname = "ab_energy_dc_mult_one_n0";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n0_te.at(0));
+                          1024,0,8192,energies_addback_n0_te.at(0));
       }
       else if (n1_mult_te ==1){
         histname = "ab_energy_dc_mult_one_n1";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n1_te.at(0));
+                          1024,0,8192,energies_addback_n1_te.at(0));
       }
       else if (n2_mult_te ==1){
         histname = "ab_energy_dc_mult_one_n2";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_n2_te.at(0));
+                          1024,0,8192,energies_addback_n2_te.at(0));
       }
   }
   else if (addback_mult_te == 2){
       dirname = Form("caesar_addback_te_%s",outgoing->GetName());
       histname = "ab_energy_dc_mult_two";
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback_te.at(0));
+                        1024,0,8192,energies_addback_te.at(0));
       obj.FillHistogram(dirname,histname,
-                        2048,0,8192,energies_addback_te.at(1));
+                        1024,0,8192,energies_addback_te.at(1));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback_te.at(0));
       obj.FillHistogram(dirname,"DTA_ab_energy_dc_mult_two",
-			        500,-0.2,0.2,s800->GetDta(),
+			        512,-0.2,0.2,s800->GetDta(),
                                 1024,0,8192,energies_addback_te.at(1));
       for (int i = 0; i < addback_mult_te; i++){
         for (int j = i+1; j < addback_mult_te; j++){
           dirname = Form("caesar_addback_te_%s",outgoing->GetName());
           histname = "ab_energy_dc_coincidence_matrix_multtwo";
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback_te.at(i),
-              1024,0,4096, energies_addback_te.at(j));
+              1024,0,8192, energies_addback_te.at(i),
+              1024,0,8192, energies_addback_te.at(j));
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback_te.at(j),
-              1024,0,4096, energies_addback_te.at(i));
+              1024,0,8192, energies_addback_te.at(j),
+              1024,0,8192, energies_addback_te.at(i));
 
           if (n0_mult_te + n1_mult_te + n2_mult_te == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_nogarbage";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(i),
-                1024,0,4096, energies_addback_te.at(j));
+                1024,0,8192, energies_addback_te.at(i),
+                1024,0,8192, energies_addback_te.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(j),
-                1024,0,4096, energies_addback_te.at(i));
+                1024,0,8192, energies_addback_te.at(j),
+                1024,0,8192, energies_addback_te.at(i));
           }
 
           if (n0_mult_te == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_n0";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(i),
-                1024,0,4096, energies_addback_te.at(j));
+                1024,0,8192, energies_addback_te.at(i),
+                1024,0,8192, energies_addback_te.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(j),
-                1024,0,4096, energies_addback_te.at(i));
+                1024,0,8192, energies_addback_te.at(j),
+                1024,0,8192, energies_addback_te.at(i));
           }
           if (n0_mult_te + n1_mult_te == 2){
             histname = "ab_energy_dc_coincidence_matrix_multtwo_n0n1";
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(i),
-                1024,0,4096, energies_addback_te.at(j));
+                1024,0,8192, energies_addback_te.at(i),
+                1024,0,8192, energies_addback_te.at(j));
             obj.FillHistogram(dirname,histname,
-                1024,0,4096, energies_addback_te.at(j),
-                1024,0,4096, energies_addback_te.at(i));
+                1024,0,8192, energies_addback_te.at(j),
+                1024,0,8192, energies_addback_te.at(i));
           }
         }
       }
       if (n0_mult_te + n1_mult_te + n2_mult_te == 2){
         histname = "ab_energy_dc_multtwo_nogarbage";
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_te.at(0));
+                          1024,0,8192,energies_addback_te.at(0));
         obj.FillHistogram(dirname,histname,
-                          2048,0,8192,energies_addback_te.at(1));
+                          1024,0,8192,energies_addback_te.at(1));
         if (n2_mult_te ==0){
           if (n1_mult_te == 0){
             histname = "ab_energy_dc_multtwo_n0";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(0));
+                              1024,0,8192,energies_addback_te.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(1));
+                              1024,0,8192,energies_addback_te.at(1));
           }//pure n0
           else{
             histname = "ab_energy_dc_multtwo_n1";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(0));
+                              1024,0,8192,energies_addback_te.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(1));
+                              1024,0,8192,energies_addback_te.at(1));
           }
         }//no n2 events
         else{
             histname = "ab_energy_dc_multtwo_n2";
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(0));
+                              1024,0,8192,energies_addback_te.at(0));
             obj.FillHistogram(dirname,histname,
-                              2048,0,8192,energies_addback_te.at(1));
+                              1024,0,8192,energies_addback_te.at(1));
         }
       }
   }//addback_mult == 2
@@ -830,27 +890,39 @@ int HandleCaesar(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
         dirname = Form("caesar_addback_te_%s",outgoing->GetName());
         histname = "ab_energy_dc_coincidence_matrix";
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_addback_te.at(i),
-                          1024,0,4096, energies_addback_te.at(j));
+                          1024,0,8192, energies_addback_te.at(i),
+                          1024,0,8192, energies_addback_te.at(j));
         obj.FillHistogram(dirname, histname,
-                          1024,0,4096, energies_addback_te.at(j),
-                          1024,0,4096, energies_addback_te.at(i));
+                          1024,0,8192, energies_addback_te.at(j),
+                          1024,0,8192, energies_addback_te.at(i));
         if (ng_mult_te == 0){
           histname = "ab_energy_dc_coincidence_matrix_nogarbage";
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback_te.at(i),
-              1024,0,4096, energies_addback_te.at(j));
+              1024,0,8192, energies_addback_te.at(i),
+              1024,0,8192, energies_addback_te.at(j));
           obj.FillHistogram(dirname, histname,
-              1024,0,4096, energies_addback_te.at(j),
-              1024,0,4096, energies_addback_te.at(i));
+              1024,0,8192, energies_addback_te.at(j),
+              1024,0,8192, energies_addback_te.at(i));
         }
       }
+
+    dirname = Form("caesar_addback_te_%s",outgoing->GetName());
+    histname = "ab_multiplicity_energydc";
+    obj.FillHistogram(dirname, histname,
+                      192, 0, 192, addback_mult_te,
+                      1024,0,8192, energies_addback_te.at(i));
   }
 
   dirname = Form("caesar_addback_te_%s",outgoing->GetName());
   histname = "ab_multiplicity";
   obj.FillHistogram(dirname, histname,
                       192, 0, 192, addback_mult_te);
+
+  if(addback_mult_te>0){
+    obj.FillHistogram(dirname,"DTA_energy_dc_first_hit_only",
+		      512,-0.2,0.2,s800->GetDta(),
+                      1024,0,8192,energies_addback_te.at(0));
+  }
 
   if(caesar) { caesar->Clear(); }
   if(caesar_ab) { caesar_ab->Clear(); }
@@ -871,7 +943,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList *gates = &(obj.GetGates());
   int numobj = list->GetSize();
 
-  HandleUngated(obj);
+//  HandleUngated(obj);
 
   if(gates_loaded!=gates->GetSize()) {
     TIter iter(gates);
