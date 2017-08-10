@@ -261,6 +261,8 @@ void GCanvas::AddMarker(int x,int y,int dim) {
     delete fMarkers.at(0);
     fMarkers.erase(fMarkers.begin());
   }
+  int args[3] = {x,y,dim};
+  Emit("AddMarker(int,int,int)",args);
   return;
 }
 
@@ -284,6 +286,7 @@ void GCanvas::RemoveMarker(Option_t* opt) {
     //printf("Marker %i Removed\n");
     fMarkers.erase(fMarkers.end()-1);
   }
+  Emit("RemoveMarker()");
 }
 
 void GCanvas::OrderMarkers() {
@@ -341,7 +344,7 @@ bool GCanvas::SetBackgroundMarkers() {
   }
 
   //fBackgroundMode = kRegionBackground;
-
+  Emit("SetBackgroundMarkers()");
   return true;
 }
 

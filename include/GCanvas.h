@@ -9,6 +9,7 @@
 #include "TLine.h"
 //#include "TBuffer.h"
 
+
 class TF1;
 class TH1;
 class GH1;
@@ -41,7 +42,7 @@ public:
   TLine *linex;
   TLine *liney;
   void Copy(TObject &object) const;
-  void Print(Option_t *opt) const; 
+  void Print(Option_t *opt="") const; 
   bool operator<(const GMarker &rhs) const { return x < rhs.x; }
   ClassDef(GMarker,0)
 };
@@ -100,13 +101,18 @@ private:
   std::vector<GMarker*> fMarkers;
   std::vector<GMarker*> fBackgroundMarkers;
   //kBackgroundSubtraction fBackgroundMode;
-  void AddMarker(int,int,int dim=1);
-  void RemoveMarker(Option_t *opt="");
+public:
+  void AddMarker(int,int,int dim=1);   //*SIGNAL*
+  void RemoveMarker(Option_t *opt=""); //*SIGNAL*
   void OrderMarkers();
   void RedrawMarkers();
-  bool SetBackgroundMarkers();
+  
+  std::vector<GMarker*> GetMarkers()           { return fMarkers; }
+  std::vector<GMarker*> GetBackgroundMarkers() { return fBackgroundMarkers; }
+    
+  bool SetBackgroundMarkers();         //*SIGNAL*
   bool CycleBackgroundSubtraction();
-
+private:
   //std::vector<GMarker*> fBG_Markers;
   //void AddBGMarker(GMarker *mark);
   //void RemoveBGMarker();
