@@ -603,7 +603,8 @@ float TCrdc::GetDispersiveX() const{
     x_offset = 0.0;
   
   std::map<int,double> datamap;
-  const int GRAVITY_WIDTH = 14;//determines how many pads one uses in averaging
+  //const int GRAVITY_WIDTH = 14;//determines how many pads one uses in averaging
+  const int GRAVITY_WIDTH = 10;//determines how many pads one uses in averaging
   const int NUM_PADS = 224;
   int lowpad = maxpad - GRAVITY_WIDTH/2;
   int highpad = lowpad + GRAVITY_WIDTH;

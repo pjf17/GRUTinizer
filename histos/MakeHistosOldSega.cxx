@@ -46,7 +46,7 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   histname = "XFP_vs_OBJTOF";
   obj.FillHistogram(dirname,histname,
         	    1000,-1000,1000,obj_corr,
-        	    350,-50,300,xfp);
+        	    600,-300,300,xfp);
  
   histname = "IC_vs_OBJTOF_PID";
   obj.FillHistogram(dirname,histname,
@@ -62,6 +62,10 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   obj.FillHistogram(dirname,"S800_DTA",1000,-0.2,0.2,s800->GetDta());
   obj.FillHistogram(dirname,"ATA_vs_BTA",1000,-0.2,0.2,s800->GetAta(),
 			                 1000,-0.2,0.2,s800->GetBta());
+  obj.FillHistogram(dirname,"CRDC1_MaxPad",300,0,300,s800->GetCrdc(0).GetMaxPad(),
+                                           2000,0,8000, s800->GetCrdc(0).GetMaxPadSum());
+  obj.FillHistogram(dirname,"CRDC2_MaxPad",300,0,300,s800->GetCrdc(1).GetMaxPad(),
+                                           2000,0,8000, s800->GetCrdc(1).GetMaxPadSum());
 
   return true;
 }
@@ -145,9 +149,6 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
 
   dirname = Form("sega_%s",outgoing->GetName());
 
-  obj.FillHistogram(dirname,"CRDC1Y",5000,-5000,5000,s800->GetCrdc(0).GetNonDispersiveY());
-  obj.FillHistogram(dirname,"CRDC2Y",5000,-5000,5000,s800->GetCrdc(1).GetNonDispersiveY());
-
    //this enforces that the outgoing PID blob (AX_from_BY_incoming) is in the incoming gate (BY_incoming)
   const char *outgoing_name = outgoing->GetName();
   const char *toRemove = outgoing->GetTitle(); //going to remove AX from name
@@ -155,6 +156,17 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
   outgoing_name += length+6; //remove AX_from_  
   if(strcmp(outgoing_name,incoming->GetName()) != 0)
     return false;
+
+  obj.FillHistogram(dirname,"CRDC1Y",5000,-5000,5000,s800->GetCrdc(0).GetNonDispersiveY());
+  obj.FillHistogram(dirname,"CRDC2Y",5000,-5000,5000,s800->GetCrdc(1).GetNonDispersiveY());
+  obj.FillHistogram(dirname,"CRDC1_MaxPad",300,0,300,s800->GetCrdc(0).GetMaxPad(),
+                                           2000,0,8000, s800->GetCrdc(0).GetMaxPadSum());
+  obj.FillHistogram(dirname,"CRDC2_MaxPad",300,0,300,s800->GetCrdc(1).GetMaxPad(),
+                                           2000,0,8000, s800->GetCrdc(1).GetMaxPadSum());
+  histname = "XFP_vs_OBJTOF";
+  obj.FillHistogram(dirname,histname,
+        	    1000,-1000,1000,s800->GetCorrTOF_OBJ(),
+        	    600,-300,300,s800->GetXFP(0));
 
   double beta = GValue::Value(Form("BETA_%s",outgoing->GetTitle()));
   TVector3 track = s800->Track();
@@ -218,6 +230,10 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                     1000,0,30000,hit.GetTime(),
                     1024,0,4096,hit.GetEnergy());
 
+    obj.FillHistogram(dirname,"Doppler_DTA_Track",
+                      1000,-0.2,0.2,s800->GetDta(),
+                      1024,0,4096,hit.GetDoppler(beta,&track));
+
     obj.FillHistogram(dirname,"Det_Doppler_NoTrack",
                     4096,0,4096,hit.GetDoppler(beta),
                     30,0,30,hit.GetDetId());
@@ -256,8 +272,8 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
     for(int z_i=0;z_i<601;z_i++){
       double z_use = -3 + z_i*0.01;
       TVector3 vec(0,0,z_use);
-      TVector3 vecx(z_use,0,0); // x shift
-      TVector3 vecy(0,z_use,0); // y shift
+//      TVector3 vecx(z_use,0,0); // x shift
+//      TVector3 vecy(0,z_use,0); // y shift
       obj.FillHistogram(dirname,histname,
                       601,-3,3,z_use,
                       4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vec).Angle(track)))
@@ -267,15 +283,15 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                       4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vec).Angle(track)))
 );
 
-      obj.FillHistogram(dirname,"Doppler_XShift_Track",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
-);
+//      obj.FillHistogram(dirname,"Doppler_XShift_Track",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
+//);
 
-      obj.FillHistogram(dirname,"Doppler_YShift_Track",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
-);
+//      obj.FillHistogram(dirname,"Doppler_YShift_Track",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
+//);
 
      if(hit.GetDetId()<11){
        obj.FillHistogram(dirname,"Doppler_ZShift_Track_37",
@@ -283,15 +299,15 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                       4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vec).Angle(track)))
 );
 
-       obj.FillHistogram(dirname,"Doppler_XShift_Track_37",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
-);
+//       obj.FillHistogram(dirname,"Doppler_XShift_Track_37",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
+//);
   
-       obj.FillHistogram(dirname,"Doppler_YShift_Track_37",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
-);
+//       obj.FillHistogram(dirname,"Doppler_YShift_Track_37",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
+//);
      }
      if(hit.GetDetId()>=11){
        obj.FillHistogram(dirname,"Doppler_ZShift_Track_90",
@@ -299,15 +315,15 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                       4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vec).Angle(track)))
 );
 
-       obj.FillHistogram(dirname,"Doppler_XShift_Track_90",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
-);
+//       obj.FillHistogram(dirname,"Doppler_XShift_Track_90",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecx).Angle(track)))
+//);
 
-       obj.FillHistogram(dirname,"Doppler_YShift_Track_90",
-                      601,-3,3,z_use,
-                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
-);
+//       obj.FillHistogram(dirname,"Doppler_YShift_Track_90",
+//                      601,-3,3,z_use,
+//                      4096,0,4096,hit.GetEnergy()*(1/(sqrt(1-pow(beta,2))))*(1 - beta*TMath::Cos((hit.GetPosition() + vecy).Angle(track)))
+//);
      }
 
       obj.FillHistogram(dirname,histname2,
