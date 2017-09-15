@@ -14,16 +14,16 @@ std::vector<GCutG*> timeenergy_cuts; // = {0};
 int gates_loaded=0;
 
 bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
-  TS800    *s800    = obj.GetDetector<TS800>();
-  TOldSega  *sega = obj.GetDetector<TOldSega>();
+  TS800    *s800 = obj.GetDetector<TS800>();
+  TOldSega *sega = obj.GetDetector<TOldSega>();
   if(!s800 || !sega)
     return false;
 
-  if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
-    return false;
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
 
-  if(s800->GetXFP(0) < -210)
-    return false;
+  //if(s800->GetXFP(0) < -210)
+    //return false;
 
   std::string histname;
   std::string dirname;
@@ -32,9 +32,10 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   else
     dirname = "outgoing";
 
-
-  double objtime = s800->GetTof().GetOBJ();
-  double xfptime = s800->GetTof().GetXFP();
+  //double objtime = s800->GetTof().GetOBJ();
+  //double xfptime = s800->GetTof().GetXFP();
+  double objtime = s800->GetTofE1_TDC(0,0);
+  double xfptime = s800->GetXF_E1Raw();
   if(incoming) {
     if(!incoming->IsInside(objtime,xfptime))
       return false;
@@ -67,6 +68,16 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
         	    1000,-1000,1000,obj_corr,
         	    1000,0,2000,ic_sum);
 
+
+  if(sega->Size()>0){
+    TOldSegaHit hit = sega->GetSegaHit(0);
+    if(hit.GetEnergy()>200){
+      obj.FillHistogram(dirname,"IC_vs_OBJTOF_PID_E>200",
+        	      1000,-1000,1000,obj_corr,
+        	      1000,0,2000,ic_sum);
+    }
+  }
+
   obj.FillHistogram(dirname,"CRDC1Y",5000,-5000,5000,s800->GetCrdc(0).GetNonDispersiveY());
   obj.FillHistogram(dirname,"CRDC2Y",5000,-5000,5000,s800->GetCrdc(1).GetNonDispersiveY());
   obj.FillHistogram(dirname,"CRDC1X",400,-400,400,s800->GetCrdc(0).GetDispersiveX());
@@ -90,19 +101,21 @@ bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
   if(!s800)
     return false;
 
-  if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
-    return false;
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
 
-  if(s800->GetXFP(0) < -210)
-    return false;
+  //if(s800->GetXFP(0) < -210)
+    //return false;
 
-  double objtime = s800->GetTof().GetOBJ();
-  double xfptime = s800->GetTof().GetXFP();
+  //double objtime = s800->GetTof().GetOBJ();
+  //double xfptime = s800->GetTof().GetXFP();
+  double objtime = s800->GetTofE1_TDC(0,0);
+  double xfptime = s800->GetXF_E1Raw();
 
-  if(objtime < 0)
-    return false;
-  if(xfptime < 0)
-    return false;
+  //if(objtime < 0)
+    //return false;
+  //if(xfptime < 0)
+    //return false;
   //if(s800->GetTrigger().GetRegistr() != 3)
   //  return false;
 
@@ -174,11 +187,11 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
   if(!s800 || !sega)
     return false;
 
-  if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
-    return false;
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
 
-  if(s800->GetXFP(0) < -210)
-    return false;
+  //if(s800->GetXFP(0) < -210)
+    //return false;
 
   std::string dirname;
   std::string histname;
@@ -280,6 +293,10 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                     30,0,30,hit.GetDetId()); 
 
     obj.FillHistogram(dirname,Form("Det_Doppler_Track_Theta_det%02i",hit.GetDetId()),
+                    180,0,180,hit.GetPosition().Theta()*TMath::RadToDeg(),
+                    4096,0,4096,hit.GetDoppler(beta,&track));
+
+    obj.FillHistogram(dirname,"Det_Doppler_Track_Theta",
                     180,0,180,hit.GetPosition().Theta()*TMath::RadToDeg(),
                     4096,0,4096,hit.GetDoppler(beta,&track));
     

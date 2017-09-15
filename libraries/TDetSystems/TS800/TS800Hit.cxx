@@ -268,20 +268,22 @@ int TCrdc::GetMaxPad() const {
 
 //  temp = data.at(0);
   for(unsigned int i = 0; i < data.size(); i++){
-    /*
-    std::cout << " ------ " << std::endl;
-    std::cout << " Data    : " << data.at(i) << " at " << i << std::endl;
-    std::cout << " Sample  : " << sample.at(i) << " at " << i << std::endl;
-    std::cout << " Channel : " << channel.at(i) << " at " << i << std::endl;
-    */
     
-
+    //std::cout << " ------ " << std::endl;
+    //std::cout << " Data    : " << data.at(i) << " at " << i << std::endl;
+    //std::cout << " Sample  : " << sample.at(i) << " at " << i << std::endl;
+    //std::cout << " Channel : " << channel.at(i) << " at " << i << std::endl;
+       
     /*if(data.at(i)>0){
       WeightedSumNum += float(data.at(i))*float(channel.at(i));
       WeightedSumDen += float(channel.at(i));
 
     }*/
 
+    if(data.at(i)<=0){
+      continue;
+    }   
+ 
     if(!IsGoodSample(i)) {
       continue;
     }
@@ -307,6 +309,7 @@ int TCrdc::GetMaxPad() const {
     }
   }
   //return (float)(channel.at(place))+gRandom->Uniform();
+  //std::cout << "max : " << max << std::endl;
   return max;
 }
 
@@ -355,6 +358,13 @@ int TCrdc::GetMaxPadSum() const{
     }
   }
   //return (float)(channel.at(place))+gRandom->Uniform();
+  //double width = sample.back()-sample.front()+1;
+  //std::cout << "-------------------------" << std::endl;
+  //std::cout << "sample_width : " << sample_width << std::endl;
+  //std::cout << "sample.size() : " << sample.size() << std::endl;
+  //std::cout << "GetSampleWidth() : " << GetSampleWidth() << std::endl;
+  maxd = maxd/sample_width;
+  //std::cout << "maxd : " << maxd << std::endl;
   return maxd; 
 }
 
@@ -471,6 +481,7 @@ void TCrdc::Clear(Option_t *opt) {
   fId   = -1;
   anode = 0;
   time  = 0;
+  sample_width = 0;
   channel.clear();
   sample.clear();
   data.clear();
