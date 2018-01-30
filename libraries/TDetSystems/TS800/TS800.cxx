@@ -530,11 +530,10 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
        //std::cout << "sample_number - old_sample_number :" << sample_number - old_sample_number << std::endl;
       //std::cout << "counter : " << counter << std::endl;
 
-      if(((sample_number-old_sample_number != 0) && (sample_number-old_sample_number != 1)) && counter>0){
-        //databits = -1;
-        //break;
-        continue;
-      }
+      //Added to fix e05017 crdc problem
+      //if(((sample_number-old_sample_number != 0) && (sample_number-old_sample_number != 1)) && counter>0){        
+      //  continue;
+      //}
 
       if((sample_number != old_sample_number) && counter>0)
         sample_width++;
