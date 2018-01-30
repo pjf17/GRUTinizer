@@ -200,7 +200,7 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
     }
 
     if(sega->Size()==1){
-      obj.FillHistogram(dirname,"Doppler_Singles",
+      obj.FillHistogram(dirname,"Doppler_Mult1",
                         4096,0,4096,hit.GetDoppler(beta,&track));
     }
     if(sega->Size()>1){

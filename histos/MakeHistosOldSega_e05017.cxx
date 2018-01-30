@@ -98,6 +98,7 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
 
 bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
   TS800    *s800    = obj.GetDetector<TS800>();
+  TOldSega *sega = obj.GetDetector<TOldSega>();
   if(!s800)
     return false;
 
@@ -139,6 +140,16 @@ bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
                      1000,-1000,5000,objtime,
                      1000,-1000,5000,xfptime);
   obj.FillHistogram(dirname,"xfp-obj",1000,-1000,1000,xfptime-objtime);
+
+  if(sega && sega->Size()>0){
+    TOldSegaHit hit = sega->GetSegaHit(0);
+    if(hit.GetEnergy()>200){
+      obj.FillHistogram(dirname,"IncomingPID_E>200",
+        	        1000,-1000,5000,objtime,
+                        1000,-1000,5000,xfptime);
+    }
+  }
+
   return true;
 }
 
@@ -250,7 +261,7 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
     }
 
     if(sega->Size()==1){
-      obj.FillHistogram(dirname,"Doppler_Singles",
+      obj.FillHistogram(dirname,"Doppler_Mult1",
                         4096,0,4096,hit.GetDoppler(beta,&track));
     }
     if(sega->Size()>1){
@@ -275,9 +286,13 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       }
     }
 
+    double objtime   = s800->GetTofE1_TDC(0,0);
+    double source    = s800->GetTrigger().GetS800Source();
+    double corr_time = (hit.GetTime() - ((source + objtime)*(0.1/0.25)));
+
     obj.FillHistogram(dirname,"Energy_Time",
                     //1000,0,30000,corr_time,
-                    1000,0,30000,hit.GetTime(),
+                    1000,0,30000,corr_time,
                     1024,0,4096,hit.GetEnergy());
 
     obj.FillHistogram(dirname,"Doppler_DTA_Track",

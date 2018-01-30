@@ -2,7 +2,7 @@
 #define MAX_DETS 24
 
 //CHANGE THIS
-#define NUM_FILES 4 
+#define NUM_FILES 7
 #include <iostream>
 #include <string>
 #include <vector>
@@ -27,15 +27,18 @@ int main(int argc, char *argv[]){
 
   //CHANGE THIS
   std::string source_name[NUM_FILES] = {
-    "cs137",
+    "bg",
+    "na22",
     "y88",
+    "co60",
     "ba133",
-    "co60"
+    "cs137",
+    "ambe"
   };
 
   //CHANGE THIS
   int run_numbers[NUM_FILES] = {
-    24,25,26,27
+    1,2,3,4,5,6,7
   };
   int det_per_ring[N_RINGS] = {
     10, 14, 24, 24, 24,
@@ -58,7 +61,7 @@ int main(int argc, char *argv[]){
   Int_t n_entries;
   Double_t energy;
   
-  Int_t hist_high_x = 4096;
+  Int_t hist_high_x = 8192;
   Int_t hist_low_x = 0;
   Int_t hist_n_bins_x = hist_high_x;
 

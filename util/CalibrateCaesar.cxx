@@ -1,9 +1,9 @@
 #define VERBOSE 0
-#define N_KNOWN_SOURCES 6    // Number of Known Sources to be used in Source Class
+#define N_KNOWN_SOURCES 7    // Number of Known Sources to be used in Source Class
 #define N_RINGS  10          // Number of Caesar Rings
 #define MAX_DETS 24          // Maximum number of detectors in a ring
 #define MAX_PEAKS 2          // Maximum number of peaks in a source spectrum
-#define TOTAL_PEAKS_TO_FIT 8 // Maximum number of peaks to find for each detector
+//#define TOTAL_PEAKS_TO_FIT 8 // Maximum number of peaks to find for each detector
 #define FIT_PADDING 15       // Distance to go to left and right of peak for fitting with gaussian
 #define FIND_PADDING 100     // for ensuring correct energy is found from rough estimate
 #define FIT_ORDER 2
@@ -70,6 +70,7 @@ class Source {
       this->known_source_names.push_back("cs137");
       this->known_source_names.push_back("ba133");
       this->known_source_names.push_back("bg");
+      this->known_source_names.push_back("ambe");
     }
     void fillKnownEnergies(){
       this->known_energies[0][0] = 898.042;
@@ -85,12 +86,17 @@ class Source {
       this->known_energies[3][1] = 0; 
 
 //      this->known_energies[4][0] = 80.9979; //Might be unable to fit this one
+//      this->known_energies[4][0] = 302.8508; //133Ba
       this->known_energies[4][0] = 356.0129; //133Ba
-      this->known_energies[4][1] = 0; //133Ba
+//      this->known_energies[4][1] = 0;
 
       this->known_energies[5][0] = 1460.822; //40K
-      this->known_energies[5][1] = 0;//keep failing to find this peak
-//      this->known_energies[5][1] = 2614.511; //208Tl
+//      this->known_energies[5][1] = 0;//keep failing to find this peak
+      this->known_energies[5][1] = 2614.511; //208Tl
+
+//      this->known_energies[6][0] = 3927; //4438-511
+      this->known_energies[6][0] = 4438; //AmBe (9Be(a,n)12C*)y
+
     }
     void fillKnownNPeaks(){
       known_n_peaks[0] = 2;//Y88
@@ -98,26 +104,30 @@ class Source {
       known_n_peaks[2] = 2;//22Na
       known_n_peaks[3] = 1;//137Cs
       known_n_peaks[4] = 1;//133Ba
-      known_n_peaks[5] = 1;//Bg
+      known_n_peaks[5] = 2;//Bg
+      known_n_peaks[6] = 1;//AmBe
     }
     void fillKnownRanges(){ //Low/High X-Axis Values for Ease of Finding Peaks
       known_ranges[0][0]  = 150;
-      known_ranges[0][1]  = 2000;
+      known_ranges[0][1]  = 800;
 
-      known_ranges[1][0]  = 150;
-      known_ranges[1][1]  = 2000;
+      known_ranges[1][0]  = 200;
+      known_ranges[1][1]  = 500;
 
       known_ranges[2][0]  = 80;
-      known_ranges[2][1]  = 2000;
+      known_ranges[2][1]  = 500;
 
-      known_ranges[3][0]  = 150;
-      known_ranges[3][1]  = 2000;
+      known_ranges[3][0]  = 100;
+      known_ranges[3][1]  = 400;
 
-      known_ranges[4][0]  = 150;
-      known_ranges[4][1]  = 2000;
+      known_ranges[4][0]  = 75;
+      known_ranges[4][1]  = 130;
 
-      known_ranges[5][0]  = 150;
-      known_ranges[5][1]  = 2000;
+      known_ranges[5][0]  = 300;
+      known_ranges[5][1]  = 900;
+
+      known_ranges[6][0] = 1200;
+      known_ranges[6][1] = 1900;
     }
 };
 
@@ -340,8 +350,10 @@ void CalibrateCaesar(char *in_hist_file_name, char *in_source_list, char *out_ca
   std::vector<double> fit_means;
   std::vector<double> expected_energy;
   std::vector<unsigned int> y88_indices;//allows easy finding of y88 for 2-Point Calibration
-  const int REBINNING_FACTOR = 4;
-
+  int REBINNING_FACTOR = 4;
+  int extra_rebinning_factor = 0;
+  int extra_find_padding = 0;
+  int extra_fit_padding = 0;
 
   //Initialize array to 0
   for (int ring = 0; ring < N_RINGS; ring++){
@@ -515,6 +527,27 @@ void CalibrateCaesar(char *in_hist_file_name, char *in_source_list, char *out_ca
           }
         }
 
+        if (source_list[source].name == "ambe"){
+          extra_rebinning_factor = 0;
+	  extra_find_padding = 250; //give ambe fit extra find padding for estimate of correct energy
+          extra_fit_padding = 25;
+        }
+        else if (source_list[source].name == "ba133") {
+          extra_rebinning_factor = -3;
+          extra_find_padding = 0;
+          extra_fit_padding = -10;
+        }
+        else if (source_list[source].name == "bg") {
+          extra_rebinning_factor = 0;
+          extra_find_padding = 50;
+          extra_fit_padding = 5;
+        }
+        else {
+          extra_rebinning_factor = 0;
+          extra_find_padding = 0;
+          extra_fit_padding = 0;
+        }
+
         in_hist = (TH1D*)in_hist_file->Get(Form("%s_run_%d_ring_%d_det_%d", source_list[source].name.c_str(),
                                                                             source_list[source].run_number, ring, det));
         if (in_hist == NULL){
@@ -523,7 +556,8 @@ void CalibrateCaesar(char *in_hist_file_name, char *in_source_list, char *out_ca
           failed_calibration = true;
           break;
         }
-        in_hist->Rebin(REBINNING_FACTOR);
+
+        in_hist->Rebin(REBINNING_FACTOR + extra_rebinning_factor);
 
         if (in_hist->Integral() == 0){
           std::cout << "Histogram: " << source_list[source].name << "_run_" << source_list[source].run_number <<
@@ -544,16 +578,18 @@ void CalibrateCaesar(char *in_hist_file_name, char *in_source_list, char *out_ca
           //Use simple fit to get approximate energy to compare to expected energies!
           peak_energy = getEnergy(peak_locations[i],cal_par[ring][det]);
 
-          if (peak_energy < source_list[source].energies[0] + FIND_PADDING &&
-              peak_energy > source_list[source].energies[0] - FIND_PADDING){
-            in_hist->Fit(gaus_fit_1,"Q+","",peak_locations[i] - FIT_PADDING, peak_locations[i] + FIT_PADDING);
+          if (peak_energy < source_list[source].energies[0] + FIND_PADDING + extra_find_padding &&
+              peak_energy > source_list[source].energies[0] - FIND_PADDING - extra_find_padding){
+            in_hist->Fit(gaus_fit_1,"Q+","",peak_locations[i] - FIT_PADDING - extra_fit_padding, 
+					    peak_locations[i] + FIT_PADDING + extra_fit_padding);
             fit_means.push_back(in_hist->GetFunction("gaus_fit_1")->GetParameter(1));
             expected_energy.push_back(source_list[source].energies[0]);
             peaks_fit++;
           }//is peak 1
-          else if (peak_energy < source_list[source].energies[1] + FIND_PADDING &&
-                     peak_energy > source_list[source].energies[1] - FIND_PADDING){
-            in_hist->Fit("gaus","Q+","",peak_locations[i] - FIT_PADDING, peak_locations[i] + FIT_PADDING);
+          else if (peak_energy < source_list[source].energies[1] + FIND_PADDING + extra_find_padding &&
+                     peak_energy > source_list[source].energies[1] - FIND_PADDING - extra_find_padding){
+            in_hist->Fit("gaus","Q+","",peak_locations[i] - FIT_PADDING - extra_fit_padding, 	
+					peak_locations[i] + FIT_PADDING + extra_fit_padding);
             fit_means.push_back(in_hist->GetFunction("gaus")->GetParameter(1));
             expected_energy.push_back(source_list[source].energies[1]);
             peaks_fit++;

@@ -33,16 +33,16 @@ int HandleUngated(TRuntimeObjects& obj) {
   std::string histname;
   std::string dirname;
 
-  const int SINGLES_ENERGY_THRESHOLD = 150;
+  //const int SINGLES_ENERGY_THRESHOLD = 150;
   const int AB_ENERGY_THRESHOLD = 0;
 
-  std::vector<double> energies_singles;
+  //std::vector<double> energies_singles;
   std::vector<double> energies_addback;
   std::vector<double> energies_addback_n0;
   std::vector<double> energies_addback_n1;
   std::vector<double> energies_addback_n2;
   std::vector<double> energies_addback_ng;
-  energies_singles.clear();
+  //energies_singles.clear();
   energies_addback.clear();
 
   for(unsigned int y=0;y<caesar->Size();y++) {
@@ -51,21 +51,29 @@ int HandleUngated(TRuntimeObjects& obj) {
       if(hit.IsOverflow())
         continue;
 
-      double energy = hit.GetEnergy(); 
+      double energy = hit.GetEnergy();
+      double charge = hit.GetCharge(); 
 
       caesar_ab->InsertHit(hit);
-        if (energy > SINGLES_ENERGY_THRESHOLD){              
-               energies_singles.push_back(energy);
-        }
+        //if (energy > SINGLES_ENERGY_THRESHOLD){              
+        //       energies_singles.push_back(energy);
+        //}
 
         dirname = "Ungated";
         histname = "energy";
         obj.FillHistogram(dirname,histname,
                           1024,0,8192,energy);
+
+        histname = "charge";
+        obj.FillHistogram(dirname,histname,
+                          1024,0,8192,charge);
          
         histname = "detnum_vs_energy";
         obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
                                            1024,0,8192,energy);
+        histname = "detnum_vs_charge";
+        obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
+                                           1024,0,8192,charge);
 
   }//for loop over singles hits
 
@@ -74,42 +82,45 @@ int HandleUngated(TRuntimeObjects& obj) {
   for (int y=0; y < num_addback_hits; y++){
       TCaesarHit &hit = caesar_ab->GetAddbackHit(y);
 
-      double energy = hit.GetEnergy();
+      double energy_ab = hit.GetEnergy();
                   
-      if (energy > AB_ENERGY_THRESHOLD){    
-        energies_addback.push_back(energy);       
+      if (energy_ab > AB_ENERGY_THRESHOLD){    
+        energies_addback.push_back(energy_ab);       
       }//For multiplicity purposes
 
       dirname = "Ungated";
       histname = "energy_addback";
       obj.FillHistogram(dirname,histname,
-                        1024,0,8192,energy);
+                        1024,0,8192,energy_ab);
+      histname = "detnum_vs_energy_addback";
+      obj.FillHistogram(dirname,histname,200,0,200,hit.GetAbsoluteDetectorNumber(),
+                                         1024,0,8192,energy_ab);
               
       if (hit.GetNumHitsContained() == 1 && !hit.is_garbage_addback){
         histname = "energy_addback_n0";
         obj.FillHistogram(dirname,histname,
-                          1024,0,8192,energy);
-        energies_addback_n0.push_back(energy);
+                          1024,0,8192,energy_ab);
+        energies_addback_n0.push_back(energy_ab);
 
       }
       else if (hit.GetNumHitsContained() == 2 && !hit.is_garbage_addback){
         histname = "energy_addback_n1";
         obj.FillHistogram(dirname,histname,
-                          1024,0,8192,energy);
-        energies_addback_n1.push_back(energy);
+                          1024,0,8192,energy_ab);
+        energies_addback_n1.push_back(energy_ab);
 
       }
       else if (hit.GetNumHitsContained() == 3 && !hit.is_garbage_addback){
         histname = "energy_addback_n2";
         obj.FillHistogram(dirname,histname,
-                          1024,0,8192,energy);
-        energies_addback_n2.push_back(energy);
+                          1024,0,8192,energy_ab);
+        energies_addback_n2.push_back(energy_ab);
       }
       else if(hit.is_garbage_addback){
         histname = "energy_addback_ng";
         obj.FillHistogram(dirname,histname,
-                          1024,0,8192,energy);
-        energies_addback_ng.push_back(energy);
+                          1024,0,8192,energy_ab);
+        energies_addback_ng.push_back(energy_ab);
 
       }
       else {
