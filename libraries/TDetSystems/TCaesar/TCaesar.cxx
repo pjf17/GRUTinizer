@@ -177,7 +177,14 @@ int TCaesar::BuildHits(std::vector<TRawEvent>& raw_data){
   for(auto& event : raw_data){
     TNSCLEvent& nscl = (TNSCLEvent&)event;
     SetTimestamp(nscl.GetTimestamp());
+//  std::cout <<  "==================================================" << std::endl;
+//  event.Print("all");
+//  std::cout <<  "==================================================" << std::endl;
+
     Build_Single_Read(nscl.GetPayloadBuffer());
+//  std::cout <<  "++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+//  nscl.GetPayloadBuffer().Print("all");
+//  std::cout <<  "++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
   }
 
   return caesar_hits.size();

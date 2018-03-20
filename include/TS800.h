@@ -140,6 +140,7 @@ public:
 private:
   virtual int  BuildHits(std::vector<TRawEvent>& raw_data);
 
+  int BuildSingleRead(TSmartBuffer buf);
   bool HandleTrigPacket(unsigned short*,int);     //!
   bool HandleTOFPacket(unsigned short*,int);      //!
   bool HandleScintPacket(unsigned short*,int);    //!

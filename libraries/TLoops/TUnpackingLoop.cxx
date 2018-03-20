@@ -100,6 +100,7 @@ void TUnpackingLoop::ClearQueue() {
 }
 
 void TUnpackingLoop::HandleNSCLData(TNSCLEvent& event) {
+  //event.Print("all");
   switch(event.GetEventType()) {
     case kNSCLEventType::BEGIN_RUN:            // 0x0001
     {

@@ -18,6 +18,7 @@
 #include "TPad.h"
 #include "TROOT.h"
 
+#include "TNSCLEvent.h"
 #include "TInverseMap.h"
 
 bool TS800::fGlobalReset =false;
@@ -227,43 +228,31 @@ int TS800::BuildHits(std::vector<TRawEvent>& raw_data){
   }
   for(auto& event : raw_data) { // should only be one..
     SetTimestamp(event.GetTimestamp());
-    int ptr = 0;
-    const TRawEvent::GEBS800Header *head = ((const TRawEvent::GEBS800Header*)event.GetPayload());
-    ptr += sizeof(TRawEvent::GEBS800Header);
+    TNSCLEvent &nscl = (TNSCLEvent&)event;
+    const TRawEvent::GEBS800Header *head = ((const TRawEvent::GEBS800Header*)nscl.GetPayloadBuffer().GetData());
     //Here, we are now pointing at the size of the next S800 thing.  Inclusive in shorts.
-    unsigned short *data = (unsigned short*)(event.GetPayload()+ptr);
-    //std::string toprint = "all";
-    size_t x = 0;
+    unsigned short *data = (unsigned short*)(nscl.GetPayloadBuffer().GetData());
+
+    size_t x = 15;//first 15 elements can be skipped; includes overall packet size and timestamp
     while(x<(head->total_size-sizeof(TRawEvent::GEBS800Header)+16)) {  //total size is inclusive.
       int size             = *(data+x);
       unsigned short *dptr = (data+x+1);
-      //toprint.append(Form("0x%04x",*dptr));
       x+=size;
-      //if(size==0) {
-      //  geb->Print(toprint.c_str());
-      //  printf("head size = %i\n",sizeof(head));
-      //  exit(0);
-      //}
       int sizeleft = size-2;
-      //ptr +=  (*((unsigned short*)(geb->GetPayload()+ptr))*2);
       switch(*dptr) {
       case 0x5801:  //S800 TriggerPacket.
 	HandleTrigPacket(dptr+1,sizeleft);
 	break;
       case 0x5802:  // S800 TOF.
-	//event.Print("all0x5802");
 	HandleTOFPacket(dptr+1,sizeleft);
 	break;
       case 0x5810:  // S800 Scint
-	//event.Print("all0x5810");
 	HandleScintPacket(dptr+1,sizeleft);
 	break;
       case 0x5820:  // S800 Ion Chamber
-	//event.Print("all0x5820");
 	HandleIonCPacket(dptr+1,sizeleft);
 	break;
       case 0x5840:  // CRDC Packet
-	//event.Print("all0x58400x5845");
         HandleCRDCPacket(dptr+1,sizeleft);
 	break;
       case 0x5850:  // II CRDC Packet
@@ -295,7 +284,6 @@ int TS800::BuildHits(std::vector<TRawEvent>& raw_data){
       };
     }
     SetEventCounter(head->GetEventNumber());
-    //geb->Print(toprint.c_str());
   }
   return 1;
 }
