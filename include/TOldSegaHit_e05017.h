@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <TMath.h>
-#include <TOldSega.h>
+#include <TOldSega_e05017.h>
 
 
 class TOldSegaHit : public TDetectorHit {

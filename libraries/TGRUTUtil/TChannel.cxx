@@ -56,8 +56,15 @@ std::ostream& operator<<(std::ostream& out, const TChannel& chan) {
       << "   Subposition:\t" << chan.array_subposition << "\n"
       << "   Segment:\t" << chan.segment << "\n"
       //<< "   Collected_Charge:\t" << chan.collected_charge << "\n"
-      << "   Pedestal:\t" << chan.pedestal << "\n";
-
+      << "   Pedestal:\t" << chan.pedestal << "\n"
+      //<< "   ThetaOffset:  ";
+      //for(double toffset : chan.theta_offset) {
+      //  out << "\t" << toffset; 
+      //} 
+      << "   Offset:  ";
+      for(double offset : chan.position_offsets) {
+        out << "\t" << offset;
+      }
   // Print out each energy coefficient
   for(auto& start_coeff : chan.energy_coeff) {
     out << "   EnergyCoeff";
@@ -128,6 +135,8 @@ void TChannel::Clear(Option_t *opt) {
   address         = 0xffffffff;
   number          = -1;
   info.clear();
+  position_offsets.clear();
+  theta_offset.clear();
   ClearCalibrations();
   array_position = -1;
   segment = -1;
@@ -577,6 +586,10 @@ int TChannel::ParseInputData(std::string &input,Option_t *opt) {
 
         } else if(type == "SEGMENT") {
           ss >> channel->segment;
+        } else if(type == "THETAOFFSET") {
+          channel->theta_offset = ParseListOfDoubles(ss);
+        } else if(type == "OFFSET") {
+          channel->position_offsets = ParseListOfDoubles(ss);
         }
       }
     }

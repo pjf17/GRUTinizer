@@ -2,7 +2,7 @@
 
 #include "TObject.h"
 #include "TS800.h"
-#include "TOldSega.h"
+#include "TOldSega_e05017.h"
 #include "TMath.h"
 
 #include "GCutG.h"
@@ -14,9 +14,16 @@ std::vector<GCutG*> timeenergy_cuts; // = {0};
 int gates_loaded=0;
 
 bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
-  TS800    *s800    = obj.GetDetector<TS800>();
-  if(!s800)
+  TS800    *s800 = obj.GetDetector<TS800>();
+  TOldSega *sega = obj.GetDetector<TOldSega>();
+  if(!s800 || !sega)
     return false;
+
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
+
+  //if(s800->GetXFP(0) < -210)
+    //return false;
 
   std::string histname;
   std::string dirname;
@@ -25,9 +32,10 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   else
     dirname = "outgoing";
 
-
-  double objtime = s800->GetTof().GetOBJ();
-  double xfptime = s800->GetTof().GetXFP();
+  //double objtime = s800->GetTof().GetOBJ();
+  //double xfptime = s800->GetTof().GetXFP();
+  double objtime = s800->GetTofE1_TDC(0,0);
+  double xfptime = s800->GetXF_E1Raw();
   if(incoming) {
     if(!incoming->IsInside(objtime,xfptime))
       return false;
@@ -35,8 +43,15 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
 
   double obj_corr   = s800->GetCorrTOF_OBJ(); 
   double ic_sum     = s800->GetIonChamber().GetAve();
+  //double ic_sum     = s800->GetIonChamber().GetSum();
   double afp        = s800->GetAFP();
   double xfp        = s800->GetXFP(0);
+
+  histname = "Ion_Chamber";
+  for(int i=0;i<(s800->GetIonChamber().Size());i++) {
+    obj.FillHistogram(dirname,histname,16,0,16,s800->GetIonChamber().GetChannel(i),
+        1000,0,4000,s800->GetIonChamber().GetCalData(i));
+  }
 
   histname = "AFP_vs_OBJTOF";
   obj.FillHistogram(dirname,histname,
@@ -53,6 +68,16 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
         	    1000,-1000,1000,obj_corr,
         	    1000,0,2000,ic_sum);
 
+
+  if(sega->Size()>0){
+    TOldSegaHit hit = sega->GetSegaHit(0);
+    if(hit.GetEnergy()>200){
+      obj.FillHistogram(dirname,"IC_vs_OBJTOF_PID_E>200",
+        	      1000,-1000,1000,obj_corr,
+        	      1000,0,2000,ic_sum);
+    }
+  }
+
   obj.FillHistogram(dirname,"CRDC1Y",5000,-5000,5000,s800->GetCrdc(0).GetNonDispersiveY());
   obj.FillHistogram(dirname,"CRDC2Y",5000,-5000,5000,s800->GetCrdc(1).GetNonDispersiveY());
   obj.FillHistogram(dirname,"CRDC1X",400,-400,400,s800->GetCrdc(0).GetDispersiveX());
@@ -62,6 +87,7 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
   obj.FillHistogram(dirname,"S800_DTA",1000,-0.2,0.2,s800->GetDta());
   obj.FillHistogram(dirname,"ATA_vs_BTA",1000,-0.2,0.2,s800->GetAta(),
 			                 1000,-0.2,0.2,s800->GetBta());
+
   obj.FillHistogram(dirname,"CRDC1_MaxPad",300,0,300,s800->GetCrdc(0).GetMaxPad(),
                                            2000,0,8000, s800->GetCrdc(0).GetMaxPadSum());
   obj.FillHistogram(dirname,"CRDC2_MaxPad",300,0,300,s800->GetCrdc(1).GetMaxPad(),
@@ -72,8 +98,27 @@ bool OutgoingBeam(TRuntimeObjects& obj,GCutG *incoming) {
 
 bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
   TS800    *s800    = obj.GetDetector<TS800>();
+  TOldSega *sega = obj.GetDetector<TOldSega>();
   if(!s800)
     return false;
+
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
+
+  //if(s800->GetXFP(0) < -210)
+    //return false;
+
+  //double objtime = s800->GetTof().GetOBJ();
+  //double xfptime = s800->GetTof().GetXFP();
+  double objtime = s800->GetTofE1_TDC(0,0);
+  double xfptime = s800->GetXF_E1Raw();
+
+  //if(objtime < 0)
+    //return false;
+  //if(xfptime < 0)
+    //return false;
+  //if(s800->GetTrigger().GetRegistr() != 3)
+  //  return false;
 
   std::string histname;
   std::string dirname;
@@ -83,18 +128,28 @@ bool IncomingBeam(TRuntimeObjects& obj,GCutG *outgoing) {
     dirname = "incoming";
   
   double ic_sum      = s800->GetIonChamber().GetAve();
+  //double ic_sum      = s800->GetIonChamber().GetSum();
   double obj_corr    = s800->GetCorrTOF_OBJ();
   if(outgoing) {
     if(!outgoing->IsInside(obj_corr,ic_sum))
       return false;
   }
 
-  double objtime = s800->GetTof().GetOBJ();
-  double xfptime = s800->GetTof().GetXFP();
   histname = "IncomingPID";
   obj.FillHistogram(dirname,histname,
                      1000,-1000,5000,objtime,
                      1000,-1000,5000,xfptime);
+  obj.FillHistogram(dirname,"xfp-obj",1000,-1000,1000,xfptime-objtime);
+
+  if(sega && sega->Size()>0){
+    TOldSegaHit hit = sega->GetSegaHit(0);
+    if(hit.GetEnergy()>200){
+      obj.FillHistogram(dirname,"IncomingPID_E>200",
+        	        1000,-1000,5000,objtime,
+                        1000,-1000,5000,xfptime);
+    }
+  }
+
   return true;
 }
 
@@ -142,6 +197,12 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
   TOldSega  *sega = obj.GetDetector<TOldSega>();
   if(!s800 || !sega)
     return false;
+
+  //if(s800->GetCrdc(0).GetMaxPad() > 223 || s800->GetCrdc(1).GetMaxPad() > 223)
+    //return false;
+
+  //if(s800->GetXFP(0) < -210)
+    //return false;
 
   std::string dirname;
   std::string histname;
@@ -225,9 +286,13 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
       }
     }
 
+    double objtime   = s800->GetTofE1_TDC(0,0);
+    double source    = s800->GetTrigger().GetS800Source();
+    double corr_time = (hit.GetTime() - ((source + objtime)*(0.1/0.25)));
+
     obj.FillHistogram(dirname,"Energy_Time",
                     //1000,0,30000,corr_time,
-                    1000,0,30000,hit.GetTime(),
+                    1000,0,30000,corr_time,
                     1024,0,4096,hit.GetEnergy());
 
     obj.FillHistogram(dirname,"Doppler_DTA_Track",
@@ -243,6 +308,10 @@ int HandleOldSega(TRuntimeObjects& obj,GCutG *incoming,GCutG *outgoing) {
                     30,0,30,hit.GetDetId()); 
 
     obj.FillHistogram(dirname,Form("Det_Doppler_Track_Theta_det%02i",hit.GetDetId()),
+                    180,0,180,hit.GetPosition().Theta()*TMath::RadToDeg(),
+                    4096,0,4096,hit.GetDoppler(beta,&track));
+
+    obj.FillHistogram(dirname,"Det_Doppler_Track_Theta",
                     180,0,180,hit.GetPosition().Theta()*TMath::RadToDeg(),
                     4096,0,4096,hit.GetDoppler(beta,&track));
     

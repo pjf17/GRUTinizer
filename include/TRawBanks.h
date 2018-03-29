@@ -305,7 +305,8 @@ friend std::ostream& operator<<(std::ostream& os, const GEBMode3Data &data);
 static void SwapMode3Data(GEBMode3Data &data);
 
 struct GEBS800Header {
-  Int_t    total_size;
+  //Int_t    total_size;
+  UShort_t total_size;
   UShort_t total_size2;
   UShort_t S800_packet;
   UShort_t S800_packet_size;

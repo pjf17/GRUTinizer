@@ -7,7 +7,7 @@
 #include <TVector3.h>
 
 #include <TDetector.h>
-#include <TOldSegaHit.h>
+#include <TOldSegaHit_e05017.h>
 
 class TOldSega : public TDetector {
   public:

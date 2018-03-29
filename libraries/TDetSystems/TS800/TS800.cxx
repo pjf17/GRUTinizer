@@ -18,6 +18,7 @@
 #include "TPad.h"
 #include "TROOT.h"
 
+#include "TNSCLEvent.h"
 #include "TInverseMap.h"
 
 bool TS800::fGlobalReset =false;
@@ -230,43 +231,31 @@ int TS800::BuildHits(std::vector<TRawEvent>& raw_data){
   }
   for(auto& event : raw_data) { // should only be one..
     SetTimestamp(event.GetTimestamp());
-    int ptr = 0;
-    const TRawEvent::GEBS800Header *head = ((const TRawEvent::GEBS800Header*)event.GetPayload());
-    ptr += sizeof(TRawEvent::GEBS800Header);
+    TNSCLEvent &nscl = (TNSCLEvent&)event;
+    const TRawEvent::GEBS800Header *head = ((const TRawEvent::GEBS800Header*)nscl.GetPayloadBuffer().GetData());
     //Here, we are now pointing at the size of the next S800 thing.  Inclusive in shorts.
-    unsigned short *data = (unsigned short*)(event.GetPayload()+ptr);
-    //std::string toprint = "all";
-    size_t x = 0;
+    unsigned short *data = (unsigned short*)(nscl.GetPayloadBuffer().GetData());
+
+    size_t x = 15;//first 15 elements can be skipped; includes overall packet size and timestamp
     while(x<(head->total_size-sizeof(TRawEvent::GEBS800Header)+16)) {  //total size is inclusive.
       int size             = *(data+x);
       unsigned short *dptr = (data+x+1);
-      //toprint.append(Form("0x%04x",*dptr));
       x+=size;
-      //if(size==0) {
-      //  geb->Print(toprint.c_str());
-      //  printf("head size = %i\n",sizeof(head));
-      //  exit(0);
-      //}
       int sizeleft = size-2;
-      //ptr +=  (*((unsigned short*)(geb->GetPayload()+ptr))*2);
       switch(*dptr) {
       case 0x5801:  //S800 TriggerPacket.
 	HandleTrigPacket(dptr+1,sizeleft);
 	break;
       case 0x5802:  // S800 TOF.
-	//event.Print("all0x5802");
 	HandleTOFPacket(dptr+1,sizeleft);
 	break;
       case 0x5810:  // S800 Scint
-	//event.Print("all0x5810");
 	HandleScintPacket(dptr+1,sizeleft);
 	break;
       case 0x5820:  // S800 Ion Chamber
-	//event.Print("all0x5820");
 	HandleIonCPacket(dptr+1,sizeleft);
 	break;
       case 0x5840:  // CRDC Packet
-	//event.Print("all0x58400x5845");
   HandleCRDCPacket(dptr+1,sizeleft);
 	break;
       case 0x5850:  // II CRDC Packet
@@ -299,7 +288,6 @@ int TS800::BuildHits(std::vector<TRawEvent>& raw_data){
       };
     }
     SetEventCounter(head->GetEventNumber());
-    //geb->Print(toprint.c_str());
   }
   return 1;
 }
@@ -483,7 +471,6 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   std::dec;
   */
 
-
   int x =1;
   int subsize = *(data+x);
   x++;
@@ -502,6 +489,11 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   //   the same sample/channel on multiple connectors.
   // Therefore, in this case, we should use the same word1 (top bit set)
   //   with all the word2 (top bit unset) instances that follow.
+
+  //std::cout << "==========Starting new crdc packet=========" << std::endl;
+  int counter = 0;
+  int sample_width = 1;
+  int old_sample_number = 0;
   unsigned short word1 = 0;
   while(x<subsize){
     unsigned short current_word = *(data+x); x++;
@@ -517,14 +509,34 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
       int databits         = (word2&(0x03ff));
       int real_channel = (connector_number << 6) + channel_number;
 
-      /*std::cout << " sample Number    : " << std::dec << sample_number << std::endl;
-        std::cout << " channel Number   : " << std::dec << channel_number << std::endl;
-        std::cout << " connector Number : " << std::dec << connector_number << std::endl;
-        std::cout << " data bits        : " << std::dec << databits << std::endl;
-        std::cout << " real channel     : " << std::dec << real_channel << std::endl;
-        std::dec;
-      */
+      //if(abs(sample_number - old_sample_number) > 1 && counter>0){
+      //std::cout << "-------------------------" << std::endl;
+      //std::cout << " sample Number    : " << std::dec << sample_number << std::endl;
+      //std::cout << " channel Number   : " << std::dec << channel_number << std::endl;
+      //std::cout << " connector Number : " << std::dec << connector_number << std::endl;
+      //std::cout << " data bits        : " << std::dec << databits << std::endl;
+      //std::cout << " real channel     : " << std::dec << real_channel << std::endl;
+        //std::dec;
+        //return false;
+      //}
+
+       //std::cout << "sample_number - old_sample_number :" << sample_number - old_sample_number << std::endl;
+      //std::cout << "counter : " << counter << std::endl;
+
+      //Added to fix e05017 crdc problem
+      //if(((sample_number-old_sample_number != 0) && (sample_number-old_sample_number != 1)) && counter>0){        
+      //  continue;
+      //}
+
+      if((sample_number != old_sample_number) && counter>0)
+        sample_width++;
+
+      counter++;
+      old_sample_number = sample_number;
+      //std::cout << "sample width : " << sample_width << std::endl;
+      //std::cout << "counter : " << counter << std::endl;
       pad[real_channel][sample_number] = databits;
+
     }
   }
   x+=1;
@@ -557,6 +569,9 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   std::cout << " CRDC Time : " << current_crdc->GetTime() << std::endl;
   std::cout << " CRDC Anod : " << current_crdc->GetAnode() << std::endl;
   std::dec;*/
+
+  current_crdc->SetSampleWidth(sample_width);
+
   return true;
 }
 

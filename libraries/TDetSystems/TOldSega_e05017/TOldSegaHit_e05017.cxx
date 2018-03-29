@@ -1,7 +1,7 @@
 
 #include <TString.h>
-#include <TOldSega.h>
-#include <TOldSegaHit.h>
+#include <TOldSega_e05017.h>
+#include <TOldSegaHit_e05017.h>
 
 
 
