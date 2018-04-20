@@ -9,6 +9,7 @@
 #include "TDetector.h"
 #include "TS800SimHit.h"
 #include "TGEBEvent.h"
+#include "TVector3.h"
 
 class TS800Sim : public TDetector {
 
@@ -24,7 +25,9 @@ public:
   virtual void          InsertHit(const TDetectorHit& hit);
   virtual TDetectorHit& GetHit(int i)            { return s800sim_hits.at(i); }
 
-  const TS800SimHit& GetS800SimHit(int i) { return s800sim_hits.at(i); }
+  TVector3 Track(double sata=0.000,double sbta=0.000) const; 
+  float AdjustedBeta(float beta) const;
+  const TS800SimHit& GetS800SimHit(int i) const { return s800sim_hits.at(i); }
   void PrintHit(int i){ s800sim_hits.at(i).Print(); }
 
  private:
