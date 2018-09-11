@@ -46,6 +46,23 @@ TVector3 TS800Sim::Track(double sata,double sbta) const {
   return track;//.Unit();
 }
 
+float TS800Sim::Azita(float ata, float bta) const{
+  float xsin = TMath::Sin(ata);
+  float ysin = TMath::Sin(bta);
+  float azita = 0.0;
+  if(xsin>0 && ysin>0){
+    azita = TMath::ATan(ysin/xsin);
+  } else if(xsin<0 && ysin>0){
+    azita = TMath::Pi()-TMath::ATan(ysin/TMath::Abs(xsin));
+  } else if(xsin<0 && ysin<0){
+    azita = TMath::Pi()+TMath::ATan(TMath::Abs(ysin)/TMath::Abs(xsin));
+  } else if(xsin>0 && ysin<0){
+    azita = 2.0*TMath::Pi()-TMath::ATan(TMath::Abs(ysin)/xsin);
+  } else{
+    azita = 0;
+  }
+  return azita;
+}
 
 float TS800Sim::AdjustedBeta(float beta) const {
   const TS800SimHit &s800simhit = GetS800SimHit(0);

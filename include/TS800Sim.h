@@ -25,8 +25,10 @@ public:
   virtual void          InsertHit(const TDetectorHit& hit);
   virtual TDetectorHit& GetHit(int i)            { return s800sim_hits.at(i); }
 
+
   TVector3 Track(double sata=0.000,double sbta=0.000) const; 
   float AdjustedBeta(float beta) const;
+  float Azita(float ata, float bta) const;
   const TS800SimHit& GetS800SimHit(int i) const { return s800sim_hits.at(i); }
   void PrintHit(int i){ s800sim_hits.at(i).Print(); }
 
