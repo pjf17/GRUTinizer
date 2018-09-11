@@ -10,7 +10,7 @@ class TF1Sum : public TNamed {
     TF1Sum():TNamed("TF1Sum","TF1Sum"),fFit(0),npars(0) { }
     TF1Sum(const TF1Sum& other) 
       : TNamed(other), fFit(0), npars(other.npars), xlow(other.xlow), xhigh(other.xhigh),
-    fTF1s(other.fTF1s) { }
+        exclude_low(0), exclude_high(0), fTF1s(other.fTF1s)  { }
 
     ~TF1Sum() { if(fFit) delete fFit; } 
 
@@ -23,6 +23,7 @@ class TF1Sum : public TNamed {
     double operator()(double *x,double *p) { return EvalPar(x,p); }
 
     void SetRange(double l,double h) { xlow =l; xhigh=h; }
+    void SetExcludeRange(double l, double h){exclude_low = l; exclude_high = h;}
     int  GetNpar() const  { return npars; }
 
     operator TF1*() { return fFit;}
@@ -37,6 +38,8 @@ class TF1Sum : public TNamed {
     int npars;
     double xlow;
     double xhigh;
+    double exclude_low;
+    double exclude_high;
 
     std::vector<double> fParam;
     std::vector<double> fParErr;

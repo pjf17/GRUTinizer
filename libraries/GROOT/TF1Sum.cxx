@@ -52,6 +52,12 @@ Double_t TF1Sum::EvalPar(const Double_t *x,const Double_t *params) {
   int parnum = 0;
   double sum = 0.0;
 
+  if (exclude_low != 0 || exclude_high != 0){
+    if (x[0] > exclude_low && x[0] < exclude_high){
+      TF1::RejectPoint();
+      return 0;
+    }
+  }
   for(auto fit : fTF1s) {
     //printf("fit->GetNpar() = %i\n",fit->GetNpar()); fflush(stdout);
     if(params==0)
