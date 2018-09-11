@@ -137,6 +137,12 @@ TVector3 TGretinaHit::GetIntPosition(unsigned int i) const {
   }
 }
 
+void TGretinaHit::SetPosition(unsigned int i, double x, double y, double z) {
+  fSegments.at(i).fX = x;
+  fSegments.at(i).fY = y;
+  fSegments.at(i).fZ = z;
+}
+
 TVector3 TGretinaHit::GetLocalPosition(unsigned int i) const {
   if(i<fSegments.size()){
     return TVector3(fSegments.at(i).fX,

@@ -165,6 +165,9 @@ public:
   TVector3 GetLastPosition()                const;
 
   TVector3 GetCrystalPosition()           const; 
+
+  //Set segment position; useful for smearing simulated Gretina data
+  void SetPosition(unsigned int i, double x, double y, double z);
                                                 
   void Add(const TGretinaHit& other);
   void SetCoreEnergy(float temp) const { fCoreEnergy = temp; }
