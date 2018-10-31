@@ -143,7 +143,7 @@ TF1  *GH1::ConstructTF1Shift() const {
   double low  = GetXaxis()->GetBinLowEdge(1);
   double high = GetXaxis()->GetBinUpEdge(GetXaxis()->GetNbins());
   
-  TF1 *tf1 = new TF1(Form("%s_tf1",GetName()),*f,low,high,1,1);
+  TF1 *tf1 = new TF1(Form("%s_tf1",GetName()),*f,low,high,2,1);
   tf1->SetParameter(0,1.0);
   tf1->SetParameter(1,0.0);
   tf1->SetNpx(GetXaxis()->GetNbins());  
