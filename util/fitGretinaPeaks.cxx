@@ -11,6 +11,9 @@
 #include "TFitResult.h"
 #include "TH1.h"
 
+//offset from start of string for peaks to get energy.
+const int CHAR_OFFSET = 28;
+
 double getEfficiency(double energy){
   return 4.532*pow(energy+100., -0.621)*8.75/8.;
 }
@@ -74,7 +77,7 @@ std::vector<std::string> parseInputFile(const std::string &input_fn, int fit_low
 
   while (std::getline(in_file,line)){
     //because of this line, the peak energy MUST be 0 padded to length 4
-    energy = std::stoi(line.substr(28, 4));
+    energy = std::stoi(line.substr(CHAR_OFFSET, 4));
     if (energy > fit_low_x && energy < fit_high_x){ 
       hist_file_names.push_back(line);
     }
@@ -87,7 +90,7 @@ std::vector<std::string> parseInputFile(const std::string &input_fn, int fit_low
 std::vector<int> getEnergies(const std::vector<std::string> &hist_file_names){
   std::vector<int> energies;
   for(auto &fn : hist_file_names){
-    energies.push_back(std::stoi(fn.substr(28, 4)));
+    energies.push_back(std::stoi(fn.substr(CHAR_OFFSET, 4)));
   }
 
   return energies;
@@ -106,19 +109,19 @@ TF1 *constructBackground(){
   //TF1 *bg = new TF1("pol4","pol4",0,10000);
 
 //TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)+[4]*TMath::Exp([5]*x)",0,10000);
-//TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)",0,10000);
+  TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)",0,10000);
 ////ni71 4kev bins
 //bg->SetParameter(0, 167.775);
 //bg->SetParameter(1, -0.000846129);
-//bg->SetParameter(0, 808.352);
-//bg->SetParameter(1, -0.00306607);
+  bg->SetParameter(0, 808.352);
+  bg->SetParameter(1, -0.00306607);
 //bg->SetParameter(0, 221.342);
 //bg->SetParameter(1, -0.000697268);
-  TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)",0,10000);
-  bg->SetParameter(0, 221.342);
-  bg->SetParameter(1, -0.000697268);
-  bg->SetParameter(2, 808.352);
-  bg->SetParameter(3, -0.00306607);
+//TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)",0,10000);
+//bg->SetParameter(0, 221.342);
+//bg->SetParameter(1, -0.000697268);
+//bg->SetParameter(2, 808.352);
+//bg->SetParameter(3, -0.00306607);
 
 
 
@@ -186,7 +189,7 @@ std::map<int, std::pair<double,double>> getParMap(){
 //parmap.insert(ParMap(844,Pair(0.0045335,0)));
 //parmap.insert(ParMap(1014,Pair(0.00334314,0)));
 //parmap.insert(ParMap(1039,Pair(0.00861912,0)));
-  //boosted lines
+////boosted lines
 //parmap.insert(ParMap(275,Pair(0.00661966,0.75801)));
 //parmap.insert(ParMap(385,Pair(0.0191657,0)));
 //parmap.insert(ParMap(479,Pair(0.00748137,0)));
@@ -224,10 +227,6 @@ std::map<int, std::pair<double,double>> getParMap(){
 //parmap.insert(ParMap(3846,Pair(0.0079845,2.00023))); 
 
   //ni71
-//parmap.insert(ParMap(511,Pair(0.00548931,0)));
-//parmap.insert(ParMap(597,Pair(0.00304962,-0.5)));
-//parmap.insert(ParMap(836,Pair(0.00203308,-0.5)));
-//parmap.insert(ParMap(1039,Pair(0.0007929,0)));
   parmap.insert(ParMap(511,Pair(0.00389334,0)));
   parmap.insert(ParMap(597,Pair(0.00204799,0)));
   parmap.insert(ParMap(836,Pair(0.00226323,0)));
@@ -252,13 +251,11 @@ std::map<int, std::pair<double,double>> getParMap(){
   parmap.insert(ParMap(1225,Pair(0.00434377,0)));
   parmap.insert(ParMap(1243,Pair(0.00493533,0)));
   parmap.insert(ParMap(1260,Pair(0.0403839,0)));
-  //Fixed Lines
+  parmap.insert(ParMap(1678,Pair(0.0002,0)));
   parmap.insert(ParMap(1868,Pair(0.0037445,0)));
+  parmap.insert(ParMap(1916,Pair(0.0002,0)));
   parmap.insert(ParMap(1957,Pair(0.00223584,0)));
   parmap.insert(ParMap(2105,Pair(0.00127498,0)));
-//parmap.insert(ParMap(1868,Pair(0.00357816,0)));
-//parmap.insert(ParMap(1957,Pair(0.00212467,0)));
-//parmap.insert(ParMap(2105,Pair(0.00116185,0)));
   return parmap;
 }
 
@@ -364,7 +361,7 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
           fit_funcs.back()->SetParLimits(1, -0.5, 4.0);//shift
         }
         //FIXING FOR NI-71
-        if (energies.at(i) > 2400){
+        if (energies.at(i) > 6000){
           fit_funcs.back()->FixParameter(0, r->second.first);
         }
         else{
