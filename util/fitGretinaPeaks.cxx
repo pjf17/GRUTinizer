@@ -102,41 +102,43 @@ std::vector<int> getEnergies(const std::vector<std::string> &hist_file_names){
  *simulated peak at 275 keV. 
  *
  */
-TF1 *constructBackground(){
-
-  //TF1 *bg = new TF1("pol3","pol3",0,10000);
-
-  //TF1 *bg = new TF1("pol4","pol4",0,10000);
-
-//TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)+[4]*TMath::Exp([5]*x)",0,10000);
-  TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)",0,10000);
-////ni71 4kev bins
-//bg->SetParameter(0, 167.775);
-//bg->SetParameter(1, -0.000846129);
-  bg->SetParameter(0, 808.352);
-  bg->SetParameter(1, -0.00306607);
-//bg->SetParameter(0, 221.342);
-//bg->SetParameter(1, -0.000697268);
-//TF1 *bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)",0,10000);
-//bg->SetParameter(0, 221.342);
-//bg->SetParameter(1, -0.000697268);
-//bg->SetParameter(2, 808.352);
-//bg->SetParameter(3, -0.00306607);
+TF1 *constructBackground(std::string background_type){
 
 
+  TF1 *bg = 0;
+  if (background_type == "se"){
+    bg = new TF1("bg","[0]*TMath::Exp([1]*x)",0,10000);
+    bg->SetParameter(0, 808.352);
+    bg->SetParameter(1, -0.00306607);
+  }
 
+  else if (background_type == "de"){
+    bg = new TF1("bg","[0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x)",0,10000);
+    bg->SetParameter(0, 221.342);
+    bg->SetParameter(1, -0.000697268);
+    bg->SetParameter(2, 808.352);
+    bg->SetParameter(3, -0.00306607);
+  }
+
+  else{
+    std::cout << "Unknown background type. Reverting to single exponential\n";
+    bg = new TF1("bg","[0]*TMath::Exp([1]*x)",0,10000);
+    bg->SetParameter(0, 808.352);
+    bg->SetParameter(1, -0.00306607);
+  }
   bg->SetRange(0,10000);
   bg->SetNpx(10000);
   return bg;
 }
 
-TF1Sum fitAllPeaks(GH1D &data_hist, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x){
+TF1Sum fitAllPeaks(GH1D &data_hist, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x,
+                   std::string background_type){
   TF1Sum fullSum;
   for (unsigned int i = 0; i < fit_funcs.size(); i++){
     fullSum.AddTF1(fit_funcs.at(i)); 
   }
 
-  TF1 *de = constructBackground();
+  TF1 *de = constructBackground(background_type);
   de->SetNpx(10000/data_hist.GetXaxis()->GetBinWidth(1));
   fullSum.AddTF1(de);
   fullSum.GetFunc()->SetRange(0,10000);
@@ -175,92 +177,104 @@ TF1Sum fitAllPeaks(GH1D &data_hist, const std::vector<TF1*> &fit_funcs, int fit_
   return fullSum;
 }
 
-std::map<int, std::pair<double,double>> getParMap(){
+std::map<int, std::pair<double,double>> getParMap(std::string element_name){
   using  Pair = std::pair<double,double>;
   using  ParMap = std::pair<int, Pair>;
   std::map<int, Pair> parmap;
-  //cu71
-  //stopped lines
-//parmap.insert(ParMap(0,Pair(1.0,0)));//overall scaling of summed stopped lines
-//parmap.insert(ParMap(511,Pair(0.04763,0)));
-//parmap.insert(ParMap(596,Pair(0.0101114,0)));
-//parmap.insert(ParMap(718,Pair(0.0069071,0)));
-//parmap.insert(ParMap(834,Pair(0.00670763,0)));
-//parmap.insert(ParMap(844,Pair(0.0045335,0)));
-//parmap.insert(ParMap(1014,Pair(0.00334314,0)));
-//parmap.insert(ParMap(1039,Pair(0.00861912,0)));
-////boosted lines
-//parmap.insert(ParMap(275,Pair(0.00661966,0.75801)));
-//parmap.insert(ParMap(385,Pair(0.0191657,0)));
-//parmap.insert(ParMap(479,Pair(0.00748137,0)));
-//parmap.insert(ParMap(609,Pair(0.0508895,0)));
-//parmap.insert(ParMap(631,Pair(0.0130008,0.939047)));
-//parmap.insert(ParMap(640,Pair(0.0334761,0)));
-//parmap.insert(ParMap(664,Pair(0.00991149,0)));
-//parmap.insert(ParMap(676,Pair(0.0073168,0.808131)));
-//parmap.insert(ParMap(683,Pair(0.00495003,0)));
-//parmap.insert(ParMap(915,Pair(0.011477,0)));
-//parmap.insert(ParMap(958,Pair(0.00754714,0)));
-//parmap.insert(ParMap(970,Pair(0.209511,0)));
-//parmap.insert(ParMap(1075,Pair(0.0125948,2.5)));
-//parmap.insert(ParMap(1247,Pair(0.0340944,0)));
-//parmap.insert(ParMap(1260,Pair(0.550913,0.648782)));
-//parmap.insert(ParMap(1321,Pair(0.0108471,0)));
-//parmap.insert(ParMap(1428,Pair(0.00439928,1.99965)));
-//parmap.insert(ParMap(1440,Pair(0.0080098,1.59399)));
-//parmap.insert(ParMap(1467,Pair(0.00606613,2.5)));
-//parmap.insert(ParMap(1583,Pair(0.0548508,0)));
-//parmap.insert(ParMap(1666,Pair(0.00451966,-0.5)));
-//parmap.insert(ParMap(1682,Pair(0.0146917,0)));
-//parmap.insert(ParMap(1787,Pair(0.0195832,0)));
-//parmap.insert(ParMap(1868,Pair(0.0407686,0)));
-//parmap.insert(ParMap(1955,Pair(0.0279031,2.5)));
-//parmap.insert(ParMap(2026,Pair(0.0167558,1.09732e-05)));
-//parmap.insert(ParMap(2071,Pair(0.00986898,1.99994)));
-//parmap.insert(ParMap(2114,Pair(0.0105043,0.793158)));
-//parmap.insert(ParMap(2342,Pair(0.00752715,-0.408376)));
-//parmap.insert(ParMap(2399,Pair(0.0118713,0.589449)));
-//parmap.insert(ParMap(2697,Pair(0.0225466,1.26662)));
-//parmap.insert(ParMap(2758,Pair(0.0196882,-0.5)));
-//parmap.insert(ParMap(2980,Pair(0.0115273,-0.5)));
-//parmap.insert(ParMap(3036,Pair(0.0187725,2.5)));
-//parmap.insert(ParMap(3846,Pair(0.0079845,2.00023))); 
+  if (element_name == "cu"){
+    //cu71-1p
+    //stopped lines
+    parmap.insert(ParMap(0,Pair(1.0,0)));//overall scaling of summed stopped lines
+    parmap.insert(ParMap(511,Pair(0.04763,0)));
+    parmap.insert(ParMap(596,Pair(0.0101114,0)));
+    parmap.insert(ParMap(718,Pair(0.0069071,0)));
+    parmap.insert(ParMap(834,Pair(0.00670763,0)));
+    parmap.insert(ParMap(844,Pair(0.0045335,0)));
+    parmap.insert(ParMap(1014,Pair(0.00334314,0)));
+    parmap.insert(ParMap(1039,Pair(0.00861912,0)));
+    //boosted lines
+    parmap.insert(ParMap(275,Pair(0.00661966,0.75801)));
+    parmap.insert(ParMap(385,Pair(0.0191657,0)));
+    parmap.insert(ParMap(479,Pair(0.00748137,0)));
+    parmap.insert(ParMap(609,Pair(0.0508895,0)));
+    parmap.insert(ParMap(631,Pair(0.0130008,0.939047)));
+    parmap.insert(ParMap(640,Pair(0.0334761,0)));
+    parmap.insert(ParMap(664,Pair(0.00991149,0)));
+    parmap.insert(ParMap(676,Pair(0.0073168,0.808131)));
+    parmap.insert(ParMap(683,Pair(0.00495003,0)));
+    parmap.insert(ParMap(915,Pair(0.011477,0)));
+    parmap.insert(ParMap(958,Pair(0.00754714,0)));
+    parmap.insert(ParMap(970,Pair(0.209511,0)));
+    parmap.insert(ParMap(1075,Pair(0.0125948,2.5)));
+    parmap.insert(ParMap(1247,Pair(0.0340944,1.00)));
+    parmap.insert(ParMap(1260,Pair(0.550913,1.648782)));
+    parmap.insert(ParMap(1321,Pair(0.0108471,0)));
+    parmap.insert(ParMap(1428,Pair(0.00439928,1.99965)));
+    parmap.insert(ParMap(1440,Pair(0.0080098,1.59399)));
+    parmap.insert(ParMap(1467,Pair(0.00606613,2.5)));
+    parmap.insert(ParMap(1583,Pair(0.0548508,0)));
+    parmap.insert(ParMap(1666,Pair(0.00451966,-0.5)));
+    parmap.insert(ParMap(1682,Pair(0.0146917,0)));
+    parmap.insert(ParMap(1787,Pair(0.0195832,0)));
+    parmap.insert(ParMap(1868,Pair(0.0407686,0)));
+    parmap.insert(ParMap(1955,Pair(0.0279031,2.5)));
+    parmap.insert(ParMap(2026,Pair(0.0167558,1.09732e-05)));
+    parmap.insert(ParMap(2071,Pair(0.00986898,1.99994)));
+    parmap.insert(ParMap(2114,Pair(0.0105043,0.793158)));
+    parmap.insert(ParMap(2342,Pair(0.00752715,-0.408376)));
+    parmap.insert(ParMap(2399,Pair(0.0118713,0.589449)));
+    parmap.insert(ParMap(2697,Pair(0.0225466,1.26662)));
+    parmap.insert(ParMap(2758,Pair(0.0196882,-0.5)));
+    parmap.insert(ParMap(2980,Pair(0.0115273,-0.5)));
+    parmap.insert(ParMap(3036,Pair(0.0187725,2.5)));
+    parmap.insert(ParMap(3846,Pair(0.0079845,2.00023))); 
+  }
 
-  //ni71
-  parmap.insert(ParMap(511,Pair(0.00389334,0)));
-  parmap.insert(ParMap(597,Pair(0.00204799,0)));
-  parmap.insert(ParMap(836,Pair(0.00226323,0)));
-  parmap.insert(ParMap(1039,Pair(0.00158093,0)));
-  parmap.insert(ParMap(0,Pair(1.0,0)));
-  parmap.insert(ParMap(385,Pair(0.0079055,0)));
-  parmap.insert(ParMap(424,Pair(0.00168021,0.0)));
-  parmap.insert(ParMap(444,Pair(0.00136974,0)));
-  parmap.insert(ParMap(609,Pair(0.00547365,0)));
-  parmap.insert(ParMap(626,Pair(0.00144228,0)));
-  parmap.insert(ParMap(640,Pair(0.00335833,0)));
-  parmap.insert(ParMap(648,Pair(0.00218808,0.0)));
-  parmap.insert(ParMap(660,Pair(0.00384201,0.0)));
-  parmap.insert(ParMap(676,Pair(0.00509541,0)));
-  parmap.insert(ParMap(683,Pair(0.00209193,0)));
-  parmap.insert(ParMap(912,Pair(0.00450256,0.0)));
-  parmap.insert(ParMap(930,Pair(0.00297641,0)));
-  parmap.insert(ParMap(946,Pair(0.00297641,0)));
-  parmap.insert(ParMap(958,Pair(0.0719071,0)));
-  parmap.insert(ParMap(970,Pair(0.0131901,0)));
-  parmap.insert(ParMap(1075,Pair(0.000864805,0)));
-  parmap.insert(ParMap(1225,Pair(0.00434377,0)));
-  parmap.insert(ParMap(1243,Pair(0.00493533,0)));
-  parmap.insert(ParMap(1260,Pair(0.0403839,0)));
-  parmap.insert(ParMap(1678,Pair(0.0002,0)));
-  parmap.insert(ParMap(1868,Pair(0.0037445,0)));
-  parmap.insert(ParMap(1916,Pair(0.0002,0)));
-  parmap.insert(ParMap(1957,Pair(0.00223584,0)));
-  parmap.insert(ParMap(2105,Pair(0.00127498,0)));
+  else if (element_name == "ni"){
+    //ni71-1n
+    //stopped lines
+    parmap.insert(ParMap(0,Pair(1.0,0)));
+    parmap.insert(ParMap(511,Pair(0.00389334,0)));
+    parmap.insert(ParMap(597,Pair(0.00204799,0)));
+    parmap.insert(ParMap(836,Pair(0.00226323,0)));
+    parmap.insert(ParMap(1039,Pair(0.00158093,0)));
+    //boosted lines
+    parmap.insert(ParMap(385,Pair(0.0079055,0)));
+    parmap.insert(ParMap(424,Pair(0.00168021,0.0)));
+    parmap.insert(ParMap(444,Pair(0.00136974,0)));
+    parmap.insert(ParMap(609,Pair(0.00547365,0)));
+    parmap.insert(ParMap(626,Pair(0.00144228,0)));
+    parmap.insert(ParMap(640,Pair(0.00335833,0)));
+    parmap.insert(ParMap(648,Pair(0.00218808,0.0)));
+    parmap.insert(ParMap(660,Pair(0.00384201,0.0)));
+    parmap.insert(ParMap(676,Pair(0.00509541,0)));
+    parmap.insert(ParMap(683,Pair(0.00209193,0)));
+    parmap.insert(ParMap(912,Pair(0.00450256,2.0)));
+    parmap.insert(ParMap(930,Pair(0.00297641,2.0)));
+    parmap.insert(ParMap(942,Pair(0.00297641,2.0)));
+    parmap.insert(ParMap(946,Pair(0.00297641,2.0)));
+    parmap.insert(ParMap(953,Pair(0.0719071,2.0)));
+    parmap.insert(ParMap(958,Pair(0.0719071,2.0)));
+    parmap.insert(ParMap(970,Pair(0.0131901,2.0)));
+    parmap.insert(ParMap(1075,Pair(0.000864805,0)));
+    parmap.insert(ParMap(1225,Pair(0.00434377,0)));
+    parmap.insert(ParMap(1243,Pair(0.00493533,0)));
+    parmap.insert(ParMap(1260,Pair(0.0403839,0)));
+    parmap.insert(ParMap(1678,Pair(0.0002,0)));
+    parmap.insert(ParMap(1868,Pair(0.0037445,0)));
+    parmap.insert(ParMap(1916,Pair(0.0002,0)));
+    parmap.insert(ParMap(1957,Pair(0.00223584,0)));
+    parmap.insert(ParMap(2105,Pair(0.00127498,0)));
+  }
+  else{
+    std::cout << "Unknown element name!\n";
+  }
   return parmap;
 }
 
 void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, std::string data_file_name, 
-    std::string data_hist_dir, std::string output_fn, int fit_low_x, int fit_high_x){
+    std::string data_hist_dir, int fit_low_x, int fit_high_x, std::string background_type,
+    std::string element_name){
 
   const int REBIN_FACTOR = 4;
   std::vector<std::string> hist_file_names = parseInputFile(input_file_list, fit_low_x, fit_high_x);
@@ -330,7 +344,7 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
 
 
   std::vector<TF1*> fit_funcs;
-  auto parmap = getParMap(); 
+  auto parmap = getParMap(element_name); 
 
   GH1D *stopped_hist_ptr = 0;
   for (unsigned int i = 0; i < fit_hists.size(); i++){
@@ -358,7 +372,7 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
         }
         else{
           fit_funcs.back()->SetParameter(1, r->second.second);
-          fit_funcs.back()->SetParLimits(1, -0.5, 4.0);//shift
+          fit_funcs.back()->SetParLimits(1, -4.0, 4.0);//shift
         }
         //FIXING FOR NI-71
         if (energies.at(i) > 6000){
@@ -403,7 +417,7 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
     fit_funcs.back()->SetName(Form("stopped_lines"));
   }
 
-  TF1Sum fSum(fitAllPeaks(data_hist, fit_funcs, fit_low_x, fit_high_x));
+  TF1Sum fSum(fitAllPeaks(data_hist, fit_funcs, fit_low_x, fit_high_x, element_name));
   fSum.GetFunc()->SetNpx(10000/data_hist.GetXaxis()->GetBinWidth(1));
   std::vector<double> fep_counts;
   std::vector<double> fep_counts_unc;
@@ -418,7 +432,8 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
     cur_par += 2;
   }
   printResults(fep_counts, fep_counts_unc, energies, isStoppedLine);
-  TFile *outfile = new TFile(output_fn.c_str(), "recreate");
+  TFile *outfile = new TFile(Form("%s_%04d_%04d_%s.root", element_name.c_str(), fit_low_x, fit_high_x,background_type.c_str()), "recreate");
+  std::cout << "saving output fit to " << outfile->GetName() << "\n";
 
   //Clone fep hists for saving
   std::vector<GH1D *> scaled_fep_hists;
@@ -443,9 +458,9 @@ void fitGretinaPeaks(std::string input_file_list, std::string input_wider_list, 
 
 int main(int argc, char **argv){ 
 
-  std::string USAGE("fitGretinaPeaks input_goodres_list input_badres_list input_data_file data_hist_dir output_fn leftHighRange rightLowRange\n");
+  std::string USAGE("fitGretinaPeaks input_goodres_list input_badres_list input_data_file data_hist_dir leftHighRange rightLowRange background_type element_name\n");
 
-  if (argc == 8){
+  if (argc == 9){
     std::cout << "using good res input file: " << argv[1] << "\n";
     std::string input_thinner_list(argv[1]);
     std::cout << "using wide input file: " << argv[2] << "\n";
@@ -454,12 +469,13 @@ int main(int argc, char **argv){
     std::string input_data_file(argv[3]);
     std::cout << "assuming spectrum in folder: " << argv[4] << "\n";
     std::string data_hist_dir(argv[4]);
-    std::cout << "saving output fit to " << argv[5] << "\n";
-    std::string output_fn(argv[5]);
-    std::cout << "fitting region: (" << argv[6] << ","<<argv[7]<<")\n";
-    int fit_low_x = std::stoi(argv[6]);
-    int fit_high_x = std::stoi(argv[7]);
-    fitGretinaPeaks(input_thinner_list,input_wider_list, input_data_file, data_hist_dir, output_fn,fit_low_x,fit_high_x);
+    std::cout << "fitting region: (" << argv[5] << ","<<argv[6]<<")\n";
+    int fit_low_x = std::stoi(argv[5]);
+    int fit_high_x = std::stoi(argv[6]);
+    std::cout << "Background Type: " << argv[7] <<"\n";
+    std::cout << "Element name: " << argv[8] <<"\n";
+    
+    fitGretinaPeaks(input_thinner_list,input_wider_list, input_data_file, data_hist_dir, fit_low_x,fit_high_x, argv[7], argv[8]);
     return 0;
   }
 
