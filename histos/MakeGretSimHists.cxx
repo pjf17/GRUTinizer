@@ -180,6 +180,7 @@ void HandleGretSim(TRuntimeObjects &obj){
   if (!s800sim || !s800sim->Size()){
     stopped = true;
   }
+  //stopped=true;
   TGretina *gretina_ab = new TGretina(*gretina);
   gretina_ab->Clear();
 
@@ -193,6 +194,17 @@ void HandleGretSim(TRuntimeObjects &obj){
   //for gg_matrix and multiplicity spectra
   std::vector<double> nonab_hits_energy;
   double SIGMA = GValue::Value("SIGMA");//mm
+  std::vector<double> betas;
+  const double START_BETA = 0.300;
+  const double END_BETA = 0.360;
+  const double STEP_SIZE = 0.0001;
+  const int N_BETA_BINS = static_cast<int>((END_BETA-START_BETA)/STEP_SIZE);
+
+  double cur_beta = START_BETA;
+  while (cur_beta <= END_BETA){
+    betas.push_back(cur_beta);
+    cur_beta += STEP_SIZE;
+  }
   for(unsigned int x = 0; x < gretina->Size(); x++){
     TVector3 local_pos(gretina->GetGretinaHit(x).GetLocalPosition(0));
 
@@ -210,22 +222,30 @@ void HandleGretSim(TRuntimeObjects &obj){
       energy_track_yta_dta = gretina->GetGretinaHit(x).GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
     }
     else{
-       energy_track_yta_dta = gretina->GetGretinaHit(x).GetDoppler(GValue::Value("BETA"));
+      energy_track_yta_dta = gretina->GetGretinaHit(x).GetDoppler(GValue::Value("BETA"));
     }
     nonab_hits_energy.push_back(energy_track_yta_dta);
     obj.FillHistogram(dirname,"gretina_summary_allcorr", 50, 0, 50, number,
         10000,0,10000, energy_track_yta_dta);
     obj.FillHistogram(dirname,"gretina_allcorr", 10000,0,10000, energy_track_yta_dta);
     if (gretsim->GetGretinaSimHit(0).fIsFull){ //full energy peak event
+
       obj.FillHistogram(dirname,"gretina_allcorr_fep", 10000,0,10000, energy_track_yta_dta);
+      for (unsigned int  i = 0; i < betas.size(); i++){
+        if (!stopped){
+          double cur_energy = gretina->GetGretinaHit(x).GetDopplerYta(s800sim->AdjustedBeta(betas.at(i)), yta, &track);
+          obj.FillHistogram(dirname, "gretina_beta_scan", 
+              N_BETA_BINS, START_BETA, END_BETA, betas.at(i),
+              10000, 0, 10000, cur_energy);
+        }
+      }
     }
     else{
       obj.FillHistogram(dirname,"gretina_allcorr_bg", 10000,0,10000, energy_track_yta_dta);
     }
   }//loop over gretina hits
-
-//std::string dirname_ab(dirname);
-//dirname_ab += "_addback";
+  //std::string dirname_ab(dirname);
+  //dirname_ab += "_addback";
 //HandleGretSimAddback(obj, dirname_ab, gretina_ab); 
 
 //std::string dirname_dc(dirname);
