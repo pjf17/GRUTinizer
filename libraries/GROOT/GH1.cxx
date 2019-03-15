@@ -168,7 +168,19 @@ bool GH1::WriteDatFile(const char *outFile){
   return 1;
 }
 
+void GH1::ShiftHistogram(int num_bins_to_shift){
+  if (num_bins_to_shift == 0){
+    return;
+  }
 
+  const int N_BINS = this->GetNbinsX();
+  GH1 *temp_hist = (GH1*)temp_hist->Clone("temp");
+  for (int i = num_bins_to_shift; i < N_BINS; i++){
+    this->SetBinContent(i, temp_hist->GetBinContent(i-num_bins_to_shift));
+  }
+  delete temp_hist;
+  return;
+}
 
 void GH1::Draw(Option_t *opt) {
   TString sopt = opt;

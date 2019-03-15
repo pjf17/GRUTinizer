@@ -114,6 +114,27 @@ Double_t GRootFunctions::DoubleGaus(Double_t *dim, Double_t *par) {
   return height1*TMath::Gaus(x,cent1,sigma) + height2*TMath::Gaus(x,cent2,sigma) + PolyBg(dim,(par+5),2);
 }
 
+//Like DoubleGaussian, but with shared centroid rather than shared sigma.
+Double_t GRootFunctions::ModifiedGaus(Double_t *dim, Double_t *par) {
+  // - dim[0]: channels to fit
+  // - par[0]: height of peak1
+  // - par[1]: sigma of peak1
+  // - par[2]: height of peak2
+  // - par[3]: sigma of peak2
+  // - par[4]: centroid for both peaks
+  // - par[5]: bg offset
+  // - par[6]: bg slope
+
+  Double_t x      = dim[0];
+  Double_t height1 = par[0];
+  Double_t sigma1   = par[1];
+
+  Double_t height2 = par[2];
+  Double_t sigma2   = par[3];
+  
+  Double_t cent   = par[4];
+  return height1*TMath::Gaus(x,cent,sigma1) + height2*TMath::Gaus(x,cent,sigma2) + PolyBg(dim,(par+5),2);
+}
 
 
 

@@ -30,6 +30,7 @@
 #include <GPeak.h>
 #include <GGaus.h>
 #include <GDoubleGaus.h>
+#include <GModifiedGaus.h>
 #include <GH2D.h>
 #include <GH1D.h>
 //#include <GRootObjectManager.h>
@@ -847,6 +848,25 @@ GDoubleGaus *DoubleGausFit(TH1 *hist,double cent1,double cent2,double xlow, doub
 }
 
 
+GModifiedGaus *ModifiedGausFit(TH1 *hist,double sigma1,double sigma2, double centroid,double xlow, double xhigh,Option_t *opt) {
+  if(!hist)
+    return 0;
+  if(xlow>xhigh)
+    std::swap(xlow,xhigh);
+
+  //std::cout << "here." << std::endl;
+
+  GModifiedGaus *mypeak= new GModifiedGaus(sigma1,sigma2,centroid,xlow,xhigh);
+  std::string options = opt;
+  options.append("Q+");
+  mypeak->Fit(hist,sigma1,sigma2,options.c_str());
+  //mypeak->Background()->Draw("SAME");
+  TF1 *bg = new TF1(*mypeak->Background());
+  hist->GetListOfFunctions()->Add(bg);
+  //edit = true;
+
+  return mypeak;
+}
 
 
 

@@ -127,6 +127,7 @@ class GH2 : public GH1 {
                                                                Int_t ylowbgbin=0,Int_t yhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
     GH1D            *ProjectionY_BG(const char *name="_bg_px", Int_t xlowbin=0,Int_t xhighbin=-1, 
                                                                Int_t xlowbgbin=0,Int_t xhighbgbin=-1,double scale=-1,Option_t *opt="") const; // *MENU*
+    bool WriteDatFile(const char *outFile);
     enum { kForward = 1, kBackward = -1 };
     GH1D            *SummaryProjection(GH1 *hist,int axis,int direction,bool show_empty) const;
  

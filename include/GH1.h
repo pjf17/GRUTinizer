@@ -44,6 +44,7 @@ class GH1 : public TH1 {
     TF1  *ConstructTF1() const; 
     TF1  *ConstructTF1Shift() const; 
     bool WriteDatFile(const char *outFile);
+    void ShiftHistogram(int num_bins_to_shift);
 
     void Draw(Option_t *opt="");
 

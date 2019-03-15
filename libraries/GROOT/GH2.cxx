@@ -20,6 +20,7 @@
 //
 //
 
+#include <fstream>
 
 #include <GH2.h>
 #include <GH1D.h>
@@ -3114,6 +3115,24 @@ std::map<int,double> GH2::FitSummary(double low,double high,int axis,Option_t *o
 }
 
 
+bool GH2::WriteDatFile(const char *outFile){
+  if(strlen(outFile)<1) return 0;
+
+  std::ofstream out;
+  out.open(outFile);
+
+  if(!(out.is_open())) return 0;
+
+  for (int i = 1; i <= GetNbinsX(); i++){
+    for (int j = 1; j <= GetNbinsY(); j++){
+      out << GetXaxis()->GetBinCenter(i) << "\t" << GetYaxis()->GetBinCenter(j) << "\t" << GetBinContent(i,j) << std::endl;
+    }
+  }
+  out << std::endl;
+  out.close();
+
+  return 1;
+}
 
 
 

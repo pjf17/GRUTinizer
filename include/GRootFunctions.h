@@ -17,6 +17,7 @@ namespace GRootFunctions {
   Double_t PhotoPeakBGExcludeRegion(Double_t *dim,Double_t *par);
   Double_t Gaus(Double_t *dim, Double_t *par);
   Double_t DoubleGaus(Double_t *dim, Double_t *par);
+  Double_t ModifiedGaus(Double_t *dim, Double_t *par);
   Double_t SkewedGaus(Double_t *dim, Double_t *par);
   Double_t Efficiency(Double_t *dim, Double_t *par);
 
