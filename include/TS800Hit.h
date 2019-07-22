@@ -436,6 +436,8 @@ class TMTof : public TDetectorHit {
     //value in each time-of-flight is taken.
     double  GetCorrelatedXfpE1()  const;   //!
     double  GetCorrelatedObjE1()  const;   //!
+    double  GetCorrelatedXfpE1Chn15()  const;   //!
+    double  GetCorrelatedObjE1Chn15()  const;   //!
 
 
 

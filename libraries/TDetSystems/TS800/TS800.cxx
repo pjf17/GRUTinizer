@@ -271,6 +271,8 @@ int TS800::BuildHits(std::vector<TRawEvent>& raw_data){
 	break;
       case 0x5850:  // II CRDC Packet
 	break;
+      case 0x5805:  // II CRDC Packet
+	break;
       case 0x5860:  // TA Pin Packet
 	break;
       case 0x5870:  // II Track Packet
@@ -1173,6 +1175,24 @@ void TS800::DrawPID_Mesy_Tune(Long_t nentries,int i,TChain *chain){
 
 }
 
+double TS800::GetMTofObjE1Chn15() const {
+  // I return the correlated gvalue corrected time-of-flight obj to e1.
+  double afp_cor = GValue::Value("OBJ_MTOF_CORR_AFP");
+  double xfp_cor = GValue::Value("OBJ_MTOF_CORR_XFP");
+  if(std::isnan(afp_cor) || std::isnan(xfp_cor)) {
+    printf(ALERTTEXT "Attmepting to do mtof obj correction without values!" RESET_COLOR "\n");
+    fflush(stdout);
+    return sqrt(-1);
+  }
+  double tofxfp_obj_shift = GValue::Value("TOFXFP_OBJ_SHIFT");
+  double tofxfp_obj_cor = GValue::Value("TOFXFP_OBJ_CORR");
+  if (std::isnan(tofxfp_obj_shift) || std::isnan(tofxfp_obj_cor)){
+    return GetMTofObjE1Chn15(afp_cor, xfp_cor);
+  }
+  else{
+    return GetMTofObjE1Chn15(afp_cor, xfp_cor, tofxfp_obj_shift, tofxfp_obj_cor);
+  }
+}
 
 double TS800::GetMTofObjE1() const {
   // I return the correlated gvalue corrected time-of-flight obj to e1.
@@ -1183,15 +1203,43 @@ double TS800::GetMTofObjE1() const {
     fflush(stdout);
     return sqrt(-1);
   }
-  return GetMTofObjE1(afp_cor, xfp_cor);
+  double tofxfp_obj_shift = GValue::Value("TOFXFP_OBJ_SHIFT");
+  double tofxfp_obj_cor = GValue::Value("TOFXFP_OBJ_CORR");
+  if (std::isnan(tofxfp_obj_shift) || std::isnan(tofxfp_obj_cor)){
+    return GetMTofObjE1(afp_cor, xfp_cor);
+  }
+  else{
+    return GetMTofObjE1(afp_cor, xfp_cor, tofxfp_obj_shift, tofxfp_obj_cor);
+  }
 }
 
-double TS800::GetMTofObjE1(double afp_cor, double xfp_cor) const {
-  // I return the correlated gvalue corrected time-of-flight obj to e1.
-  return(GetMTof().GetCorrelatedObjE1()
+double TS800::GetMTofObjE1Chn15(double afp_cor, double xfp_cor, double xfp_obj_shift, double xfp_obj_cor) const {
+  double correlated_obj = GetMTof().GetCorrelatedObjE1Chn15();
+  double correlated_xfp = GetMTof().GetCorrelatedXfpE1Chn15();
+  double xfp_obj = correlated_xfp - correlated_xfp;
+  return(correlated_obj + afp_cor * GetAFP() + 
+         xfp_cor  * GetCrdc(0).GetDispersiveX() + 
+         xfp_obj_cor*(xfp_obj-xfp_obj_shift));
+}
+
+double TS800::GetMTofObjE1Chn15(double afp_cor, double xfp_cor) const {
+  return(GetMTof().GetCorrelatedObjE1Chn15()
          + afp_cor * GetAFP() + xfp_cor  * GetCrdc(0).GetDispersiveX());
 }
 
+double TS800::GetMTofObjE1(double afp_cor, double xfp_cor, double xfp_obj_shift, double xfp_obj_cor) const {
+  double correlated_obj = GetMTof().GetCorrelatedObjE1();
+  double correlated_xfp = GetMTof().GetCorrelatedXfpE1();
+  double xfp_obj = correlated_xfp - correlated_xfp;
+  return(correlated_obj + afp_cor * GetAFP() + 
+         xfp_cor  * GetCrdc(0).GetDispersiveX() + 
+         xfp_obj_cor*(xfp_obj-xfp_obj_shift));
+}
+
+double TS800::GetMTofObjE1(double afp_cor, double xfp_cor) const {
+  return(GetMTof().GetCorrelatedObjE1()
+         + afp_cor * GetAFP() + xfp_cor  * GetCrdc(0).GetDispersiveX());
+}
 
 double TS800::GetMTofXfpE1() const {
   // I return the correlated gvalue corrected time-of-flight xfp to e1.

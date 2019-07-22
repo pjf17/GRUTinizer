@@ -193,7 +193,6 @@ float TIonChamber::GetSum() const {
 //}
 
 float TIonChamber::GetdE(TCrdc *crdc){
-  float sum = GetAve();
   float x   = crdc->GetDispersiveX();
   float y   = crdc->GetNonDispersiveY();
 
@@ -827,7 +826,56 @@ void TMTof::Clear(Option_t *opt) {
 //  CorrelateXfp();
 //  return true;
 //}
+//
+double TMTof::GetCorrelatedXfpE1Chn15() const{
+  double target = GValue::Value("TARGET_MTOF_XFPE1");
+  if (std::isnan(target)){
+    std::cout << "TARGET_MTOF_XFPE1CHN15 not defined! Use fXfp.at(0) if you want first.\n";
+    fCorrelatedXFPE1 = sqrt(-1);
+    return fCorrelatedXFPE1;
+  }
+  if(fXfp.size() && fRef.size()){
+    fCorrelatedXFPE1 = std::numeric_limits<double>::max(); 
+    for(size_t i=0;i<fXfp.size();i++) {     
+      for (size_t j=0; j < fRef.size(); j++){
+        double newvalue = fXfp.at(i)-fRef.at(j);
+        if(std::abs(target - newvalue) < std::abs(target - fCorrelatedXFPE1)) {
+          fCorrelatedXFPE1 = newvalue;
+        }
+      }
+    }
+  }
+  return fCorrelatedXFPE1;
+}
 
+double TMTof::GetCorrelatedObjE1Chn15() const{
+  double target = GValue::Value("TARGET_MTOF_OBJE1CHN15");
+  if (std::isnan(target)){
+    std::cout << "TARGET_MTOF_OBJE1CHN15 not defined! Use fObj.at(0) if you want first.\n";
+    fCorrelatedOBJE1 = sqrt(-1);
+    return fCorrelatedOBJE1 = sqrt(-1);
+  }
+
+  //shift allows "shifting" of TOF to line up different runs. Necessary when,
+  //e.g., the voltage on a scintillator changes during an experiment
+  double shift = GValue::Value("SHIFT_MTOF_OBJE1");
+  
+  if(fObj.size() && fRef.size()){
+    fCorrelatedOBJE1 = std::numeric_limits<double>::max(); 
+    for(size_t i=0;i<fObj.size();i++) {     
+      for (size_t j=0; j < fRef.size(); j++){
+        double newvalue = fObj.at(i)-fRef.at(j);
+        if (!std::isnan(shift)){
+          newvalue += shift;
+        }
+        if(std::abs(target - newvalue) < std::abs(target - fCorrelatedOBJE1)) {
+          fCorrelatedOBJE1 = newvalue;
+        }
+      }
+    }
+  }
+  return fCorrelatedOBJE1;
+}
 double TMTof::GetCorrelatedObjE1() const{
   double target = GValue::Value("TARGET_MTOF_OBJE1");
   if (std::isnan(target)){

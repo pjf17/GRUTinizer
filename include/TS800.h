@@ -96,11 +96,20 @@ public:
   
   float GetRawXF_MESY(unsigned int i=0) const;
 
-  // Return the correlated gvalue corrected time-of-flight obj to e1.
-  // If no corrections are passed, GValues OBJ_MTOF_CORR_AFP and 
-  // OBJ_MTOF_CORR_XFP are used
+  // Return the correlated gvalue corrected time-of-flight obj to e1.  If no
+  // corrections are passed, GValues OBJ_MTOF_CORR_AFP and OBJ_MTOF_CORR_XFP
+  // are used
+  //GValues XFP_OBJ_SHIFT and XFP_OBJ_CORR are optional. XFP_OBJ_SHIFT is used
+  //to shift the XFP-OBJ distribution to be centered around 0 and XFP_OBJ_CORR is used
+  //to correct the OBJ timing (where XFP in this optional piece refers to the
+  //A1900 timing) in the same manner as the AFP/XFP corrections.
   double GetMTofObjE1() const ; 
   double GetMTofObjE1(double afp_cor, double xfp_cor) const ; 
+  double GetMTofObjE1(double afp_cor, double xfp_cor, double tofxfp_obj_shift, double tofxfp_obj_cor) const;
+
+  double GetMTofObjE1Chn15() const ; 
+  double GetMTofObjE1Chn15(double afp_cor, double xfp_cor) const ; 
+  double GetMTofObjE1Chn15(double afp_cor, double xfp_cor, double tofxfp_obj_shift, double tofxfp_obj_cor) const;
   // Return the correlated gvalue corrected time-of-flight xfp to e1.
   // If no corrections are passed, GValues XFP_MTOF_CORR_AFP and 
   // XFP_MTOF_CORR_XFP are used
