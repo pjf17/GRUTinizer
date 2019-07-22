@@ -828,7 +828,7 @@ void TMTof::Clear(Option_t *opt) {
 //}
 //
 double TMTof::GetCorrelatedXfpE1Chn15() const{
-  double target = GValue::Value("TARGET_MTOF_XFPE1");
+  double target = GValue::Value("TARGET_MTOF_XFPE1CHN15");
   if (std::isnan(target)){
     std::cout << "TARGET_MTOF_XFPE1CHN15 not defined! Use fXfp.at(0) if you want first.\n";
     fCorrelatedXFPE1 = sqrt(-1);
