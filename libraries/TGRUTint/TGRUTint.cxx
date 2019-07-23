@@ -468,6 +468,9 @@ void TGRUTint::SetupPipeline() {
     if(raw_filtered_output) {
       filter_loop->OpenRawOutputFile(opt->OutputFilteredFile());
     }
+    for (auto cut_file: cuts_files){
+      filter_loop->AddCutFile(cut_file);
+    }
     filter_loop->InputQueue() = current_queue;
     current_queue = filter_loop->OutputQueue();
   }
