@@ -117,11 +117,11 @@ void HandleMultiplicityAndMatrices(TRuntimeObjects &obj, const std::string &dirn
 
 void HandleDopplerCorrectionHists (TRuntimeObjects &obj, TGretina *gretina, const std::string &dirname){
   TS800Sim    *s800sim    = obj.GetDetector<TS800Sim>();
-  double ata = s800sim->GetS800SimHit(0).GetATA();
-  double bta = s800sim->GetS800SimHit(0).GetBTA();
+  double ata = s800sim->GetS800SimHit(0).GetATA();//these are in MRAD here!!!
+  double bta = s800sim->GetS800SimHit(0).GetBTA();//these are in MRAD here!!!
   double yta = s800sim->GetS800SimHit(0).GetYTA();
   double dta = s800sim->GetS800SimHit(0).GetDTA();
-  double azita = s800sim->Azita(ata,bta);//GRUTinizer expects YTA in mm
+  double azita = s800sim->Azita(ata,bta);
   TVector3 track = s800sim->Track(0, 0);
 
   std::string dirname_ytadbd(dirname);

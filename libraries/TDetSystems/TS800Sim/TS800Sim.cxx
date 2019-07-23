@@ -47,8 +47,8 @@ TVector3 TS800Sim::Track(double sata,double sbta) const {
 }
 
 float TS800Sim::Azita(float ata, float bta) const{
-  float xsin = TMath::Sin(ata);
-  float ysin = TMath::Sin(bta);
+  float xsin = TMath::Sin(ata/1000.);//ATA and BTA are in mrad for the simulation!!
+  float ysin = TMath::Sin(bta/1000.);//ATA and BTA are in mrad for the simulation!!
   float azita = 0.0;
   if(xsin>0 && ysin>0){
     azita = TMath::ATan(ysin/xsin);

@@ -13,6 +13,8 @@
 
 class TS800Sim : public TDetector {
 
+  //NOTE: ATA and BTA from the S800 simulation are in mrad, which is different
+  //than the ATA/BTA from the real S800 data which is in rad.
 public:
   TS800Sim();
   ~TS800Sim();
