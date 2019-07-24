@@ -346,6 +346,9 @@ prompt gamma condition.
 
 ## GValues
 
+The following table presents all GValues used automatically by specific
+functions in GRUTinizer.
+
 | GValue Name           | Purpose                  | Related Function          |
 |:---------------------:|--------------------------|---------------------------|
 |CRDC1_X_OFFSET         | Calibration for CRDC 1 X | TS800Hit::GetDispersiveX()| 
