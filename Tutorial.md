@@ -343,3 +343,34 @@ For GRETINA related cuts, these can still be loaded using LoadGates, though
 checking whether individual hits satisfy e.g. the timing condition will need to
 be handled differently. This can be done as shown in sample_histos.cxx for the
 prompt gamma condition.
+
+## GValues
+
+| GValue Name           | Purpose                  | Related Function          |
+|:---------------------:|--------------------------|---------------------------|
+|CRDC1_X_OFFSET         | Calibration for CRDC 1 X | TS800Hit::GetDispersiveX()| 
+|CRDC1_X_SLOPE          | Calibration for CRDC 1 X | TS800Hit::GetDispersiveX()| 
+|CRDC2_X_OFFSET         | Calibration for CRDC 2 X | TS800Hit::GetDispersiveX()| 
+|CRDC2_X_SLOPE          | Calibration for CRDC 2 X | TS800Hit::GetDispersiveX()| 
+|CRDC1_Y_OFFSET         | Calibration for CRDC 1 Y | TS800Hit::GetNonDispersiveY()| 
+|CRDC1_Y_SLOPE          | Calibration for CRDC 1 Y | TS800Hit::GetNonDispersiveY()| 
+|CRDC2_Y_OFFSET         | Calibration for CRDC 2 Y | TS800Hit::GetNonDispersiveY()| 
+|CRDC2_Y_SLOPE          | Calibration for CRDC 2 Y | TS800Hit::GetNonDispersiveY()| 
+|ATA_SHIFT              | Enables centering ATA distribution on 0.  | TS800::GetAta() | 
+|BTA_SHIFT              | Enables centering BTA distribution on 0.  | TS800::GetBta() | 
+|TARGET_MTOF_OBJE1      | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 0). | TS800Hit::GetCorrelatedObjE1() |
+|TARGET_MTOF_OBJE1CHN15 | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 15). | TS800Hit::GetCorrelatedObjE1Chn15() |
+|TARGET_MTOF_XFPE1      | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 0). | TS800Hit::GetCorrelatedXfpE1() |
+|TARGET_MTOF_XFPE1CHN15 | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 15). | TS800Hit::GetCorrelatedXfpE1Chn15() |
+|OBJ_MTOF_CORR_AFP      | Correct mesytec OBJ-E1 for correlation with angle in the focal plane. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
+|OBJ_MTOF_CORR_XFP      | Correct mesytec OBJ-E1 for correlation with position in the focal plane. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
+|TOFXFP_OBJ_SHIFT       | Shift mesytec XFP-OBJ to be centered on 0 to allow correction for correlation between OBJ-E1 and XFP-OBJ timing. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
+|TOFXFP_OBJ_CORR        | Correct for correlation between OBJ-E1 and XFP-OBJ timing after shifting with TOFXFP_OBJ_SHIFT. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
+|OBJTAC_TOF_CORR_AFP    | Correct tac OBJ-E1 for correlation with angle in the focal plane.   | TS800::GetCorrTOF_OBJTAC()|
+|OBJTAC_TOF_CORR_XFP    | Correct tac OBJ-E1 for correlation with position in the focal plane.|TS800::GetCorrTOF_OBJTAC()|
+|OBJ_TOF_CORR_AFP       | Correct standard TDC OBJ-E1 for correlation with angle in the focal plane.   | TS800::GetCorrTOF_OBJ()|
+|OBJ_TOF_CORR_XFP       | Correct standard TDC OBJ-E1 for correlation with position in the focal plane.| TS800::GetCorrTOF_OBJ()|
+|TARGET_X_OFFSET        | Shift x-position of hits from GRETINA to better line up crystals. | TGretinaHit::GetDopplerYta() |
+|TARGET_Y_OFFSET        | Shift y-position of hits from GRETINA to better line up crystals. | TGretinaHit::GetDopplerYta() |
+|TARGET_Z_OFFSET        | Shift z-position of hits from GRETINA to better line up crystals. | TGretinaHit::GetDopplerYta() |
+
