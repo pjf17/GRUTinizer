@@ -1,9 +1,8 @@
 # Tutorial for GRUTinizer
 
 This text will describe the basic process of using GRUTinizer for analyzing
-data from nuclear physics experiments at the NSCL, by providing an example of analyzing
-data from a nucleon knockout experiment utilizing the S800 with GRETINA.
-
+data from nuclear physics experiments at the NSCL. For more detail, see the
+Appendix in Eric Lunderberg's thesis. 
 
 ## Installation
 
@@ -289,11 +288,58 @@ The value for TOFXFP_OBJ_CORR has been seen to be typically small and negative
 (~ -0.6 in two experiments recently).
 
 ### Using Histos Files
-The previous corrections were rather slow, because a considerable amount of
-statistics can be necessary to see enough of a component of interest to be able
-to do the corrections. Also, you may want to make many histograms without
-sorting through the full tree everytime. To handle this, we make histogramming
-libraries in $GRUTSYS/histos, with file extensions *.cxx which will
-automatically be compiled when calling make for GRUTinizer. Then these can be
-passed to grutinizer based on the built library in $GRUTSYS/lib/libhistos.so
-(where histos.so is replaced with the name of the histogramming library).
+The best way to visualize data using GRUTinizer is to create histogramming
+libraries that are saved as *.cxx files in $GRUTSYS/histos and compiled along
+with other components of GRUTinizer. For an example, see:
+
+* $GRUTSYS/histos/sample_histos.cxx
+
+This histos file will create most of the spectra discussed above, and more can
+be added by following the basic format. Call "make" in $GRUTSYS to compile
+this file after any changes. To use this to histogram your data, use:
+
+* grutinizer -qH raw_data.dat $GRUTSYS/lib/libsample_histos.so
+
+This will sort the full raw_data.dat file into both a ROOT tree and a
+file of ROOT histograms. Once a file is sorted into a root tree, it can be
+resorted more quickly into histograms using (assuming the root tree file is
+root_tree.root):
+
+* grutinizer -qH root_tree.root $GRUTSYS/lib/libsample_histos.so
+
+You can only look at the histograms from these two commands after the full sort
+is complete. A more convenient method that allows you to observe the effects
+during the sort is to use the -g option:
+
+* grutinizer -gH root_tree.root $GRUTSYS/lib/libsample_histos.so
+
+or
+
+* grutinizer -gH raw_data.dat $GRUTSYS/lib/libsample_histos.so -o /dev/null
+
+Where the second option allows you to skip writing the root tree and therefore
+histogram more qiuckly.
+
+The nice thing about the graphical method is that it enables you to make cuts
+and corrections and observe the results without waiting to fully sort the
+histograms. 
+
+Note that sample_histos.cxx contains multiple defined GValues in the lines
+using GValue::AddValue. These lines should either be updated with your own
+corrections, or removed entirely so that a *.val file can be used in its place
+to define the corrections by calling grutinizer with the *.val file.
+
+The cut creation process is the same as described in earlier sections. Now,
+after calling grutinizer with a *.cuts file, the cuts are accessible in the
+histogramming file. The gates are loaded using the LoadGates function in
+sample_histos.cxx, and if an event satisfies the gate conditions CheckGates
+in this same file will append the index of the gate that is satisfied to
+a vector with the suffix *_passed. By looping through the indices in these
+vectors it is possible to histogram the events that satisfy the gates. Other
+gates can be added easily by modifying the LoadGates and CheckGates functions
+to load other tags and check other conditions. 
+
+For GRETINA related cuts, these can still be loaded using LoadGates, though
+checking whether individual hits satisfy e.g. the timing condition will need to
+be handled differently. This can be done as shown in sample_histos.cxx for the
+prompt gamma condition.
