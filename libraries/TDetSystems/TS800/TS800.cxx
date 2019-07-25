@@ -1160,7 +1160,7 @@ double TS800::GetMTofObjE1() const {
 double TS800::GetMTofObjE1Chn15(double afp_cor, double xfp_cor, double xfp_obj_shift, double xfp_obj_cor) const {
   double correlated_obj = GetMTof().GetCorrelatedObjE1Chn15();
   double correlated_xfp = GetMTof().GetCorrelatedXfpE1Chn15();
-  double xfp_obj = correlated_xfp - correlated_xfp;
+  double xfp_obj = correlated_xfp - correlated_obj;
   return(correlated_obj + afp_cor * GetAFP() + 
          xfp_cor  * GetCrdc(0).GetDispersiveX() + 
          xfp_obj_cor*(xfp_obj-xfp_obj_shift));
@@ -1174,11 +1174,10 @@ double TS800::GetMTofObjE1Chn15(double afp_cor, double xfp_cor) const {
 double TS800::GetMTofObjE1(double afp_cor, double xfp_cor, double xfp_obj_shift, double xfp_obj_cor) const {
   double correlated_obj = GetMTof().GetCorrelatedObjE1();
   double correlated_xfp = GetMTof().GetCorrelatedXfpE1();
-  double xfp_obj = correlated_xfp - correlated_xfp;
-  return(correlated_obj + afp_cor * GetAFP() + 
-         xfp_cor  * GetCrdc(0).GetDispersiveX() + 
-         xfp_obj_cor*(xfp_obj-xfp_obj_shift));
-}
+  double xfp_obj = correlated_xfp - correlated_obj;
+  return (correlated_obj + afp_cor * GetAFP() + 
+          xfp_cor  * GetCrdc(0).GetDispersiveX() +
+          xfp_obj_cor*(xfp_obj-xfp_obj_shift)); }
 
 double TS800::GetMTofObjE1(double afp_cor, double xfp_cor) const {
   return(GetMTof().GetCorrelatedObjE1()
