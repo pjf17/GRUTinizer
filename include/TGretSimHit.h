@@ -22,8 +22,6 @@ public:
 
   void Copy(TObject& obj) const;
 
-  //  void BuildFrom(const TRawEvent::GEBBankType1& raw); // ??
-
   virtual Int_t Charge()        const { return fEnergy;  }
 
   const char *GetName() const;
@@ -35,9 +33,6 @@ public:
 
   int    GetEn() const   { return fEnergy; }
   double GetBeta() const { return fBeta; }
-  /* double GetX()  const   { return fPosit.X(); } */
-  /* double GetY()  const   { return fPosit.Y(); } */
-  /* double GetZ()  const   { return fPosit.Z(); } */
   double GetX()  const   { return fInteraction.X(); }
   double GetY()  const   { return fInteraction.Y(); }
   double GetZ()  const   { return fInteraction.Z(); }
@@ -66,25 +61,6 @@ public:
     }
   }
   double GetTheta()    const { return fPosit.Theta(); }
-
-  /*
-  double GetPhi(int id=0) {
-    double phi = fPosit.at(0).Phi();
-    if(phi<0) {
-      return TMath::TwoPi()+phi;
-    } else {
-      return phi;
-    }
-  }
-  double GetTheta(int id=0)    const { return fPosit.at(id).Theta(); }
-  double GetPhiDeg(int id=0)   const { return GetPhi(id)*TMath::RadToDeg(); }
-  double GetThetaDeg(int id=0) const { return GetTheta(id)*TMath::RadToDeg(); }
-  */
-
-  
-  //void SetPosition(TVector3 &vec) { fCorePosition = vec; }
-
-  
 
   int      fEnergy;
   TVector3 fPosit;

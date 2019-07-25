@@ -13,8 +13,8 @@ class TOldSegaHit : public TDetectorHit {
     TOldSegaHit() { }
     TOldSegaHit(const TOldSegaHit &rhs) { rhs.Copy(*this); }
   
-    void Copy(TObject &rhs) const;      //  { TDetectorHit::Copy(rhs); }
-    void Print(Option_t *opt="") const; //  { TDetectorHit::Print(opt); }
+    void Copy(TObject &rhs) const;      
+    void Print(Option_t *opt="") const;
     void Clear(Option_t *opt=""); 
 
     TDetectorHit &GetSegment(int i)  { return segments.at(i); }

@@ -53,7 +53,7 @@ public:
   // Interval (seconds) between each scaler packet
   Int_t GetIntervalDivisor();
 
-// Number of integers to follow.
+  // Number of integers to follow.
   Int_t GetScalerCount();
 
   // Are the scalers reset after each read

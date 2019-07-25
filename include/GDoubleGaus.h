@@ -8,7 +8,6 @@
 
 class GDoubleGaus : public TF1 {
   public:
-    //GDoubleGaus(Double_t xlow,Double_t xhigh,int bg_order=1,Option_t *opt="gsc");  make this a thing.  pcb.
     
     GDoubleGaus(Double_t cent1,Double_t cent2,Double_t xlow,Double_t xhigh,Option_t *opt="gsc");
     
@@ -24,10 +23,8 @@ class GDoubleGaus : public TF1 {
     bool InitParams(TH1* fithist = 0,double cent1=0,double cent2=1);
     bool Fit(TH1*,double c1,double c2,Option_t *opt="");
     void DrawResiduals(TH1*) const;
-    //void DrawResiduals(); // *MENU*
 
     TF1  *Background(Option_t *opt="TF1") { return &fBGFit; }
-    //void DrawBackground(Option_t* opt = "SAME") const; // *MENU*
 
     Double_t GetCentroid1() const     { return GetParameter("centroid1"); }
     Double_t GetCentroid1Err() const  { return GetParError(GetParNumber("centroid1")); }
@@ -56,12 +53,6 @@ class GDoubleGaus : public TF1 {
     void SetChi2(Double_t chi2)   { fChi2 = chi2; }
     void SetNdf(Double_t Ndf)     { fNdf  = Ndf; }
   
-  public: 
-    //void CheckArea();
-    //void CheckArea(Double_t int_low, Double_t int_high);
-    //static Bool_t CompareEnergy(const GDoubleGaus& lhs, const GDoubleGaus& rhs) {return lhs.GetCentroid()<rhs.GetCentroid();}
-    //static Bool_t CompareArea(const GDoubleGaus& lhs, const GDoubleGaus& rhs)   {return lhs.GetArea()<rhs.GetArea();}
-
   private:
     double fAreaTotal;
     double fDAreaTotal;
@@ -79,7 +70,6 @@ class GDoubleGaus : public TF1 {
     double fDSum1;
     double fSum2;
     double fDSum2;
-
 
     Bool_t IsInitialized() const { return init_flag; }
     void SetInitialized(Bool_t flag = true) {init_flag = flag;}

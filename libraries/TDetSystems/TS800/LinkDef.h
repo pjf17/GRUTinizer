@@ -18,12 +18,7 @@
 #pragma link C++ class TScintillator+;
 #pragma link C++ class TIonChamber+;
 
-#pragma link C++ class TS800Channel+;
-
-#pragma link C++ class TTOFHit+;
-#pragma link C++ class TFPScint+;
 #pragma link C++ class TIonChamber+;
-#pragma link C++ class TCrdcPad+;
 #pragma link C++ class THodoHit+;
 #pragma link C++ class THodoscope+;
 

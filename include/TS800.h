@@ -28,7 +28,6 @@ public:
   Long_t GetTimestamp()    { return Timestamp(); }
 
   TVector3 CRDCTrack();  // not a finished method
-  TVector3 ExitTargetVect(int order=6); //DEPRECATED/BROKEN. Use TS800::Track() instead.
   Float_t Azita(int order=6);
 
   //S800 track determined from inverse map with shifts sata, sbta for ata and
@@ -60,7 +59,6 @@ public:
   TMTof         &GetMTof()         const { return (TMTof&)mtof;        }
   TIonChamber   &GetIonChamber()   const { return (TIonChamber&)ion; }
   TScintillator &GetScint(int x=0) const { return (TScintillator&)scint[x]; }
-  //Added 1/4/2016 for getting trigbit - BAE
   TTrigger      &GetTrigger()      const { return (TTrigger&)trigger;}
   THodoscope &GetHodoscope() const { return (THodoscope&)hodo;}
 
@@ -162,7 +160,6 @@ private:
   TCrdc        crdc1;
   TCrdc        crdc2;
   THodoscope   hodo;
-  //TMultiHitTof multi_tof;
   
   Long_t fEventCounter;
   static bool fGlobalReset; //!

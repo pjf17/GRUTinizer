@@ -43,7 +43,6 @@ public:
   void Print(Option_t* opt = "") const;
   void Clear(Option_t* opt = "");
 
-//private:
   static TDetectorEnv* env;
 
   TDetectorEnv() { }

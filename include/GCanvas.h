@@ -4,10 +4,8 @@
 #include "TROOT.h"
 #include "TCanvas.h"
 #include "TRootCanvas.h"
-//#include "TPeak.h"
 
 #include "TLine.h"
-//#include "TBuffer.h"
 
 class TF1;
 class TH1;
@@ -45,19 +43,6 @@ public:
   ClassDef(GMarker,0)
 };
 
-/*
-class GPopup : public TGTransientFrame  {
-  public:
-    GPopup(const TGWindow *p=0,const TGWindow *m=0);
-    virtual ~GPopup();
-    virtual void CloseWindow();
-    //bool ProcessMessage(Long_t,Long_t,Long_t);
-  private:
-    TGTextButton *fButton1,*fButton2;
-  ClassDef(GPopup,0)
-};
-*/
-
 class GCanvas : public TCanvas {
 public:
   GCanvas(Bool_t build = kTRUE);
@@ -68,20 +53,16 @@ public:
   GCanvas(const char* name, const char* title, Int_t wtopx, Int_t wtopy, Int_t ww, Int_t wh,bool gui=false);
   virtual ~GCanvas();
 
-  //void ProcessEvent(Int_t event,Int_t x,Int_t y,TObject *obj);
-  //void CatchEvent(Int_t event,Int_t x,Int_t y,TObject *obj);
   void HandleInput(Int_t event,Int_t x,Int_t y);
   void Draw(Option_t *opt="");
 
   static GCanvas *MakeDefCanvas();
 
   Int_t  GetNMarkers()               { return fMarkers.size();    }
-  //Int_t  GetNBG_Markers()            { return fBG_Markers.size(); }
   void SetMarkerMode(bool flag=true) { fMarkerMode = flag;        }
 
-  //static void SetBackGroundSubtractionType();
-
   TF1 *GetLastFit();
+
 private:
   void GCanvasInit();
 
@@ -94,23 +75,15 @@ private:
 
   GH1 *gHist;
 
-  //bool fStatsDisplayed;
   bool fMarkerMode;
   std::vector<GMarker*> fMarkers;
   std::vector<GMarker*> fBackgroundMarkers;
-  //kBackgroundSubtraction fBackgroundMode;
   void AddMarker(int,int,int dim=1);
   void RemoveMarker(Option_t *opt="");
   void OrderMarkers();
   void RedrawMarkers();
   bool SetBackgroundMarkers();
   bool CycleBackgroundSubtraction();
-
-  //std::vector<GMarker*> fBG_Markers;
-  //void AddBGMarker(GMarker *mark);
-  //void RemoveBGMarker();
-  //void ClearBGMarkers();
-  //void OrderBGMarkers();
 
   std::vector<TH1*> FindHists(int dim=1);
   std::vector<TH1*> FindAllHists();
@@ -132,21 +105,6 @@ private:
   bool Process2DKeyboardPress(Event_t *event,UInt_t *keysym);
   bool Process2DMousePress(Int_t event,Int_t x,Int_t y);
 
-  //bool SetBackGround(GMarker *m1=0,GMarker *m2=0,GMarker *m3=0,GMarker *m4=0);
-  //bool SetLinearBG(GMarker *m1=0,GMarker *m2=0);
-  //bool SetConstantBG(); //GMarker *m1=0,GMarker *m2=0);
-  //bool SetBGGate(GMarker *m1,GMarker *m2,GMarker *m3=0,GMarker *m4=0);
-
-  //TH1 *GetBackGroundHist(GMarker *addlow,GMarker *addhigh);
-
-  //bool GausFit(GMarker *m1=0,GMarker *m2=0);
-  //bool GausBGFit(GMarker *m1=0,GMarker *m2=0);
-  //bool PeakFit(GMarker *m1=0,GMarker *m2=0);
-  //bool PeakFitQ(GMarker *m1=0,GMarker *m2=0);
-
-  //static int fBGSubtraction_type;
-  //
-  //void Streamer(TBuffer*);
 private:
   Window_t fCanvasWindowID;
   TRootCanvas *fRootCanvas;

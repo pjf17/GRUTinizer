@@ -83,7 +83,6 @@ public:
 
   friend std::ostream& operator<<(std::ostream& out, const TChannel& chan);
 
-//private:
 public:
   static int  ParseInputData(std::string &input,Option_t *opt="");
   static int  WriteToBuffer(Option_t *opt="");
@@ -125,9 +124,7 @@ public:
   std::vector<CoefficientTimes> time_coeff;
   std::vector<double> efficiency_coeff;
   int pedestal;
-  //name and title held by TNamed.
 
-  //static std::vector<std::string> fFileNames;
   static std::string fChannelData;
   static std::map<unsigned int,TChannel*> fChannelMap;
   static TChannel *fDefaultChannel;

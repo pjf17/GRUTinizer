@@ -8,8 +8,6 @@
 
 class GModifiedGaus : public TF1 {
   public:
-    //GModifiedGaus(Double_t xlow,Double_t xhigh,int bg_order=1,Option_t *opt="gsc");  make this a thing.  pcb.
-    
     GModifiedGaus(Double_t sigma1,Double_t sigma2, Double_t centroid, 
                   Double_t xlow,Double_t xhigh,Option_t *opt="gsc");
     
@@ -25,10 +23,8 @@ class GModifiedGaus : public TF1 {
     bool InitParams(TH1* fithist = 0,double sigma1=0,double sigma2=0);
     bool Fit(TH1*,double c1,double c2,Option_t *opt="");
     void DrawResiduals(TH1*) const;
-    //void DrawResiduals(); // *MENU*
 
     TF1  *Background(Option_t *opt="TF1") { return &fBGFit; }
-    //void DrawBackground(Option_t* opt = "SAME") const; // *MENU*
 
     Double_t GetSigma1() const     { return GetParameter("sigma1"); }
     Double_t GetSigma1Err() const  { return GetParError(GetParNumber("sigma1")); }
@@ -56,12 +52,6 @@ class GModifiedGaus : public TF1 {
     void SetAreaTotal(Double_t a, Double_t dA) { SetAreaTotal(a); SetAreaTotalErr(dA);}
     void SetChi2(Double_t chi2)   { fChi2 = chi2; }
     void SetNdf(Double_t Ndf)     { fNdf  = Ndf; }
-  
-  public: 
-    //void CheckArea();
-    //void CheckArea(Double_t int_low, Double_t int_high);
-    //static Bool_t CompareEnergy(const GModifiedGaus& lhs, const GModifiedGaus& rhs) {return lhs.GetCentroid()<rhs.GetCentroid();}
-    //static Bool_t CompareArea(const GModifiedGaus& lhs, const GModifiedGaus& rhs)   {return lhs.GetArea()<rhs.GetArea();}
 
   private:
     double fAreaTotal;

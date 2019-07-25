@@ -21,8 +21,6 @@ class TNucleus : public TNamed{
  private:
   static const char *grsipath;
   static std::string& massfile(); //The massfile to be used, which includes Z, N, atomic symbol, and mass excess
-  //static const char *massfile; //The massfile to be used, which includes Z, N, atomic symbol, and mass excess
-  //static std::string masspath;
 
  public:
   TNucleus() { };					              // Should not be use, here so we can write things to a root file.
@@ -32,10 +30,8 @@ class TNucleus : public TNamed{
 
   virtual ~TNucleus();
 
-  //static void SetMassFile(const char *tmp = NULL);// {massfile = tmp;} //Sets the mass file to be used
 
   static const char* SortName(const char *name);
-  //void SetName(const char *name) { fName = name; }
   void SetZ(int);					// Sets the Z (# of protons) of the nucleus
   void SetN(int);					// Sets the N (# of neutrons) of the nucleus
   void SetMassExcess(double);  				// Sets the mass excess of the nucleus (in MeV)
@@ -46,10 +42,7 @@ class TNucleus : public TNamed{
 
    void AddTransition(Double_t energy, Double_t intensity, Double_t energy_uncertainty = 0.0, Double_t intensity_uncertainty = 0.0);
    void AddTransition(TTransition *tran);
-  //Bool_t RemoveTransition(Int_t idx);
-  //TGRSITransition *GetTransition(Int_t idx);
 
-  //const char* GetName()        { return fName.c_str(); }
   int GetZ() const             { return fZ; }  		        // Gets the Z (# of protons) of the nucleus
   int GetN() const             { return fN; }			// Gets the N (# of neutrons) of the nucleus
   int GetA() const             { return fN+fZ; }		// Gets the A (Z + N) of the nucleus
@@ -57,11 +50,9 @@ class TNucleus : public TNamed{
   double GetMass() const       { return fMass; }		// Gets the mass of the nucleus (in MeV)
   const char* GetSymbol() const{ return fSymbol.c_str(); }	// Gets the atomic symbol of the nucleus
 
-  // Returns total kinetic energy in MeV
   double GetEnergyFromBeta(double beta);
   double GetBetaFromEnergy(double energy_MeV);
 
-  //Bool_t RemoveTransition(Int_t idx);
   TTransition *GetTransition(Int_t idx);
 
   Int_t NTransitions() const { return TransitionList.GetSize();};
@@ -69,7 +60,6 @@ class TNucleus : public TNamed{
   double GetRadius() const;
   int GetZfromSymbol(char*);
 
-  //bool SetSourceData();
 
   void Print(Option_t *opt = "") const;
   void WriteSourceFile(std::string outfilename = "");

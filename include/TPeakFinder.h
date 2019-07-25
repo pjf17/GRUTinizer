@@ -42,13 +42,6 @@ class TPeakFinder : public TObject{
   Double_t GetPeaksForFit()     { return fPeakNum; }
   TNucleus *GetNucleus() const  { return tnNucleus; }
   
-
-  //TSpectrum *LocatePeaks(TH1* hist,Double_t sigma=2.0,Double_t thresh=0.2);
-  //void OrderPeaks(TSpectrum* Spec,Double_t &XVal,Double_t &YVal,Bool_t LowToHigh=true);
-
-
-  
-
  private:
   Bool_t PeaksForFit(); // Only call this in the constructor.
   std::vector<Double_t> fPeaksToFit;

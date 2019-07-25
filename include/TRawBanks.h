@@ -1,11 +1,6 @@
 #ifndef TRAWBANKS__H
 #define TRAWBANKS__H
 
-//#include <cstdio>
-//#include <iostream>
-//#include <iomanip>
-
-//#include <stdint.h>
 #include <Rtypes.h>
 
 //  https:://gswg.lbl.gov/tiki-index.php?page=GEB+Headers
@@ -186,9 +181,6 @@ struct M_TDC_Data{
   UShort_t Time()   const { return tail&0xffff; }
 }__attribute__((__packed__));
 
-
-
-
 typedef struct {
   Int_t   totalsize;
   Short_t moresize;
@@ -206,24 +198,13 @@ typedef struct {
   Short_t header;
   Short_t number_chans() { return  ((header & 0x7800)>>11); }
   Short_t vsn()          { return   (header & 0x00ff)-1; }
-//  CAESARFeraItem items[16];
-
 }__attribute__((__packed__)) CAESARFera;
-
 
 typedef struct {
   Short_t data;
   Short_t channel()  { return  ((data & 0x7800)>>11); }
   Short_t value()    { return   (data & 0x07ff); }
 }__attribute__((__packed__)) CAESARFeraItem;
-
-
-
-
-
-
-
-
 
 typedef struct { // HPGe Segment Hit Type 1;
    Float_t     x;
@@ -276,7 +257,6 @@ struct GEBMode3Head {
 friend std::ostream& operator<<(std::ostream& os, const GEBMode3Head &head);
 static void SwapMode3Head(GEBMode3Head &head);
 
-//typedef struct {
 struct GEBMode3Data {
   UShort_t led_middle;
   UShort_t led_low;

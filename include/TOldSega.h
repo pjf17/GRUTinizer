@@ -14,8 +14,8 @@ class TOldSega : public TDetector {
     TOldSega() {  } 
     TOldSega(const TOldSega &rhs) { rhs.Copy(*this); }
     
-    void Copy(TObject &rhs)      const; // { TDetector::Copy(rhs); }
-    void Print(Option_t *opt="") const; // { TDetector::Print(opt); }
+    void Copy(TObject &rhs)      const;
+    void Print(Option_t *opt="") const; 
     void Clear(Option_t *opt=""); 
 
     void InsertHit(const TDetectorHit &hit) { TOldSegaHit &oshit = (TOldSegaHit&)hit; oshit.Sort(); sega_hits.push_back(oshit); }
@@ -32,9 +32,6 @@ class TOldSega : public TDetector {
     void SetRf(unsigned short tmp)         { rf         = tmp; }
 
     TOldSega& operator=(const TOldSega& rhs) { rhs.Copy(*this); return *this;}
-
-    //static TVector3& GetPosition(int det,int seg)    { return fSegaPositions[det]; }
-
 
   private:
     int  BuildHits(std::vector<TRawEvent>& raw_data)  { return sega_hits.size(); }

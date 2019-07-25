@@ -128,33 +128,6 @@ TVector3 TS800::Track(double sata,double sbta) const {
   return track;//.Unit();
 }
 
-
-TVector3 TS800::ExitTargetVect(int order){
-  TVector3 track;
-  double sin_ata = 0;
-  double sin_bta = 0;
-  sin_ata = GetAta(order); //* TMath::DegToRad() ;
-  sin_bta = GetBta(order); // * TMath::DegToRad() ;
-  
-  sin_ata = TMath::Sin(sin_ata);
-  sin_bta = TMath::Sin(sin_bta);
-
-  double phi   = 0;
-  double theta = 0;
-  
-   if(sin_ata>0 && sin_bta>0)      phi = 2.0*TMath::Pi()-TMath::ATan(sin_bta/sin_ata);
-   else if(sin_ata<0 && sin_bta>0) phi = TMath::Pi()+TMath::ATan(sin_bta/TMath::Abs(sin_ata));
-   else if(sin_ata<0 && sin_bta<0) phi = TMath::Pi()-TMath::ATan(TMath::Abs(sin_bta)/TMath::Abs(sin_ata));
-   else if(sin_ata>0 && sin_bta<0) phi = TMath::ATan(TMath::Abs(sin_bta)/sin_ata);
-   else                      phi = 0;
-
-   theta = TMath::ASin(TMath::Sqrt(sin_ata*sin_ata+sin_bta*sin_bta));
-   //   track.SetMagThetaPhi(1,theta,phi);
-   track.SetXYZ(TMath::Sin(theta)*TMath::Cos(phi),TMath::Sin(theta)*TMath::Sin(phi),TMath::Cos(phi));
-   //track.SetXYZ(sin_ata,-sin_bta,1);
-   return track; 
-}
-
 TVector3 TS800::CRDCTrack(){
   TVector3 track;
   track.SetTheta(TMath::ATan((GetCrdc(0).GetDispersiveX()-GetCrdc(1).GetDispersiveX())/1073.0)); // rad
@@ -465,8 +438,6 @@ bool TS800::HandleTOFPacket(unsigned short *data ,int size){
 
 
 bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
-  //std::cout << "----------------------" << std::endl;
-  //std::cout << " In Handle CRDC " << std::endl;
 
   TCrdc *current_crdc=0;
   if((*data)<3){
@@ -477,23 +448,14 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   if(!current_crdc)
     return false;
 
-  //printf("crdc = [%i]\t0x%08x\n",(*data),crdc+(*data));
 
   current_crdc->SetId(*data);
-  /*std::cout << std::hex << " data : " <<  *data << std::endl;
-  std::cout << std::hex << " ID   : " << current_crdc->GetId() << std::endl;
-  std::dec;
-  */
-
 
   int x =1;
   int subsize = *(data+x);
   x++;
-  //int subtype = *(data+x);
   x++;
 
-  //std::cout << " subsize : " << std::hex << subsize << std::endl;
-  //std::cout << " subtype : " << std::hex << subtype << std::endl;
   current_crdc->SetAddress((0x58<<24) + (1<<16) + (current_crdc->GetId() <<8) + 0);
 
   std::map<int,std::map<int,int> > pad;
@@ -519,13 +481,6 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
       int databits         = (word2&(0x03ff));
       int real_channel = (connector_number << 6) + channel_number;
 
-      /*std::cout << " sample Number    : " << std::dec << sample_number << std::endl;
-        std::cout << " channel Number   : " << std::dec << channel_number << std::endl;
-        std::cout << " connector Number : " << std::dec << connector_number << std::endl;
-        std::cout << " data bits        : " << std::dec << databits << std::endl;
-        std::cout << " real channel     : " << std::dec << real_channel << std::endl;
-        std::dec;
-      */
       pad[real_channel][sample_number] = databits;
     }
   }
@@ -534,31 +489,20 @@ bool TS800::HandleCRDCPacket(unsigned short *data,int size) {
   std::map<int,int>::iterator it2;
 
   for(it1=pad.begin();it1!=pad.end();it1++) {
-    //printf("channel[%03i]\n",it1->first);
     for(it2=it1->second.begin();it2!=it1->second.end();it2++) {
-      //printf("\t%i\t%i\n",it2->first,it2->second);
       current_crdc->AddPoint(it1->first,it2->first,it2->second);
     }
   }
-  //printf("\nchannel.size() = %i\n\n\n",current_crdc->Size());
-  //printf("\t0x%08x\t%i\n",currentcrdc,currentcrdc->
 
   if(x>=size)
       return true;
   subsize = *(data+x);
   x++;
-  //subtype = *(data+x);
   x++;
   current_crdc->SetAnode(*(data+x));
   x++;
   current_crdc->SetTime(*(data+x));
 
-  /*std::cout << " subsize   : " << std::hex << subsize << std::endl;
-  std::cout << " subtype   : " << subtype << std::endl;
-  std::cout << " ID   : " << current_crdc->GetId() << std::endl;
-  std::cout << " CRDC Time : " << current_crdc->GetTime() << std::endl;
-  std::cout << " CRDC Anod : " << current_crdc->GetAnode() << std::endl;
-  std::dec;*/
   return true;
 }
 

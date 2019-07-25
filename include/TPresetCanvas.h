@@ -38,7 +38,6 @@ class TPresetPad : public TNamed {
 
     void Set(int,int);
 
-  //private:
     int fPadNumber;
     int fRowNumber;
     int fColNumber;
@@ -70,20 +69,16 @@ class TPresetCanvas : public TNamed {
     void Set();
     void AddPad(TPresetPad &pad); 
 
-  //private:
     std::map<int,TPresetPad> fPadMap;
 
     int fRows;
     int fCols;
 
-  public:
     int ReadWinFile(const char *filename="",Option_t *opt="replace");
     int WriteWinFile(std::string filename="",Option_t *opt="");
     int Size()  { return fPadMap.size(); }
 
-  //private:
     int  ParseInputData(const std::string input,Option_t *opt="");
-    //static std::map<std::string,TPresetCanvas*> fCanvasMap;
     static void trim(std::string *, const std::string &trimChars=" \f\n\r\t\v");
 
   ClassDef(TPresetCanvas,1);

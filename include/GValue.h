@@ -53,10 +53,8 @@ public:
   bool AppendValue(GValue*);
   bool ReplaceValue(GValue*);
 
-  //virtual void Clear(Option_t *opt="");
   virtual void Print(Option_t *opt="") const;
   virtual void Copy(TObject &obj) const;
-  //virtual bool Notify();
 
   static int Size()  { return fValueVector.size(); }
   std::string PrintToString() const;

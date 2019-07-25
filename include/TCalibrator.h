@@ -68,18 +68,8 @@ public:
 
   std::string PrintEfficency(const char *filenamei="");
 
-#ifndef __CINT__
-  //struct SingleFit {
-  //  double max_error;
-  //  std::string nucleus;
-  //  std::map<double,double> data2source;
-  //  TGraph graph;
-  //};
-#endif
-
 private:
 #ifndef __CINT__
-  //std::map<std::string,SingleFit> all_fits;
   std::map<double,double> Match(std::vector<double>,std::vector<double>); 
 #endif
   std::vector<Peak> fPeaks;

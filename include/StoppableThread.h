@@ -65,10 +65,6 @@ public:
 protected:
   static std::map<std::string,StoppableThread*> fthreadmap;
 
-  //long items_in;
-  //long items_out;
-  //long rate;
-
 private:
   StoppableThread(const StoppableThread& other) { }
   StoppableThread& operator=(const StoppableThread& other) { return *this; }

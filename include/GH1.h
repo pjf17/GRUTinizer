@@ -26,8 +26,6 @@ class GH1 : public TH1 {
     TH1 *GetNext()     { return 0; }
     TH1 *GetPrevious() { return 0; }
     
-    //GH1D *Project(double low=sqrt(-1),double high=(sqrt(-1));    
-    //GH1D *Project(double low,double high,double bg_low,double bg_high,double scale=-1)    { return 0; }
     GH1D *Project(int low=0,int high=-1);    
     GH1D *Project(int low,int high,int bg_low,int bg_high,double scale=-1);  
     

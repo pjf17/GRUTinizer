@@ -84,10 +84,6 @@ public:
   int   FillHistogram(const char* name);
   int   FillHistogram(const char* dir,const char* name);
   
-  
-  
-  
-  
   TProfile* FillProfileHist(const char* name,
 			    int Xbins, double Xlow, double Xhigh, double Xvalue,
 			    double Yvalue);

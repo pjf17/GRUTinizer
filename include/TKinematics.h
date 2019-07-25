@@ -32,9 +32,7 @@ public:
   void Initial();
   void FinalCm();
   void Final(double angle, int part);
-  //void SetAngles(double angle, int part);
   void SetAngles(double angle, int part, bool upper=false);
-  //get
   TSpline3* Evslab(double thmin, double thmax, double size, int part = 2);
   TSpline3* Evscm(double thmin, double thmax, double size, int part = 2);
   TSpline3* labvscm(double thmin, double thmax, double size, int part = 2);
@@ -97,11 +95,8 @@ public:
   void Transform2cm(double &angle, double &errangle, double &sigma, double &errsigma);
   void AngleErr_lab2cm(double angle, double &err);
   void SigmaErr_lab2cm(double angle, double err, double &sigma, double &errsigma);
-  //double Sigma_cm2labnew(double vcm, double angle_cm, double sigma_cm);
   double Rutherford(double angle_cm);
 
- // void Print(Option_t* opt="") { }
- // void Clear(Option_t* opt="") { }
     
 private:
 

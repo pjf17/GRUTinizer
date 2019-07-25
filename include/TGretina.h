@@ -8,8 +8,6 @@
 #include <TObject.h>
 #include <TMath.h>
 
-//#include <TClonesArray.h>
-
 #include "TDetector.h"
 #include "TGretinaHit.h"
 

@@ -33,7 +33,6 @@ public:
 private:
   virtual int BuildHits(std::vector<TRawEvent>& raw_data);
 
-  //TClonesArray* mode3_hits;//("TMode3Hit");
   std::vector<TMode3Hit> mode3_hits;
 
   ClassDef(TMode3,3);

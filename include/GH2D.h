@@ -1,18 +1,6 @@
 #ifndef GH2D__H
 #define GH2D__H
 
-//#include <cstdio>
-//#include <map>
-
-//#include <TNamed.h>
-//#include <TH2.h>
-//#include <TList.h>
-//#include <TVirtualPad.h>
-//#include <TFrame.h>
-
-//#include <GH2Base.h>
-//class GH1D;
-
 #include <GH2.h>
 
 class GH2D : public GH2, public TArrayI {
@@ -42,7 +30,6 @@ public:
   virtual void SetBinsLength(int n=-1);
 
 
-  //Int_t Write(const char *name="",Int_t option=0,Int_t bufsize=0) const;  
 
 protected:
   virtual double RetrieveBinContent(int bin) const { return double (fArray[bin]); }

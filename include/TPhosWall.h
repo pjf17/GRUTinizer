@@ -40,20 +40,11 @@ public:
   const TPhosWallHit& GetPhosWallHit(int i) const { return phoswall_hits.at(i); }
   TDetectorHit& GetHit(int i)                     { return phoswall_hits.at(i); }
 
-  //void Draw(Option_t *opt="");
-  //static void DrawPID(Option_t *gate="",Option_t *opt="BC",Long_t entries=kMaxLong,TChain *chain=0); 
-
   TVector3 GetHitPosition() 
     { if(fLargestHit>-1) return GetWallPosition(Pixel(fLargestHit)); else return TVector3(sqrt(-1),sqrt(-1),sqrt(-1)); }
 
   TVector3 GetKinVector(Double_t E_ejec,Double_t E_beam=30.0,const char *beam="18O",const char *recoil="30Si", const char *ejec="a");
   TVector3 GetKinVector(Double_t E_ejec,Double_t E_beam,TNucleus &beam,TNucleus &recoil,TNucleus &ejec);
-
-
-  //void DrawXY(Option_t *opt="");
-  //static TVector3 FindWallPosition(const Int_t &pixel) { if(pixel<0||pixel>256) return TDetector::fB;  return fWallPositions[pixel]; }
-  //void FindWeightedPosition();
-  //void SetWeightedPosition(const TVector3 &temp)  { fWeightedPosition = temp; }
 
   static TVector3 GetWallPosition(int pixelnumber,double delta=5.0);
 

@@ -27,17 +27,11 @@ public:
 
   int GetDetNumberIn_fs_hits(Int_t det);
   
-  //  void SetTDCTrigger(int trig) { tdc_trigger = trig; }
-  //void SetTDC_Count(int count) { tdc_channels= count;}
-  //void SetQDC_Count(int count) { qdc_channels= count;}
   void SetTDC_TimeStamp(int ts) { tdc_TS = ts; }
   void SetQDC_TimeStamp(int ts) { qdc_TS = ts; }
 
   int GetTDC_TimeStamp() {return tdc_TS; }
   int GetQDC_TimeStamp() {return qdc_TS; }
-  //int GetTDCTrigger() {return tdc_trigger; }
-  //int GetTDC_Count()  {return tdc_channels; }
-  //int GetQDC_Count()  {return qdc_channels; }
   int GetErrors() {return errors; };
 
   void SetTrigTime(UShort_t time) { trig_time = time; }
@@ -53,7 +47,6 @@ private:
 
   int Build_From(TRawEvent &event);
 
-  //TClonesArray* fs_hits; //->
   std::vector<TFastScintHit> fs_hits;
 
   int qdc_TS;

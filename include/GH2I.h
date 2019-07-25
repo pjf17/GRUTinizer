@@ -1,18 +1,6 @@
 #ifndef GH2I__H
 #define GH2I__H
 
-//#include <cstdio>
-//#include <map>
-
-//#include <TNamed.h>
-//#include <TH2.h>
-//#include <TList.h>
-//#include <TVirtualPad.h>
-//#include <TFrame.h>
-
-//#include <GH2Base.h>
-//class GH1D;
-
 #include <GH2.h>
 
 class GH2I : public GH2, public TArrayI {

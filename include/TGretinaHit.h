@@ -16,7 +16,6 @@
 class TSmartBuffer;
 class TS800;
 
-
 class interaction_point { 
   public:
   interaction_point():fSeg(-1),fX(sqrt(-1)),fY(sqrt(-1)),fZ(sqrt(-1)),fEng(sqrt(-1)),fFrac(sqrt(-1)) { }
@@ -61,12 +60,7 @@ struct intpnt_compare_wedge {
     return (p1.fSeg%6) < (p2.fSeg%6);
   }
 };
-
-
-
 #endif
-
-
 
 class TGretinaHit : public TDetectorHit {
 
@@ -175,8 +169,6 @@ public:
   void TrimSegments(int type); // 0: drop multiple ident int pnts.  1: make into wedge "data"
   bool IsClean() const { return !fPad; }
 
-//bool IsAddback() const { return this->TestBit(31); }
-
 private:
   void SortHits();
 /* All possible decomp information and
@@ -199,9 +191,6 @@ private:
   Int_t     pad;        // decomp error code.
  *------------------
 */
-
-
-
   Int_t           fCrystalId;
   Int_t           fCoreCharge[4];
   Int_t   fPad;

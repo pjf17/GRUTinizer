@@ -11,7 +11,7 @@ class TLenda : public TDetector {
     TLenda() { }
     ~TLenda() { }
 
-    void Copy(TObject &obj) const { } //TDetector::Copy(obj); }
+    void Copy(TObject &obj) const { } 
 
     void Clear(Option_t *opt="") { TDetector::Clear(opt); }
     TLendaHit &GetLendaHit(int i) { return lenda_hits.at(i); }
@@ -23,7 +23,6 @@ class TLenda : public TDetector {
 
   private:
     int BuildHits(std::vector<TRawEvent>& raw_data);
-    //{ printf("lenda build hits called\n"); fflush(stdout);return 0;}
     std::vector<TLendaHit> lenda_hits;
 
   ClassDef(TLenda,1);

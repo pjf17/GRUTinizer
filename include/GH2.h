@@ -141,8 +141,6 @@ class GH2 : public GH1 {
     void    AddToProjections(GH1 *hist) const { fProjections.Add(hist); hist->SetDirectory(0); }
     mutable TList fProjections;
 
-    //friend class GH1;
-
   ClassDef(GH2,1)  //2-Dim histogram base class
 };
 
