@@ -351,20 +351,21 @@ functions in GRUTinizer.
 
 | GValue Name           | Purpose                  | Related Function          |
 |:---------------------:|--------------------------|---------------------------|
-|CRDC1_X_OFFSET         | Calibration for CRDC 1 X | TS800Hit::GetDispersiveX()| 
-|CRDC1_X_SLOPE          | Calibration for CRDC 1 X | TS800Hit::GetDispersiveX()| 
-|CRDC2_X_OFFSET         | Calibration for CRDC 2 X | TS800Hit::GetDispersiveX()| 
-|CRDC2_X_SLOPE          | Calibration for CRDC 2 X | TS800Hit::GetDispersiveX()| 
-|CRDC1_Y_OFFSET         | Calibration for CRDC 1 Y | TS800Hit::GetNonDispersiveY()| 
-|CRDC1_Y_SLOPE          | Calibration for CRDC 1 Y | TS800Hit::GetNonDispersiveY()| 
-|CRDC2_Y_OFFSET         | Calibration for CRDC 2 Y | TS800Hit::GetNonDispersiveY()| 
-|CRDC2_Y_SLOPE          | Calibration for CRDC 2 Y | TS800Hit::GetNonDispersiveY()| 
+|CRDC1_X_OFFSET         | Calibration for CRDC 1 X | TS800Hit::TCrdc::GetDispersiveX()| 
+|CRDC1_X_SLOPE          | Calibration for CRDC 1 X | TS800Hit::TCrdc::GetDispersiveX()| 
+|CRDC2_X_OFFSET         | Calibration for CRDC 2 X | TS800Hit::TCrdc::GetDispersiveX()| 
+|CRDC2_X_SLOPE          | Calibration for CRDC 2 X | TS800Hit::TCrdc::GetDispersiveX()| 
+|CRDC1_Y_OFFSET         | Calibration for CRDC 1 Y | TS800Hit::TCrdc::GetNonDispersiveY()| 
+|CRDC1_Y_SLOPE          | Calibration for CRDC 1 Y | TS800Hit::TCrdc::GetNonDispersiveY()| 
+|CRDC2_Y_OFFSET         | Calibration for CRDC 2 Y | TS800Hit::TCrdc::GetNonDispersiveY()| 
+|CRDC2_Y_SLOPE          | Calibration for CRDC 2 Y | TS800Hit::TCrdc::GetNonDispersiveY()| 
 |ATA_SHIFT              | Enables centering ATA distribution on 0.  | TS800::GetAta() | 
 |BTA_SHIFT              | Enables centering BTA distribution on 0.  | TS800::GetBta() | 
-|TARGET_MTOF_OBJE1      | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 0). | TS800Hit::GetCorrelatedObjE1() |
-|TARGET_MTOF_OBJE1CHN15 | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 15). | TS800Hit::GetCorrelatedObjE1Chn15() |
-|TARGET_MTOF_XFPE1      | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 0). | TS800Hit::GetCorrelatedXfpE1() |
-|TARGET_MTOF_XFPE1CHN15 | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 15). | TS800Hit::GetCorrelatedXfpE1Chn15() |
+|TARGET_MTOF_OBJE1      | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 0). | TS800Hit::TMTof::GetCorrelatedObjE1() |
+|TARGET_MTOF_OBJE1CHN15 | Allows selecting correct MesyTec time of flights for OBJ-E1 (chn. 15). | TS800Hit::TMTof::GetCorrelatedObjE1Chn15() |
+|TARGET_MTOF_XFPE1      | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 0). | TS800Hit::TMTof::GetCorrelatedXfpE1() |
+|TARGET_MTOF_XFPE1CHN15 | Allows selecting correct MesyTec time of flights for XFP-E1 (chn. 15). | TS800Hit::TMTof::GetCorrelatedXfpE1Chn15() |
+|SHIFT_MTOF_OBJE1       | Allows for shifting the MTOF_OBJE1 value to line up the time of flights if jumps occur between runs | TS800Hit::TMTof::GetCorrelatedObjE1(), TS800Hit::TMTof::GetCorrelatedObjE1Chn15() |
 |OBJ_MTOF_CORR_AFP      | Correct mesytec OBJ-E1 for correlation with angle in the focal plane. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
 |OBJ_MTOF_CORR_XFP      | Correct mesytec OBJ-E1 for correlation with position in the focal plane. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
 |TOFXFP_OBJ_SHIFT       | Shift mesytec XFP-OBJ to be centered on 0 to allow correction for correlation between OBJ-E1 and XFP-OBJ timing. Note that this same GValue is used when using either Channel 0 (E1Up) or Channel 15 (Ref) from the E1 scintillator | TS800::GetMTofObjE1(), TS800::GetMTofObjE1Chn15()|
