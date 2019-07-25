@@ -148,12 +148,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double crdc_2_x = s800->GetCrdc(1).GetDispersiveX();
   double afp = GetAfp(crdc_1_x, crdc_2_x);
   obj.FillHistogram("ungated", "corrobje1_crdc1x", 1000, -4000, 0, tof_obje1_corr,
-                                               1024, 0, 4096, crdc_1_x);
+                                               600, -300, 300, crdc_1_x);
   obj.FillHistogram("ungated", "corrobje1_afp", 1000, -4000, 0, tof_obje1_corr,
-                                               1024, 0, 4096, afp);
+                                               1000, -0.1, 0.1, afp);
   double xfp_obj = tof_xfpe1-tof_obje1;
+  double xfpobj_shift = GValue::Value("TOFXFP_OBJ_SHIFT");
+  if (!std::isnan(xfpobj_shift)){
+      xfp_obj -= xfpobj_shift;
+  }
+  obj.FillHistogram("ungated", "corrobje1_crdc1x", 1000, -4000, 0, tof_obje1_corr,
+                                               600, -300, 300, crdc_1_x);
+  obj.FillHistogram("ungated", "corrobje1_afp", 1000, -4000, 0, tof_obje1_corr,
+                                               1000, -0.1, 0.1, afp);
   obj.FillHistogram("ungated", "corrobje1_tofxfpobj", 1000, -4000, 0, tof_obje1_corr,
-                                               2048, 0, 8192, xfp_obj);
+                                               2048, -1024, 8192, xfp_obj);
 
   std::vector<unsigned short> incoming_passed;
   std::vector<unsigned short> outgoing_passed;
@@ -162,26 +170,31 @@ void MakeHistograms(TRuntimeObjects& obj) {
     dirname = Form("%s_gated", incoming_gates.at(ind_inc)->GetName());
     obj.FillHistogram(dirname, "outgoing_pid", 1000, -4000, 0, tof_obje1_corr,
         1024, 0, 4096, ic_ave);
-    if (gretina){
       for (auto ind_out : outgoing_passed){
-        gretina->CleanHits();
         dirname = Form("%s_%s_gated", incoming_gates.at(ind_inc)->GetName(), 
             outgoing_gates.at(ind_out)->GetName()); 
-        for (unsigned int i = 0; i < gretina->Size(); i++){
-          TGretinaHit &hit = gretina->GetGretinaHit(i);
-          double energy = hit.GetDoppler(GValue::Value("BETA"));
-          obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
-          if (prompt_timing_gate){
-            if (bank29){
-              double time = bank29->Timestamp()-hit.GetTime();
-              if (prompt_timing_gate->IsInside(time, energy)){
-                obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+        obj.FillHistogram(dirname, "corrobje1_crdc1x", 1000, -4000, 0, tof_obje1_corr,
+            600, -300, 300, crdc_1_x);
+        obj.FillHistogram(dirname, "corrobje1_afp", 1000, -4000, 0, tof_obje1_corr,
+            1000, -0.1, 0.1, afp);
+        obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 1000, -4000, 0, tof_obje1_corr,
+            2048, -1024, 8192, xfp_obj);
+        if (gretina){
+          for (unsigned int i = 0; i < gretina->Size(); i++){
+            TGretinaHit &hit = gretina->GetGretinaHit(i);
+            double energy = hit.GetDoppler(GValue::Value("BETA"));
+            obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
+            if (prompt_timing_gate){
+              if (bank29){
+                double time = bank29->Timestamp()-hit.GetTime();
+                if (prompt_timing_gate->IsInside(time, energy)){
+                  obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+                }
               }
             }
           }
         }
       }
-    }
   }
 
   if(numobj!=list->GetSize()){
