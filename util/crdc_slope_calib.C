@@ -1,0 +1,184 @@
+#include <cmath>
+#include <TF1.h>
+#include <TFile.h>
+#include <TCanvas.h>
+
+//NOTE FOR THIS TO WORK PROPERLY YOU NEED TO CREATE A TXT FILE WITH ALL THE HISTOGRAM NAMES IN IT
+//TO DO THIS JUST ENTER 'ls hist*.root > name_of_your_choice.txt' IN THE DIRECTORY WITH YOUR HISTS
+
+TFile *outfile;
+
+//Path to where you want to put your val files
+const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e19002/config/crdcY/"; 
+
+GH1D *GetYHist(std::string filename, int crdc){
+  TFile *f = new TFile(filename.c_str(),"READ");
+  
+  std::string inHistName = Form("ungated/crdc%d X_Y",crdc);
+  GH2D *hist2d = (GH2D*) f->Get(inHistName.c_str());
+
+  if (!hist2d){
+    std::cout<<"error reading hist"<<std::endl;
+    return NULL;
+  }
+
+  std::string dirname = "run" + filename.substr(4,4);
+  outfile->cd(dirname.c_str());
+  
+  GH1D *hy = new GH1D(*hist2d->ProjectionY());
+  std::string histname = Form("crdc%d_Y",crdc);
+  std::string histtitle = dirname + histname;
+  hy->SetNameTitle(histname.c_str(),histtitle.c_str());
+  
+  delete hist2d;
+  f->Close();
+  delete f;
+  
+  return hy;
+}
+
+double GetMean(GH1D *hy){
+  if (!hy) {
+    return sqrt(-1);
+  }
+  
+  double low = -600;
+  double high = 600;
+
+  std::string fitname(hy->GetName());
+  fitname += "_fit";
+
+  TF1 *fitfunc = new TF1(fitname.c_str(),"gaus",low,high);
+  hy->Fit(fitfunc,"QR0","",low, high);
+
+  const Int_t kNotDraw = 1<<9;
+  hy->GetFunction(fitname.c_str())->ResetBit(kNotDraw);
+
+  hy->Write("",TObject::kOverwrite);
+  
+  return fitfunc->GetParameter(1);
+}
+
+void GetNewSlopes(std::vector<std::string> &allfiles){
+  outfile = new TFile("crdc_calib_hists.root","RECREATE");
+  int nloops = 0;
+  std::cout<<"Working.";
+  for (auto filename : allfiles){
+    
+    //create run directory for crdcY 1 & 2
+    std::string dirname = "run" + filename.substr(4,4);
+    if (!outfile->GetDirectory(dirname.c_str())){
+      outfile->mkdir(dirname.c_str());
+    }
+
+    //create .val file
+    std::string valfile = VAL_FILE_DIR + dirname + ".val";
+    ofstream out_valfile(valfile.c_str());
+  
+    for (int i=0; i < 2; i++){
+      //get mean and check if its nan
+      //double mean = GetMean(GetYHist(filename,i+1));
+      double mean = GetYHist(filename,i+1)->GetMean();
+      if (std::isnan(mean)){
+        std::cout<<"Error in crdc "<<i+1<< "mean\n";
+        return;
+      }
+      //get initial slope
+      std::string gSlope = Form("CRDC%d_Y_SLOPE",i+1);
+      double old_slope = GValue::Value(gSlope.c_str());
+      if (std::isnan(old_slope)){
+	      std::cout<<"No old slope for crdc"<<i+1<<", setting to 1"<<std::endl;
+        slope = 1.0;
+      }
+
+      //get offset
+      std::string gOffset = Form("CRDC%d_Y_OFFSET",i+1);
+      double offset = GValue::Value(gOffset.c_str());
+      if (std::isnan(offset)){
+	      std::cout<<"No offset for crdc"<<i+1<<std::endl;
+	      break;
+      }
+
+      //undo old calibration
+      double uncal_mean = (mean - offset)/old_slope;
+      
+      //find new slope such that the new mean is zero
+      double new_slope = -(offset/uncal_mean);
+      out_valfile << "CRDC" << i+1 << "_Y_SLOPE {\nvalue: " << new_slope << "\n}\n\n";
+    }
+  
+    out_valfile.close();
+    if (nloops%5 == 0) std::cout<<"."<<std::flush;
+    nloops++;
+  }
+  std::cout<<std::endl;
+
+  outfile->Write();
+  return;
+}
+
+void CheckYDists(std::vector<std::string> allfiles){
+    outfile = new TFile("crdc_calib_hists_check.root","RECREATE");
+    ofstream statusOut; 
+    statusOut.open("calib_check.txt");
+
+    double good = 0.01, okay = 0.1, fine = 0.25;
+    for (auto filename : allfiles){
+        statusOut<<filename<<std::endl; 
+        for (int i=0; i < 2; i++){
+            statusOut<<"\tcrdc"<<i+1<<": ";
+            //get mean and check if its nan
+            double mean = GetYHist(filename,i+1)->GetMean();
+            mean = std::abs(mean);
+            if (std::isnan(mean)){
+                statusOut<<"Error";
+                break;
+            }
+
+            //check if mean is close to zero
+            if (mean < good){
+                statusOut<<"good";
+            } else if (mean < okay){
+                statusOut<<"okay";
+            } else if (mean < fine){
+                statusOut<<"fine";
+            } else {
+                statusOut<<"BAD";
+            }
+            statusOut<<std::endl;
+        } 
+    }
+    statusOut.close();
+    return;
+}
+
+bool ReadFiles(std::string filelist, std::vector<std::string> &allfiles){
+  ifstream input(filelist.c_str());
+
+  if (!input.is_open()){
+    std::cout<<"Error: cannot open files list\n";
+    return false;
+  }
+
+  std::string line;
+  while ( getline(input,line) ){
+    allfiles.push_back(line);
+  }
+  
+  input.close();
+  return true;
+}
+
+void crdc_slope_calib(std::string mode, std::string filelist="list_o_hists.txt"){
+  std::vector<std::string> files;
+  if (!ReadFiles(filelist, files)) return;
+  
+  if (mode == "calib"){
+    GetNewSlopes(files);
+  } else if (mode == "check"){
+    CheckYDists(files);
+  } else {
+    std::cout<<"Enter either calib, or check as your mode\n";
+  }
+  return;
+}

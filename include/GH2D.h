@@ -35,7 +35,7 @@ protected:
   virtual double RetrieveBinContent(int bin) const { return double (fArray[bin]); }
   virtual void   UpdateBinContent(int bin,double content) { fArray[bin] = float(content); }
 
-  ClassDef(GH2D,3)
+  ClassDef(GH2D,3);
 };
 
 GH2D operator*(float c1,const GH2D &h1);
