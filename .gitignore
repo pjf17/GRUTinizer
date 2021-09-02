@@ -99,3 +99,4 @@ util/Check_TOF_73Cu.C
 util/Check_TOF_77Cu.C
 util/CoincidenceHelpers.C
 util/GetXtalEnVsPhi.C
+.vscode/

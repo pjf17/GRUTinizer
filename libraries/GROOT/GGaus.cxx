@@ -279,10 +279,13 @@ Bool_t GGaus::Fit(TH1 *fithist,Option_t *opt) {
     std::swap(xlow,xhigh);
   fSum = fithist->Integral(fithist->GetXaxis()->FindBin(xlow),
                            fithist->GetXaxis()->FindBin(xhigh)); //* fithist->GetBinWidth(1);
+  printf("markers: %1f : %1f\n",xlow,xhigh);                         
   printf("sum between markers: %02f\n",fSum);
   fDSum = TMath::Sqrt(fSum);
   fSum -= bgArea;
   printf("sum after subtraction: %02f\n",fSum);
+  fChi2  = TF1::GetChisquare();
+  fNdf   = TF1::GetNDF();
 
   if(!verbose && !noprint) {
     printf("hist: %s\n",fithist->GetName());
@@ -293,6 +296,7 @@ Bool_t GGaus::Fit(TH1 *fithist,Option_t *opt) {
     printf("GetProb():       %.4f\n", TF1::GetProb());*/
     //TF1::Print();
   }
+
 
   Copy(*fithist->GetListOfFunctions()->FindObject(GetName()));
   fithist->GetListOfFunctions()->Add(fBGFit.Clone());
@@ -325,8 +329,12 @@ void GGaus::Print(Option_t *opt) const {
   printf("Area:      %1f +/- %1f \n", fArea, fDArea);
   printf("Sum:       %1f +/- %1f \n", fSum, fDSum);
   printf("FWHM:      %1f +/- %1f \n",this->GetFWHM(),this->GetFWHMErr());
-  printf("Reso:      %1f%%  \n",this->GetFWHM()/this->GetParameter("centroid")*100.);
-  printf("Chi^2/NDF: %1f\n",fChi2/fNdf);
+  double reso = this->GetFWHM()/this->GetParameter("centroid")*100.;
+  double centPErr = this->GetParError(GetParNumber("centroid"))/this->GetParameter("centroid");
+  double fwhmPErr = this->GetFWHMErr()/this->GetFWHM();
+  double resoErr = reso*TMath::Sqrt(pow(centPErr,2) + pow(fwhmPErr,2));
+  printf("Reso:      %1f%% +/- %1f%% \n",reso,resoErr);
+  printf("Chi^2/NDF: %1f/%.0f = %1f\n",fChi2,fNdf,fChi2/fNdf);
   if(options.Contains("all")){
     TF1::Print(opt);
   }

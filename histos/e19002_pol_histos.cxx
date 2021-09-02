@@ -1,4 +1,3 @@
-
 #include "TRuntimeObjects.h"
 
 #include <iostream>
@@ -237,7 +236,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   for (auto ind_out : outgoing_passed){
     dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
     obj.FillHistogram(dirname, "incoming_pid", 2500, -5000, 0, tof_obje1,
-                                               2000, 0, 4000, tof_xfpe1);
+                                               2000, 0, 4000, tof_xfpe1);                                            
   }
 
   for (auto ind_in : incoming_passed){
@@ -246,7 +245,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
     if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
       obj.FillHistogram(dirname, "outgoing_pid", 4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
     }
-    
+    //test the gretina hit map
+    if (gretina){
+      auto nGretHits = gretina->Size();
+      for (unsigned int h=0; h<gretina->Size(); h++){
+        TGretinaHit &hit = gretina->GetGretinaHit(h);
+        double theta = hit.GetThetaDeg();
+        double phi = hit.GetPhiDeg();
+        int crystalId = hit.GetCrystalId();
+        obj.FillHistogram(dirname, "gret_crystal_map_tot",180,0,180,180-theta,360,0,360,phi);
+        // if (crystalId > 40)
+        obj.FillHistogram(dirname,Form("gret_crystal_%d",crystalId),180,0,180,180-theta,360,0,360,phi);
+      }
+    }
+    /*
     for (auto ind_iso : isoline_passed){
       dirname = Form("%s_%s_gated", incoming_gates.at(ind_in)->GetName(), isoline_gates.at(ind_iso)->GetName());
       obj.FillHistogram(dirname, "crdc1x_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_x);
@@ -290,34 +302,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 
                 if (prompt_timing_gate->IsInside(time, abEnergy_corrected)){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
-                  
-                  //BETA CALIBRATION
-                  /*
-                  double minBeta = 0.3;
-                  double maxBeta = 0.4;
-                  double stepSize = 0.001;
-                  int nbinsBeta = (maxBeta - minBeta)/stepSize;
-                  double beta = minBeta;
 
-                  for (int i=0; i < nbinsBeta; i++){
-                    double energyBeta = abHit.GetDoppler(beta);
-                    obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
-                    beta+=stepSize;
-                  }
-                  */
-                  //GAMMA GAMMA CORRELATION PLOT
-                  for (int j=0; j < nABevents; j++){
-                    if (i==j) continue;
-                    if (prompt_timing_gate && bank29){
-                      TGretinaHit abHit2 = gretina->GetAddbackHit(j);
-                      TVector3 track2 = s800->Track();
-                      double abEnergy_corrected2 = abHit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track2);
-                      double time2 = bank29->Timestamp()-abHit2.GetTime();
-                      if (prompt_timing_gate->IsInside(time2, abEnergy_corrected2)){
-                        obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, abEnergy_corrected2, 8192,0,8192, abEnergy_corrected);
-                      }
-                    }
-                  }
+                  //POLARIZATION
+                  obj.FillHistogram(dirname, "ab_gret_events",180,0,180,abHit.GetThetaDeg(),360,0,360,abHit.GetPhiDeg());
                 }
               }
             }
@@ -350,7 +337,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
         }
       }
-    }
+    }*/
   }
   
   if(numobj!=list->GetSize()){

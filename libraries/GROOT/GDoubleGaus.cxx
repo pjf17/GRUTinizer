@@ -297,7 +297,8 @@ void GDoubleGaus::Print(Option_t *opt) const {
   printf("AreaTotal:      %1f +/- %1f \n", fAreaTotal, fDAreaTotal);
   printf("SumTotal:       %1f +/- %1f \n", fSumTotal, fDSumTotal);
   printf("FWHM:      %1f +/- %1f \n",this->GetFWHM(),this->GetFWHMErr());
-  printf("Reso:      %1f%%  \n",this->GetFWHM()/this->GetParameter("centroid")*100.);
+  printf("Reso1:      %1f%%  \n",this->GetFWHM()/this->GetParameter("centroid1")*100.);
+  printf("Reso2:      %1f%%  \n",this->GetFWHM()/this->GetParameter("centroid2")*100.);
   printf("Chi^2/NDF: %1f\n",fChi2/fNdf);
   if(options.Contains("all")){
     TF1::Print(opt);
