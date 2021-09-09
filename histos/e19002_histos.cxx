@@ -1,4 +1,3 @@
-
 #include "TRuntimeObjects.h"
 
 #include <iostream>
@@ -27,6 +26,59 @@ std::vector<GCutG*> isoline_gates = {};
 GCutG *prompt_timing_gate=0;
 GCutG *afp_gate=0;
 int gates_loaded=0;
+
+std::vector<std::pair<int,int>> redPairs = {
+  std::make_pair(46,44),
+  std::make_pair(46,48),
+  std::make_pair(48,49),
+  std::make_pair(50,51),
+  std::make_pair(51,47),
+  std::make_pair(56,57),
+  std::make_pair(57,61),
+  std::make_pair(59,58),
+  std::make_pair(60,58),
+  std::make_pair(60,62),
+  std::make_pair(64,62),
+  std::make_pair(64,65),
+  std::make_pair(69,65),
+  std::make_pair(63,67),
+  std::make_pair(66,67),
+  std::make_pair(66,68),
+  std::make_pair(70,68),
+  std::make_pair(78,76)
+};
+
+std::vector<std::pair<int,int>> goldPairs = {
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(48,51),
+  std::make_pair(49,50),
+  std::make_pair(56,59),
+  std::make_pair(57,58),
+  std::make_pair(61,60),
+  std::make_pair(62,63),
+  std::make_pair(64,67),
+  std::make_pair(65,66),
+  std::make_pair(69,68),
+  std::make_pair(70,71),
+  std::make_pair(78,79),
+};
+
+std::vector<std::pair<int,int>> bluePairs = {
+  std::make_pair(44,47),
+  std::make_pair(45,46),
+  std::make_pair(46,51),
+  std::make_pair(48,50),
+  std::make_pair(56,58),
+  std::make_pair(57,60),
+  std::make_pair(60,63),
+  std::make_pair(61,62),
+  std::make_pair(62,67),
+  std::make_pair(64,66),
+  std::make_pair(65,68),
+  std::make_pair(68,71),
+  std::make_pair(76,79),
+};
 
 double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
@@ -255,7 +307,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname, "crdc1y_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_y);
     }
     for (auto ind_out : outgoing_passed){
-      for (int a=0; a < 2; a++){
+      for (int a=1; a < 2; a++){
         if (a==1 || afp_gate->IsInside(tof_obje1_corr,afp)){
           dirname = Form("%s_%s", incoming_gates.at(ind_in)->GetName(), outgoing_gates.at(ind_out)->GetName());
           if (a==0) dirname += "_afp";
@@ -290,6 +342,38 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 
                 if (prompt_timing_gate->IsInside(time, abEnergy_corrected)){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
+                  int crystalId1 = abHit.GetCrystalId();
+
+                  for (int j=0; j < nABevents; j++){
+                    if (i==j) continue;
+                    TGretinaHit abHit2 = gretina->GetAddbackHit(j);
+                    int crystalId2 = abHit2.GetCrystalId();
+
+                    int nGoldPairs = (int) goldPairs.size();
+                    for (int k=0; k < nGoldPairs; k++){
+                      if ( (crystalId1 == goldPairs[k].first && crystalId2 == goldPairs[k].second)
+                        || (crystalId2 == goldPairs[k].first && crystalId1 == goldPairs[k].second) ){
+                        obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, abEnergy_corrected);
+                      }
+                    }
+
+                    int nRedPairs = (int) redPairs.size();
+                    for (int k=0; k < nRedPairs; k++){
+                      if ( (crystalId1 == redPairs[k].first && crystalId2 == redPairs[k].second)
+                        || (crystalId2 == redPairs[k].first && crystalId1 == redPairs[k].second) ){
+                        obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, abEnergy_corrected);
+                      }
+                    }
+
+                    int nBluePairs = (int) bluePairs.size();
+                    for (int k=0; k < nBluePairs; k++){
+                      if ( (crystalId1 == bluePairs[k].first && crystalId2 == bluePairs[k].second)
+                        || (crystalId2 == bluePairs[k].first && crystalId1 == bluePairs[k].second) ){
+                        obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, abEnergy_corrected);
+                      }
+                    }
+
+                  }
                   
                   //BETA CALIBRATION
                   /*
@@ -306,6 +390,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   }
                   */
                   //GAMMA GAMMA CORRELATION PLOT
+                  /*
                   for (int j=0; j < nABevents; j++){
                     if (i==j) continue;
                     if (prompt_timing_gate && bank29){
@@ -318,6 +403,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                       }
                     }
                   }
+                  */
                 }
               }
             }

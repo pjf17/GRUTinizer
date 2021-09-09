@@ -66,8 +66,8 @@ void TGretina::BuildAddback(int EngRange) const {
     for(unsigned int j=i+1; j<addback_hits.size(); j++) {
       TGretinaHit& other_hit = addback_hits[j];
       if(fAddbackCondition(current_hit, other_hit)) {
-	current_hit.Add(other_hit);
-	to_erase.push_back(j);
+        current_hit.Add(other_hit);
+        to_erase.push_back(j);
       }
     }
 
