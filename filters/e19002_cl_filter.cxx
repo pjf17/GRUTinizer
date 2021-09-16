@@ -32,8 +32,8 @@ double GetGoodICE(TS800 *s800){
 int gates_loaded = 0;
 std::vector<GCutG*> outgoing_cuts;
 
-std::string CUT_OF_INTEREST_NAME = "allAr";
-std::string CUT_FILE_NAME = "/mnt/analysis/pecan-2015/farris/e19002/config/allAr_filter.cuts";
+std::string CUT_OF_INTEREST_NAME = "allCl";
+std::string CUT_FILE_NAME = "/mnt/analysis/pecan-2015/farris/e19002/config/allCl_filter.cuts";
 
 TFile *cut_file = 0;
 GCutG *cut_of_interest = 0;

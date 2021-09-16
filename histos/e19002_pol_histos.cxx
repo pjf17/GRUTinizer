@@ -1,24 +1,24 @@
-#include "TRuntimeObjects.h1"
+#include "TRuntimeObjects.h"
 
 #include <iostream>
 #include <map>
 #include <cstdio>
 
-#include <TH1.h1>
-#include <TH2.h1>
-#include <TMath.h1>
-#include <TRandom.h1>
-#include <TObject.h1>
-#include <TLine.h1>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TRandom.h>
+#include <TObject.h>
+#include <TLine.h>
 
-#include "TGretina.h1"
-#include "TS800.h1"
-#include "TBank29.h1"
-#include "TS800.h1"
-#include "GCutG.h1"
+#include "TGretina.h"
+#include "TS800.h"
+#include "TBank29.h"
+#include "TS800.h"
+#include "GCutG.h"
 
-#include "TChannel.h1"
-#include "GValue.h1"
+#include "TChannel.h"
+#include "GValue.h"
 
 std::vector<GCutG*> incoming_gates = {};
 std::vector<GCutG*> outgoing_gates = {};
@@ -176,11 +176,19 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(76,79),
 };
 
-bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::pair<int, int> &p) {
+bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = one.GetCrystalId();
   int cryId2 = two.GetCrystalId();
-  return ( (cryId1 == p.first && cryId2 == p.second) 
-        || (cryId2 == p.first && cryId1 == p.second) );
+  bool hit = false;
+  
+  for (auto &p : pairs){
+    if ( (cryId1 == p.first && cryId2 == p.second) 
+        || (cryId2 == p.first && cryId1 == p.second) ) {
+        hit = true;
+        break;
+    }
+  }
+  return hit;
 }
 
 // extern "C" is needed to prevent name mangling.
@@ -309,17 +317,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
     if (gretina){
       auto nGretHits = gretina->Size();
       for (unsigned int h1=0; h1<nGretHits; h1++){
-        TGretinaHit &abhit1 = gretina->GetGretinaHit(h1);
-        for (unsigned int h2=0; h1<nGretHits; h2++){
-          TGretinaHit &abhit2 = gretina->GetGretinaHit(h1);
-          
-        }
-        double theta = abhit.GetThetaDeg();
-        double phi = abhit.GetPhiDeg();
-        int crystalId = abhit.GetCrystalId();
+        TGretinaHit &hit1 = gretina->GetGretinaHit(h1);
+        double theta = hit1.GetThetaDeg();
+        double phi = hit1.GetPhiDeg();
+        int cryId = hit1.GetCrystalId();
         obj.FillHistogram(dirname, "gret_crystal_map_tot",180,0,180,180-theta,360,0,360,phi);
-        obj.FillHistogram(dirname,Form("gret_crystal_%d",crystalId),180,0,180,180-theta,360,0,360,phi);
-
+        
+        //check for nearest neighbors
+        for (unsigned int h2=h1+1; h2<nGretHits; h2++){
+          // if (h2 <= h1) continue;
+          TGretinaHit &hit2 = gretina->GetGretinaHit(h2);
+          if ( PairHit(hit1, hit2, redPairs) ){
+            int cryId2 = hit2.GetCrystalId();
+            if (cryId < cryId2) std::swap(cryId,cryId2);
+            
+            obj.FillHistogram(dirname,Form("gret_pair_%d_%d",cryId,cryId2),180,0,180,180-theta,360,0,360,phi);
+            theta = hit2.GetThetaDeg();
+            phi = hit2.GetPhiDeg();
+            obj.FillHistogram(dirname,Form("gret_pair_%d_%d",cryId,cryId2),180,0,180,180-theta,360,0,360,phi);
+          }
+        }
+      }
     }
   }
   
