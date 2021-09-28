@@ -20,13 +20,6 @@
 #include "TChannel.h"
 #include "GValue.h"
 
-std::vector<GCutG*> incoming_gates = {};
-std::vector<GCutG*> outgoing_gates = {};
-std::vector<GCutG*> isoline_gates = {};
-GCutG *prompt_timing_gate=0;
-GCutG *afp_gate=0;
-int gates_loaded=0;
-
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -61,7 +54,7 @@ std::vector<std::pair<int,int>> goldPairs = {
   std::make_pair(65,66),
   std::make_pair(69,68),
   std::make_pair(70,71),
-  std::make_pair(78,79)
+  std::make_pair(78,79),
 };
 
 std::vector<std::pair<int,int>> bluePairs = {
@@ -77,7 +70,7 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(64,66),
   std::make_pair(65,68),
   std::make_pair(68,71),
-  std::make_pair(76,79)
+  std::make_pair(76,79),
 };
 
 bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pair<int, int>> &pairs) {
@@ -94,6 +87,13 @@ bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pa
   }
   return hit;
 }
+
+std::vector<GCutG*> incoming_gates = {};
+std::vector<GCutG*> outgoing_gates = {};
+std::vector<GCutG*> isoline_gates = {};
+GCutG *prompt_timing_gate=0;
+GCutG *afp_gate=0;
+int gates_loaded=0;
 
 double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
@@ -203,7 +203,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
 
-
   TList *gates = &(obj.GetGates());
   if (!s800){
     return;
@@ -283,16 +282,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     xocor_highbin = 128;
     xocor_nbins = 256;
   }
-  
-  if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){    
 
-    //OUTGOING PID
-    obj.FillHistogram("ungated", "outgoing_pid", 2000, -4000, 0, tof_obje1_corr,
-                                                2048, 0, 4096, ic_energy);
-    obj.FillHistogram("ungated", "outgoing_pid_uncorrected", 2000, -4000, 0, tof_obje1,
-                                                2048, 0, 4096, ic_energy);  
-  } 
-  
   //---------------------------------------------------------------
   //GATED
 
@@ -302,11 +292,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
   CheckGates(s800, incoming_passed, outgoing_passed, isoline_passed);
   std::string dirname  = "";
 
-  // for (auto ind_out : outgoing_passed){
-  //   dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-  //   obj.FillHistogram(dirname, "incoming_pid", 2500, -5000, 0, tof_obje1,
-  //                                              2000, 0, 4000, tof_xfpe1);
-  // }
+  for (auto ind_out : outgoing_passed){
+    dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
+    obj.FillHistogram(dirname, "incoming_pid", 2500, -5000, 0, tof_obje1,
+                                               2000, 0, 4000, tof_xfpe1);
+  }
 
   //INCOMING
   for (auto ind_in : incoming_passed){
@@ -346,22 +336,48 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
       
       if (gretina){
-        //ADDBACK STUFF
-        int nABHits = gretina->AddbackSize();
-        for (int i=0; i < nABHits; i++){
-          TGretinaHit abhit = gretina->GetAddbackHit(i);
-          TVector3 track1 = s800->Track();
-          double abEnergy_corrected = abhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
-          double time = bank29->Timestamp()-abhit.GetTime();
-          if (prompt_timing_gate->IsInside(time, abEnergy_corrected)){
-            obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
+        if (bank29 && prompt_timing_gate){
+          //ADDBACK STUFF
+          double timeBank29 = bank29->Timestamp();
+          TVector3 track = s800->Track();
+          int nABHits = gretina->AddbackSize();
+          
+          for (int i=0; i < nABHits; i++){
+            TGretinaHit abhit = gretina->GetAddbackHit(i);
+            double abEnergy_corrected = abhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            
+            if (prompt_timing_gate->IsInside(timeBank29-abhit.GetTime(), abEnergy_corrected)){
+              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
+              
+              //GAMMA GAMMA CORRELATION
+              for (int j=i+1; j < nABHits; j++){
+                if (i==j) continue; //don't do similar events
+                TGretinaHit abHit2 = gretina->GetAddbackHit(j);
+                double abEnergy_corrected2 = abHit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                
+                if (prompt_timing_gate->IsInside(timeBank29-abHit2.GetTime(), abEnergy_corrected2)){
+                  obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, abEnergy_corrected2, 8192,0,8192, abEnergy_corrected);
+                }
+              }
+            }
+
+            //BETA CALIBRATION
+            // double minBeta = 0.3;
+            // double maxBeta = 0.4;
+            // double stepSize = 0.001;
+            // int nbinsBeta = (maxBeta - minBeta)/stepSize;
+            // double beta = minBeta;
+
+            // for (int i=0; i < nbinsBeta; i++){
+            //   double energyBeta = hit1.GetDoppler(beta);
+            //   obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
+            //   beta+=stepSize;
+            // }
           }
-        }
-        
-        //polarization
-        int nHits = gretina->Size();
-        for (int i=0; i < nHits; i++){
-          if (prompt_timing_gate && bank29){
+
+          //POLARIZATION
+          int nHits = gretina->Size();
+          for (int i=0; i < nHits; i++){   
             TGretinaHit &hit1 = gretina->GetGretinaHit(i);
             TVector3 track1 = s800->Track();
             
@@ -386,66 +402,36 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
                 if ( PairHit(hit1,hit2,bluePairs) )
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
-
               }
-              
-              //BETA CALIBRATION
-              // double minBeta = 0.3;
-              // double maxBeta = 0.4;
-              // double stepSize = 0.001;
-              // int nbinsBeta = (maxBeta - minBeta)/stepSize;
-              // double beta = minBeta;
-
-              // for (int i=0; i < nbinsBeta; i++){
-              //   double energyBeta = hit1.GetDoppler(beta);
-              //   obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
-              //   beta+=stepSize;
-              // }
-              
-              //GAMMA GAMMA CORRELATION PLOT
-              
-              // for (int j=0; j < nHits; j++){
-              //   if (i==j) continue;
-              //   if (prompt_timing_gate && bank29){
-              //     TGretinaHit abHit2 = gretina->GetAddbackHit(j);
-              //     TVector3 track2 = s800->Track();
-              //     double abEnergy_corrected2 = abHit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track2);
-              //     double time2 = bank29->Timestamp()-abHit2.GetTime();
-              //     if (prompt_timing_gate->IsInside(time2, abEnergy_corrected2)){
-              //       obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, abEnergy_corrected2, 8192,0,8192, abEnergy_corrected);
-              //     }
-              //   }
-              // }
             }
           }
         }
-        
         //OTHER STUFF
-        // for (unsigned int i = 0; i < gretina->Size(); i++){
-        //   TGretinaHit &hit = gretina->GetGretinaHit(i);
-        //   TVector3 track = s800->Track();
-        //   double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-        //   double energy = hit.GetDoppler(GValue::Value("BETA"));
-        //   obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
+        for (unsigned int i = 0; i < gretina->Size(); i++){
+          TGretinaHit &hit = gretina->GetGretinaHit(i);
+          TVector3 track = s800->Track();
+          double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          double energy = hit.GetDoppler(GValue::Value("BETA"));
+          obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
           
-        //   if (bank29){
-        //     obj.FillHistogram(dirname,"gamma_corrected_t0_Bank29_time",
-        //         600,-600,600,bank29->Timestamp()-hit.GetTime(),
-        //         2500,0,10000,energy_corrected);
-        //   }
-        //   if (prompt_timing_gate && bank29){
-        //     double time = bank29->Timestamp()-hit.GetTime();
-        //     if (prompt_timing_gate->IsInside(time, energy_corrected)){
-        //       TVector3 position = hit.GetPosition();
-        //       double theta = position.Theta();
+          if (bank29){
+            obj.FillHistogram(dirname,"gamma_corrected_t0_Bank29_time",
+                600,-600,600,bank29->Timestamp()-hit.GetTime(),
+                2500,0,10000,energy_corrected);
+          }
+          if (prompt_timing_gate && bank29){
+            double time = bank29->Timestamp()-hit.GetTime();
+            if (prompt_timing_gate->IsInside(time, energy_corrected)){
+              TVector3 position = hit.GetPosition();
+              double theta = position.Theta();
               
-        //       obj.FillHistogram(dirname, "gamma_corrected_vs_theta", 8192,0,8192, energy_corrected, 100, 0, 4, theta);
-        //       obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 4, theta);
-        //       obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-        //       obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
-        //     }
-        //   }
-        // }
+              obj.FillHistogram(dirname, "gamma_corrected_vs_theta", 8192,0,8192, energy_corrected, 100, 0, 4, theta);
+              obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 4, theta);
+              obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+            }
+          }
+        }
       }
     }
   }

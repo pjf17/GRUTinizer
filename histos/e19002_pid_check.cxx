@@ -45,15 +45,23 @@ bool GetGoodMTOFObjE1(TS800 *s800, double &obje1){
 }
 
 //Get the Ion Chamber DE depending on whether IC_DE_XTILT is set
-double GetGoodIC_DE(TS800 *s800){
+double GetGoodICE(TS800 *s800){
+  static int ncalls = 0;
   double value = 0;
   double crdc_1_x = s800->GetCrdc(0).GetDispersiveX();
+  double crdc_1_y = s800->GetCrdc(0).GetNonDispersiveY();
   
-  if (!std::isnan(GValue::Value("IC_DE_XTILT"))){
-    double crdc_1_y = s800->GetCrdc(0).GetNonDispersiveY();
+  double xtilt = GValue::Value("IC_DE_XTILT");
+  double x0tilt = GValue::Value("IC_DE_X0TILT");
+  double ytilt = GValue::Value("IC_DE_YTILT");
+  if (!std::isnan(xtilt) && !std::isnan(x0tilt) && !std::isnan(ytilt)){
     value = s800->GetIonChamber().GetdE(crdc_1_x, crdc_1_y);
-  } else{
+  } else {
     value = s800->GetIonChamber().GetAve();
+    if (ncalls == 0){
+      std::cout<<"XTILT, X0TILT, YTILT NOT SET SWITCHING TO GETAVE()\n";
+      ncalls++;
+    }
   }
   
   return value;
@@ -97,10 +105,10 @@ void CheckGates(TS800 *s800, std::vector<unsigned short> &incoming_passed, std::
   }
 
   double corr_obje1 = s800->GetMTofObjE1();
-  double ic_de = GetGoodIC_DE(s800);
+  double icE = GetGoodICE(s800);
   
   for(unsigned int i=0;i<outgoing_gates.size();i++) {
-    if(outgoing_gates.at(i)->IsInside(corr_obje1,ic_de)){
+    if(outgoing_gates.at(i)->IsInside(corr_obje1,icE)){
       outgoing_passed.push_back(i);
     }
   }
@@ -126,18 +134,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
     LoadGates(obj);
   }
 
-  //---------------------------------------------------------------
-  //UNGATED
+  std::vector<unsigned short> incoming_passed;
+  std::vector<unsigned short> outgoing_passed;
+  CheckGates(s800, incoming_passed, outgoing_passed);
+  std::string dirname  = "";
 
-  //GET TOFs FOR PID AND CORRELATION PLOTS
-  double tof_obje1_corr;
-  double ic_ave = s800->GetIonChamber().GetAve();
-  
-  if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){    
+  for (auto ind_in : incoming_passed){
+    dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
 
-    //OUTGOING PID
-    obj.FillHistogram("ungated", "outgoing_pid", 2000, -3000, -2000, tof_obje1_corr,
-                                                2048, 1024, 3072, ic_ave); 
+    //GET TOFs FOR PID AND CORRELATION PLOTS
+    double tof_obje1_corr;
+    double ic_energy = GetGoodICE(s800);
+
+    if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
+      //OUTGOING PID
+      obj.FillHistogram(dirname, "outgoing_pid", 
+        4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy); 
+    }
+
   }
   
   if(numobj!=list->GetSize()){

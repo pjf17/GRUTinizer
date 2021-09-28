@@ -212,85 +212,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if(gates_loaded!=gates->GetSize()) {
     LoadGates(obj);
   }
-
-  //Use this spectrum for the time-energy cut for GRETINA
-  if(bank29 && gretina) {
-    for(unsigned int i=0;i<gretina->Size();i++) {
-      //Time-energy cut
-      TGretinaHit &hit = gretina->GetGretinaHit(i);
-      obj.FillHistogram("Bank29","Gretina_dop_t0_Bank29_time",
-          600,-600,600,bank29->Timestamp()-hit.GetTime(),
-          2500,0,10000, hit.GetDoppler(GValue::Value("BETA")));
-    }//loop over gretina hits
-  }//bank29 and gretina exist
-
-  //---------------------------------------------------------------
-  //UNGATED
-
-  unsigned short bits = s800->GetTrigger().GetRegistr();
-  for(int j=0;j<16;j++) {
-    if(((bits>>j)&0x0001))
-      obj.FillHistogram("ungated","trig_bit",20,0,20,j);
-  }
-  
-  //MAKE RAW TOF HISTS
-  double raw_obj = s800->GetRawOBJ_MESY();
-  double raw_e1 = s800->GetRawE1_MESY();
-  double raw_xf = s800->GetRawXF_MESY();
-  
-  obj.FillHistogram("ungated", "MTOF_OBJE1", 3000, -6000, 0, raw_obj - raw_e1);
-  obj.FillHistogram("ungated", "MTOF_XFE1", 3000, -2000, 4000, raw_xf - raw_e1);
-
-  //MAKE INCOMING PID
-  double tof_obje1 = s800->GetMTof().GetCorrelatedObjE1(); 
-  double tof_xfpe1 = s800->GetMTof().GetCorrelatedXfpE1();
-  obj.FillHistogram("ungated", "incoming_pid", 2500, -5000, 0, tof_obje1,
-                                               2000, 0, 4000, tof_xfpe1);                                              
-
-  //CRDC PLOTS
-  double crdc_1_x = s800->GetCrdc(0).GetDispersiveX();
-  double crdc_2_x = s800->GetCrdc(1).GetDispersiveX();
-  double crdc_1_y = s800->GetCrdc(0).GetNonDispersiveY();
-  double crdc_2_y = s800->GetCrdc(1).GetNonDispersiveY();
-  double afp = GetAfp(crdc_1_x, crdc_2_x);
-  
-  double ylow = -200;
-  double yhigh = 200;
-  double ybins = 400;
-  
-  double yslope = GValue::Value("CRDC1_Y_SLOPE");
-  if (std::isnan(yslope) || yslope == 0){
-    ylow = 0;
-    yhigh = 1200;
-    ybins = 1200;
-  }
-  obj.FillHistogram("ungated", "crdc1 X_Y", 600, -300, 300, crdc_1_x, ybins, ylow, yhigh, crdc_1_y);  
-  obj.FillHistogram("ungated", "crdc2 X_Y", 600, -300, 300, crdc_2_x, ybins, ylow, yhigh, crdc_2_y);
-
-  //GET TOFs FOR PID AND CORRELATION PLOTS
-  double tof_obje1_corr;
-  double ic_energy = GetGoodICE(s800);
-  
-  //obje1 xfp correlation hist binning parameters
-  double xocor_lowbin = -2028;
-  double xocor_highbin = 8192;
-  int xocor_nbins = 4096;
-  double xfp_obj = tof_xfpe1 - tof_obje1;
-  double xfp_obj_shift = GValue::Value("TOFXFP_OBJ_SHIFT");
-  if (!std::isnan(xfp_obj_shift)){
-    xfp_obj -= xfp_obj_shift;
-    xocor_lowbin = -128;
-    xocor_highbin = 128;
-    xocor_nbins = 256;
-  }
-  if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){    
-
-    //OUTGOING PID
-    obj.FillHistogram("ungated", "outgoing_pid", 2000, -4000, 0, tof_obje1_corr,
-                                                2048, 0, 4096, ic_energy);
-    obj.FillHistogram("ungated", "outgoing_pid_uncorrected", 2000, -4000, 0, tof_obje1,
-                                                2048, 0, 4096, ic_energy);  
-  } 
   
   //---------------------------------------------------------------
   //GATED
@@ -301,46 +222,47 @@ void MakeHistograms(TRuntimeObjects& obj) {
   CheckGates(s800, incoming_passed, outgoing_passed, isoline_passed);
   std::string dirname  = "";
 
-  for (auto ind_out : outgoing_passed){
-    dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-    obj.FillHistogram(dirname, "incoming_pid", 2500, -5000, 0, tof_obje1,
-                                               2000, 0, 4000, tof_xfpe1);                                            
-  }
-
-  for (auto ind_in : incoming_passed){
-    dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
-    double ic_ave = s800->GetIonChamber().GetAve();
-    if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
-      obj.FillHistogram(dirname, "outgoing_pid", 4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
-    }
-    //test the gretina hit map
-    if (gretina){
-      auto nGretHits = gretina->Size();
-      for (unsigned int h1=0; h1<nGretHits; h1++){
-        TGretinaHit &hit1 = gretina->GetGretinaHit(h1);
-        double theta = hit1.GetThetaDeg();
-        double phi = hit1.GetPhiDeg();
-        int cryId = hit1.GetCrystalId();
-        obj.FillHistogram(dirname, "gret_crystal_map_tot",180,0,180,180-theta,360,0,360,phi);
-        
-        //check for nearest neighbors
-        for (unsigned int h2=h1+1; h2<nGretHits; h2++){
-          // if (h2 <= h1) continue;
-          TGretinaHit &hit2 = gretina->GetGretinaHit(h2);
-          if ( PairHit(hit1, hit2, redPairs) ){
-            int cryId2 = hit2.GetCrystalId();
-            if (cryId < cryId2) std::swap(cryId,cryId2);
+  for (auto ind_in: incoming_passed){
+    for (auto ind_out : outgoing_passed){
+      dirname = Form("%s_%s_gated", incoming_gates.at(ind_in)->GetName(), outgoing_gates.at(ind_out)->GetName());
+      
+      if (gretina){    
+        //polarization
+        int nHits = gretina->Size();
+        for (int i=0; i < nHits; i++){
+          if (prompt_timing_gate && bank29){
             
-            obj.FillHistogram(dirname,Form("gret_pair_%d_%d",cryId,cryId2),180,0,180,180-theta,360,0,360,phi);
-            theta = hit2.GetThetaDeg();
-            phi = hit2.GetPhiDeg();
-            obj.FillHistogram(dirname,Form("gret_pair_%d_%d",cryId,cryId2),180,0,180,180-theta,360,0,360,phi);
+            TGretinaHit &hit1 = gretina->GetGretinaHit(i);
+            TVector3 track1 = s800->Track();
+            
+            double energy1_corrected = hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
+            double time = bank29->Timestamp()-hit1.GetTime();
+            
+            //make sure hit1 is prompt
+            if (prompt_timing_gate->IsInside(time, energy1_corrected)){
+              //loop through other hits that make a unique pair without double counting
+              for (int j=i+1; j < nHits; j++){
+                TGretinaHit &hit2 = gretina->GetGretinaHit(j);
+                TVector3 track2 = s800->Track();
+                
+                double energy2_corrected = hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track2);
+                double tot_energy = energy1_corrected + energy2_corrected;
+                
+                if ( PairHit(hit1,hit2,redPairs) )
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
+
+                if ( PairHit(hit1,hit2,goldPairs) )
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
+
+                if ( PairHit(hit1,hit2,bluePairs) )
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
+              }
+            }
           }
         }
       }
     }
   }
-  
   if(numobj!=list->GetSize()){
     list->Sort();
   }
