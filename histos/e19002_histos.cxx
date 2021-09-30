@@ -360,19 +360,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 }
               }
             }
-
-            //BETA CALIBRATION
-            // double minBeta = 0.3;
-            // double maxBeta = 0.4;
-            // double stepSize = 0.001;
-            // int nbinsBeta = (maxBeta - minBeta)/stepSize;
-            // double beta = minBeta;
-
-            // for (int i=0; i < nbinsBeta; i++){
-            //   double energyBeta = hit1.GetDoppler(beta);
-            //   obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
-            //   beta+=stepSize;
-            // }
           }
 
           //POLARIZATION
