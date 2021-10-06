@@ -142,7 +142,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   for (auto ind_in : incoming_passed){
     dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
 
-    //GET TOFs FOR PID AND CORRELATION PLOTS
     double tof_obje1_corr;
     double ic_energy = GetGoodICE(s800);
 
@@ -150,6 +149,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
       //OUTGOING PID
       obj.FillHistogram(dirname, "outgoing_pid", 
         4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy); 
+    }
+
+    for (auto ind_out : outgoing_passed){
+      dirname = Form("%s_%s_gated", incoming_gates.at(ind_in)->GetName(), outgoing_gates.at(ind_out)->GetName());
+      obj.FillHistogram(dirname, "outgoing_pid", 
+        4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy);
     }
 
   }

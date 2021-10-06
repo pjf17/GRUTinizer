@@ -170,8 +170,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit abhit = gretina->GetAddbackHit(i);
             
             //BETA CALIBRATION
-            double minBeta = 0.3;
-            double maxBeta = 0.4;
+            double minBeta = 0.33;
+            double maxBeta = 0.35;
             double stepSize = 0.001;
             int nbinsBeta = (maxBeta - minBeta)/stepSize;
             double beta = minBeta;
