@@ -364,22 +364,28 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //POLARIZATION
           int nHits = gretina->Size();
+          TVector3 track1 = s800->Track();
           for (int i=0; i < nHits; i++){   
             TGretinaHit &hit1 = gretina->GetGretinaHit(i);
-            TVector3 track1 = s800->Track();
-            
-            double energy1_corrected = hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
-            double time = bank29->Timestamp()-hit1.GetTime();
-            
-            //make sure hit1 is prompt
-            if (prompt_timing_gate->IsInside(time, energy1_corrected)){
-              //loop through other hits that make a unique pair without double counting
-              for (int j=i+1; j < nHits; j++){
-                TGretinaHit &hit2 = gretina->GetGretinaHit(j);
-                TVector3 track2 = s800->Track();
+
+            //loop through other hits that make a unique pair without double counting
+            for (int j=i+1; j < nHits; j++){
+              TGretinaHit &hit2 = gretina->GetGretinaHit(j);
+              
+              //ensure that hit1 has the greater energy so that hit1 has the first interaction point
+              if (hit1.GetCoreEnergy() < hit2.GetCoreEnergy()){
+                std::swap(hit1,hit2);
+              }
+
+              double energy1_corrected = hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
+              double time = bank29->Timestamp()-hit1.GetTime();
+
+              //ensure that the first hit is prompt
+              if (prompt_timing_gate->IsInside(time, energy1_corrected)){
+                TGretinaHit sumHit = TGretinaHit(hit1);
+                sumHit.Add(hit2);
                 
-                double energy2_corrected = hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track2);
-                double tot_energy = energy1_corrected + energy2_corrected;
+                double tot_energy = sumHit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
                 
                 if ( PairHit(hit1,hit2,redPairs) )
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);

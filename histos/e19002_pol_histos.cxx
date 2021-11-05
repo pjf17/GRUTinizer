@@ -229,35 +229,42 @@ void MakeHistograms(TRuntimeObjects& obj) {
       if (gretina){    
         //polarization
         int nHits = gretina->Size();
+        
+        std::vector<TGretinaHit> gHits;
         for (int i=0; i < nHits; i++){
-          if (prompt_timing_gate && bank29){
-            
-            TGretinaHit &hit1 = gretina->GetGretinaHit(i);
-            TVector3 track1 = s800->Track();
-            
-            double energy1_corrected = hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
-            double time = bank29->Timestamp()-hit1.GetTime();
-            
-            //make sure hit1 is prompt
-            if (prompt_timing_gate->IsInside(time, energy1_corrected)){
-              //loop through other hits that make a unique pair without double counting
-              for (int j=i+1; j < nHits; j++){
-                TGretinaHit &hit2 = gretina->GetGretinaHit(j);
-                TVector3 track2 = s800->Track();
+          gHits.push_back(gretina->GetGretinaHit(i));
+        }
+
+        std::sort(gHits.begin(), gHits.end(),
+          [](const TGretinaHit& a, const TGretinaHit& b) {
+            return a.GetCoreEnergy() > b.GetCoreEnergy();
+          });
+
+        TVector3 track = s800->Track();
+
+        if (prompt_timing_gate && bank29){
+          for (int i=0; i < nHits; i++){
+            for (int j=i+1; j < nHits; j++){
+              TGretinaHit sum = TGretinaHit(gHits[i]);
+              sum.Add(gHits[j]);
+
+              double tot_energy = sum.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              double time = bank29->Timestamp()-sum.GetTime();
+              
+              //ensure the hit was prompt and that the hits were close in time
+              if (prompt_timing_gate->IsInside(time,tot_energy) && 
+                (std::abs(gHits[i].GetTime() - gHits[j].GetTime()) < 44.0) ){
                 
-                double energy2_corrected = hit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track2);
-                double tot_energy = energy1_corrected + energy2_corrected;
-                
-                if ( PairHit(hit1,hit2,redPairs) )
+                if ( PairHit(gHits[i],gHits[j],redPairs) )
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
 
-                if ( PairHit(hit1,hit2,goldPairs) )
+                if ( PairHit(gHits[i],gHits[j],goldPairs) )
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
 
-                if ( PairHit(hit1,hit2,bluePairs) )
+                if ( PairHit(gHits[i],gHits[j],bluePairs) )
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
               }
-            }
+            } 
           }
         }
       }
