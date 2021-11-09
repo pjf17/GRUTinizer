@@ -265,20 +265,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
                 if ( PairHit(gHits[i],gHits[j],redPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
-                  color_folder = dirname + "/red_pairs";
-                  obj.FillHistogram(color_folder,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],goldPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
-                  color_folder = dirname + "/gold_pairs";
-                  obj.FillHistogram(color_folder,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],bluePairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
-                  color_folder = dirname + "/gold_pairs";
-                  obj.FillHistogram(color_folder,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
               }
             } 
