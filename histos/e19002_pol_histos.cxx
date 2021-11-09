@@ -255,14 +255,26 @@ void MakeHistograms(TRuntimeObjects& obj) {
               if (prompt_timing_gate->IsInside(time,tot_energy) && 
                 (std::abs(gHits[i].GetTime() - gHits[j].GetTime()) < 44.0) ){
                 
-                if ( PairHit(gHits[i],gHits[j],redPairs) )
+                int cryID1 = gHits[i].GetCrystalId(); 
+                int cryID2 = gHits[j].GetCrystalId();
+                if (cryID1 < cryID2){
+                  std::swap(cryID1,cryID2);
+                }
+                
+                if ( PairHit(gHits[i],gHits[j],redPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                }
 
-                if ( PairHit(gHits[i],gHits[j],goldPairs) )
+                if ( PairHit(gHits[i],gHits[j],goldPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                }
 
-                if ( PairHit(gHits[i],gHits[j],bluePairs) )
+                if ( PairHit(gHits[i],gHits[j],bluePairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                }
               }
             } 
           }
