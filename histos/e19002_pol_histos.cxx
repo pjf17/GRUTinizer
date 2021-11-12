@@ -250,7 +250,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             double energy_corrected = gHits[i].GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             if (prompt_timing_gate->IsInside(timeBank29-gHits[i].GetTime(),energy_corrected)){
               obj.FillHistogram(dirname,"gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
+              if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
+                obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
+              }
             }
 
             for (int j=i+1; j < nHits; j++){
@@ -295,8 +297,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
             double abEnergy_corrected = abhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             
             if (prompt_timing_gate->IsInside(timeBank29-abhit.GetTime(), abEnergy_corrected)){
-              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);  
-              obj.FillHistogram(dirname, Form("corrected_prompt_addback_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, abEnergy_corrected);  
+              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
+              if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
+                obj.FillHistogram(dirname, Form("corrected_prompt_addback_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, abEnergy_corrected);  
+              }  
             }
           }
         }
