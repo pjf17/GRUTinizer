@@ -141,7 +141,7 @@ std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(66,67),
   std::make_pair(66,68),
   std::make_pair(70,68),
-  std::make_pair(78,76)
+  std::make_pair(78,76).
 };
 
 std::vector<std::pair<int,int>> goldPairs = {

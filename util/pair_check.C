@@ -20,7 +20,7 @@ void plot(std::vector<TH1D*> &vec){
 }
 
 void pair_check(TFile *f, std::string folder, int bw){
-    std::vector<GH1D*> hBlue, hRed, hGold;
+    std::vector<TH1D*> hBlue, hRed, hGold;
     int nbins = 100;
     double xlo = 0;
     double xhi = 0.2;
@@ -36,25 +36,30 @@ void pair_check(TFile *f, std::string folder, int bw){
     TKey *key;
     while ((key = (TKey*)next())) {
         std::string hname = std::string(key->GetName());
-        GH1D *h = (GH1D*) key->ReadObj();
-        h->Rebin(bw);
-        // h->GetXaxis()->SetRangeUser(0,600);
-        // new TCanvas();
-        GGaus *fit = GausFit(h,270,420,"0");
-        double res = fit->GetFWHM()/fit->GetCentroid();
+        TH1D *h = (TH1D*) key->ReadObj();
 
         if (hname.find("red_pair_") != std::string::npos){
+            h->Rebin(bw);
+            GGaus *fit = GausFit(h,270,420,"0");
+            double res = fit->GetFWHM()/fit->GetCentroid();
             hRed.push_back(h);
             rRed->Fill(res);
         }
         if (hname.find("blue_pair_") != std::string::npos){
+            h->Rebin(bw);
+            GGaus *fit = GausFit(h,270,420,"0");
+            double res = fit->GetFWHM()/fit->GetCentroid();
             hBlue.push_back(h);
             rBlue->Fill(res);
         }
         if (hname.find("gold_pair_") != std::string::npos){
+            h->Rebin(bw);
+            GGaus *fit = GausFit(h,270,420,"0");
+            double res = fit->GetFWHM()/fit->GetCentroid();
             hGold.push_back(h);
             rGold->Fill(res);
         }
+
     }
 
     rRed->Draw();
