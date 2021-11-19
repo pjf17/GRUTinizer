@@ -39,6 +39,9 @@ public:
   static TVector3 GetSegmentPosition(int cryid,int segment); //return the position of the segemnt in the lab system
   static TVector3 GetCrystalPosition(int cryid); //return the position of the crysal in the lab system
 
+  virtual bool IsNeighbor(int ID1, int ID2);
+  virtual bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b);
+
 #ifndef __CINT__ 
   static void SetAddbackCondition(std::function<bool(const TGretinaHit&,const TGretinaHit&)> condition) {
     fAddbackCondition = condition;
@@ -96,6 +99,9 @@ private:
   static void SetSegmentCRMAT();
   static bool fCRMATSet;
 
+  static std::map<int,std::map<int,bool>> gretNeighbors;
+  static void SetGretNeighbors();
+  static bool fNEIGHBORSet;
 
   ClassDef(TGretina,3);
 };

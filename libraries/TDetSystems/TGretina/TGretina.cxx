@@ -31,6 +31,25 @@ TGretina::~TGretina() {
 Float_t TGretina::crmat[32][4][4][4];
 Float_t TGretina::m_segpos[2][36][3];
 bool    TGretina::fCRMATSet = false;
+bool    TGretina::fNEIGHBORSet = false;
+
+std::map<int,bool> tempmap = {{0,false}};
+std::map<int,std::map<int,bool>> TGretina::gretNeighbors = {
+  {24, tempmap},{25, tempmap},{26, tempmap},{27, tempmap},
+  {28, tempmap},{29, tempmap},{30, tempmap},{31, tempmap},
+  {32, tempmap},{33, tempmap},{34, tempmap},{35, tempmap},
+  {36, tempmap},{37, tempmap},{38, tempmap},{39, tempmap},
+  {40, tempmap},{41, tempmap},{42, tempmap},{43, tempmap},
+  {44, tempmap},{45, tempmap},{46, tempmap},{47, tempmap},
+  {48, tempmap},{49, tempmap},{50, tempmap},{51, tempmap},
+  {52, tempmap},{53, tempmap},{54, tempmap},{55, tempmap},
+  {56, tempmap},{57, tempmap},{58, tempmap},{59, tempmap},
+  {60, tempmap},{61, tempmap},{62, tempmap},{63, tempmap},
+  {64, tempmap},{65, tempmap},{66, tempmap},{67, tempmap},
+  {68, tempmap},{69, tempmap},{70, tempmap},{71, tempmap},
+  {72, tempmap},{73, tempmap},{74, tempmap},{75, tempmap},
+  {76, tempmap},{77, tempmap},{78, tempmap},{79, tempmap},
+};
 
 bool DefaultAddback(const TGretinaHit& one,const TGretinaHit &two) {
   TVector3 res = one.GetLastPosition()-two.GetPosition();
@@ -314,6 +333,64 @@ void TGretina::BuildAddbackHits(){
   }
 }
 */
+
+void TGretina::SetGretNeighbors() {
+  if(fNEIGHBORSet){
+    return;
+  }
+
+  std::string temp = getenv("GRUTSYS");
+  temp.append("/libraries/TDetSystems/TGretina/gretina-pairs.dat");
+  std::ifstream infile;
+  infile.open(temp.c_str());
+  if(!infile.is_open()) {
+    std::cout<<"error with file"<<std::endl;
+    return;
+  }
+
+  std::string line;
+  std::vector<int> cryIDs;
+  char delim = '\t';
+  
+  //read the header to get all the crystal id's
+  getline(infile,line);
+  std::stringstream ssids(line);
+  std::string element;
+  
+  while(getline(ssids,element,delim)){
+    cryIDs.push_back( std::atoi(element.c_str()) );
+  }
+  
+  //read the table values
+  while(getline(infile,line)) {
+    std::stringstream ss(line);
+    
+    getline(ss,element,delim);
+    int cryID = std::atoi(element.c_str());
+
+    std::map<int,bool> submap;
+    int i=0;
+    while(getline(ss,element,delim)){
+      submap.insert(std::make_pair(cryIDs[i], std::atoi(element.c_str())));
+      i++;
+    }
+    gretNeighbors[cryID] = submap;
+  }
+  
+  infile.close();
+  fNEIGHBORSet = true;
+  return;
+}
+
+bool TGretina::IsNeighbor(int ID1, int ID2){
+  SetGretNeighbors();
+  return gretNeighbors[ID1][ID2];
+}
+
+bool TGretina::IsNeighbor(const TGretinaHit &a, const TGretinaHit &b){
+  SetGretNeighbors();
+  return gretNeighbors[a.GetCrystalId()][b.GetCrystalId()];
+}
 
 void TGretina::Print(Option_t *opt) const {
   printf(BLUE "GRETINA: size = %i" RESET_COLOR "\n",(int)Size());
