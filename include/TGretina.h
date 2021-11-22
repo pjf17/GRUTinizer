@@ -23,6 +23,7 @@ public:
 
   virtual size_t Size() const { return gretina_hits.size(); }
   virtual Int_t AddbackSize(int EngRange=-1) { BuildAddback(EngRange); return addback_hits.size(); }
+  virtual Int_t NNAddbackSize(int multiplicity, int EngRange=-1) { BuildNNAddback(EngRange); return nn_hits[multiplicity].size(); }
   void ResetAddback() { addback_hits.clear();}
 
   virtual void InsertHit(const TDetectorHit& hit);
@@ -31,6 +32,7 @@ public:
   const TGretinaHit& GetGretinaHit(int i) const { return gretina_hits.at(i); }
         TGretinaHit& GetGretinaHit(int i)       { return gretina_hits.at(i); }
   const TGretinaHit& GetAddbackHit(int i) const { return addback_hits.at(i); }
+  const TGretinaHit& GetNNAddbackHit(int multiplicity, int i) const { return nn_hits[multiplicity][i]; }
 
 
   void PrintHit(int i){ gretina_hits.at(i).Print(); }
@@ -39,8 +41,8 @@ public:
   static TVector3 GetSegmentPosition(int cryid,int segment); //return the position of the segemnt in the lab system
   static TVector3 GetCrystalPosition(int cryid); //return the position of the crysal in the lab system
 
-  virtual bool IsNeighbor(int ID1, int ID2);
-  virtual bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b);
+  static bool IsNeighbor(int ID1, int ID2);
+  static bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b);
 
 #ifndef __CINT__ 
   static void SetAddbackCondition(std::function<bool(const TGretinaHit&,const TGretinaHit&)> condition) {
@@ -85,6 +87,7 @@ public:
 
 private:
   void BuildAddback(int EngRange=-1) const;
+  void BuildNNAddback(int EngRange=-1) const;
 #ifndef __CINT__ 
   static std::function<bool(const TGretinaHit&,const TGretinaHit&)> fAddbackCondition;  
 #endif
@@ -92,6 +95,7 @@ private:
 
   std::vector<TGretinaHit> gretina_hits;
   mutable std::vector<TGretinaHit> addback_hits; //!
+  mutable std::vector<std::vector<TGretinaHit>> nn_hits;
 
   static Float_t crmat[32][4][4][4];
   static Float_t m_segpos[2][36][3];

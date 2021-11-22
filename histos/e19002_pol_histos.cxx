@@ -251,9 +251,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname,"singles_crystal_hits",100,0,100,gHits[i].GetCrystalId());
             if (prompt_timing_gate->IsInside(timeBank29-gHits[i].GetTime(),energy_corrected)){
               obj.FillHistogram(dirname,"gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-              if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
-                obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
-              }
+              // if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
+              //   obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
+              // }
             }
 
             for (int j=i+1; j < nHits; j++){
@@ -300,9 +300,22 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (prompt_timing_gate->IsInside(timeBank29-abhit.GetTime(), abEnergy_corrected)){
               obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
               obj.FillHistogram(dirname,"addback_crystal_hits",100,0,100,abhit.GetCrystalId());
-              if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
-                obj.FillHistogram(dirname, Form("corrected_prompt_addback_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, abEnergy_corrected);  
-              }  
+              // if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
+              //   obj.FillHistogram(dirname, Form("corrected_prompt_addback_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, abEnergy_corrected);  
+              // }  
+            }
+          }
+
+          //NNADDBACK
+          for (int n=0; n<2; n++){
+            int nnSize = gretina->NNAddbackSize(n);
+            for (int i=0; i < nnSize; i++){
+              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            
+              if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+                obj.FillHistogram(dirname, Form("gamma_corrected_addback_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
+              }
             }
           }
         }

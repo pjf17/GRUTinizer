@@ -97,6 +97,66 @@ void TGretina::BuildAddback(int EngRange) const {
   }
 }
 
+void TGretina::BuildNNAddback(int EngRange) const {
+  if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
+    return;
+  }
+
+  std::vector<TGretinaHit> temp_hits = gretina_hits;
+  std::vector<TGretinaHit> n0_hits;
+  std::vector<TGretinaHit> n1_hits;
+
+  if(EngRange>=0 && EngRange<4){
+    for(auto& hit : temp_hits) {
+      hit.SetCoreEnergy(hit.GetCoreEnergy(EngRange));
+    }
+  }
+  
+  std::sort(temp_hits.begin(), temp_hits.end(),
+	    [](const TGretinaHit& a, const TGretinaHit& b) {
+	      return a.GetCoreEnergy() > b.GetCoreEnergy();
+	    });
+  
+  for(unsigned int i=0; i < temp_hits.size(); i++) {
+    TGretinaHit &current_hit = temp_hits[i];
+    int nNeighborHits = 0;
+    TGretinaHit n1_coinc_hit;
+    unsigned int to_erase;
+    
+    for(unsigned int j=i+1; j < temp_hits.size(); j++) {    
+      //to >n1 multiplicity hits
+      if (IsNeighbor(current_hit,temp_hits[j])){
+        nNeighborHits++;
+        if (nNeighborHits > 1) break;
+        n1_coinc_hit = temp_hits[j];
+        to_erase = j;
+
+        //check if other_hit has no hits in the neighboring crystals
+        for (unsigned int k=j+1; k < temp_hits.size(); k++){
+          if (IsNeighbor(temp_hits[j],temp_hits[k])){
+            nNeighborHits++;
+            break;
+          }
+        }
+      }
+    }
+    
+    //n0
+    if (nNeighborHits == 0){
+      n0_hits.push_back(current_hit);
+    //n1
+    } else if (nNeighborHits == 1) {
+      current_hit.Add(n1_coinc_hit);
+      n1_hits.push_back(current_hit);
+      temp_hits.erase(temp_hits.begin() + to_erase);
+    }
+  }
+  nn_hits.push_back(n0_hits);
+  nn_hits.push_back(n1_hits);
+  // std::cout<<"BUILDNNADDBACK EXIT"<<std::endl;
+  return;
+}
+
 void TGretina::SetCRMAT() {
   if(fCRMATSet){
     return;
