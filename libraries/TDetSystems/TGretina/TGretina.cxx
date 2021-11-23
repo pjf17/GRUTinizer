@@ -32,24 +32,10 @@ Float_t TGretina::crmat[32][4][4][4];
 Float_t TGretina::m_segpos[2][36][3];
 bool    TGretina::fCRMATSet = false;
 bool    TGretina::fNEIGHBORSet = false;
+bool    TGretina::fRINGSet = false;
 
-std::map<int,bool> tempmap = {{0,false}};
-std::map<int,std::map<int,bool>> TGretina::gretNeighbors = {
-  {24, tempmap},{25, tempmap},{26, tempmap},{27, tempmap},
-  {28, tempmap},{29, tempmap},{30, tempmap},{31, tempmap},
-  {32, tempmap},{33, tempmap},{34, tempmap},{35, tempmap},
-  {36, tempmap},{37, tempmap},{38, tempmap},{39, tempmap},
-  {40, tempmap},{41, tempmap},{42, tempmap},{43, tempmap},
-  {44, tempmap},{45, tempmap},{46, tempmap},{47, tempmap},
-  {48, tempmap},{49, tempmap},{50, tempmap},{51, tempmap},
-  {52, tempmap},{53, tempmap},{54, tempmap},{55, tempmap},
-  {56, tempmap},{57, tempmap},{58, tempmap},{59, tempmap},
-  {60, tempmap},{61, tempmap},{62, tempmap},{63, tempmap},
-  {64, tempmap},{65, tempmap},{66, tempmap},{67, tempmap},
-  {68, tempmap},{69, tempmap},{70, tempmap},{71, tempmap},
-  {72, tempmap},{73, tempmap},{74, tempmap},{75, tempmap},
-  {76, tempmap},{77, tempmap},{78, tempmap},{79, tempmap},
-};
+std::map<int,std::map<int,bool>> TGretina::gretNeighbors;
+std::map<int,int> TGretina::gretRings;
 
 bool DefaultAddback(const TGretinaHit& one,const TGretinaHit &two) {
   TVector3 res = one.GetLastPosition()-two.GetPosition();
@@ -393,6 +379,44 @@ void TGretina::BuildAddbackHits(){
   }
 }
 */
+
+void TGretina::SetGretRings() {
+  if(fRINGSet){
+    return;
+  }
+
+  std::string temp = getenv("GRUTSYS");
+  temp.append("/libraries/TDetSystems/TGretina/gretina-rings.dat");
+  std::ifstream infile;
+  infile.open(temp.c_str());
+  if(!infile.is_open()) {
+    std::cout<<"error with file"<<std::endl;
+    return;
+  }
+
+  std::string line, element;
+  char delim = ' ';
+  
+  //read the table values
+  int nlines = 0;
+  int ringnum =-1;
+  while(getline(infile,line)) {
+    if (nlines%2 == 0){
+      ringnum = std::atoi(line.c_str());
+    } else {
+      std::stringstream ss(line);
+      while(getline(ss,element,delim)){
+        int cryID = std::atoi(element.c_str());
+        gretRings[cryID] = ringnum;
+      }
+    }
+    nlines++;
+  }
+  
+  infile.close();
+  fRINGSet = true;
+  return;
+}
 
 void TGretina::SetGretNeighbors() {
   if(fNEIGHBORSet){

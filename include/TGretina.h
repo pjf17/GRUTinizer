@@ -107,6 +107,10 @@ private:
   static void SetGretNeighbors();
   static bool fNEIGHBORSet;
 
+  static std::map<int,int> gretRings;
+  static void SetGretRings();
+  static bool fRINGSet;
+
   ClassDef(TGretina,3);
 };
 
