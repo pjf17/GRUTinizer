@@ -41,8 +41,11 @@ public:
   static TVector3 GetSegmentPosition(int cryid,int segment); //return the position of the segemnt in the lab system
   static TVector3 GetCrystalPosition(int cryid); //return the position of the crysal in the lab system
 
-  static bool IsNeighbor(int ID1, int ID2);
-  static bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b);
+  static bool IsNeighbor(int ID1, int ID2) {SetGretNeighbors(); return gretNeighbors[ID1][ID2];}
+  static bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b) { return IsNeighbor(a.GetCrystalId(),b.GetCrystalId());}
+
+  static int GetRingNumber(int id){ SetGretRings(); return gretRings[id];}
+  static int GetRingNumber(const TGretinaHit &h){ SetGretRings(); return gretRings[h.GetCrystalId()];}
 
 #ifndef __CINT__ 
   static void SetAddbackCondition(std::function<bool(const TGretinaHit&,const TGretinaHit&)> condition) {

@@ -466,16 +466,6 @@ void TGretina::SetGretNeighbors() {
   return;
 }
 
-bool TGretina::IsNeighbor(int ID1, int ID2){
-  SetGretNeighbors();
-  return gretNeighbors[ID1][ID2];
-}
-
-bool TGretina::IsNeighbor(const TGretinaHit &a, const TGretinaHit &b){
-  SetGretNeighbors();
-  return gretNeighbors[a.GetCrystalId()][b.GetCrystalId()];
-}
-
 void TGretina::Print(Option_t *opt) const {
   printf(BLUE "GRETINA: size = %i" RESET_COLOR "\n",(int)Size());
   for(unsigned int x=0;x<Size();x++) {
