@@ -274,17 +274,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 
                 if ( PairHit(gHits[i],gHits[j],redPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
-                  obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  // obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],goldPairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
-                  obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  // obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],bluePairs) ){
                   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
-                  obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+                  // obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
               }
             } 
@@ -312,10 +312,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
             for (int i=0; i < nnSize; i++){
               TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-              gretina->GetRingNumber(nnhit);
               if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
-                obj.FillHistogram(dirname, Form("gamma_corrected_n%d_crystal%d_prompt",n,nnhit.GetCrystalId()), 8192,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, 
+                                  Form("gamma_corrected_n%d_ring%d_crystal%d_prompt",n,gretina->GetRingNumber(nnhit),nnhit.GetCrystalId()),
+                                  8192,0,8192, nnEnergy_corrected);
               }
             }
           }
