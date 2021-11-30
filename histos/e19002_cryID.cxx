@@ -38,6 +38,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double theta = 180 - hit.GetThetaDeg();
       int cryID = hit.GetCrystalId();
       obj.FillHistogram("crystals",Form("crystal%d",cryID),180,0,180,theta,360,0,360,phi);
+      obj.FillHistogram("crystals",Form("ring%d",gretina->GetRingNumber(hit)),180,0,180,theta,360,0,360,phi);
       obj.FillHistogram("crystals","total",180,0,180,theta,360,0,360,phi);
     }
   }
