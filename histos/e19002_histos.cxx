@@ -73,9 +73,9 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(76,79),
 };
 
-bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pair<int, int>> &pairs) {
-  int cryId1 = one.GetCrystalId();
-  int cryId2 = two.GetCrystalId();
+bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
+  int cryId1 = abhit.GetCrystalId();
+  int cryId2 = abhit.GetCrystalNeighborId();
   bool hit = false;
   
   for (auto &p : pairs){
@@ -336,95 +336,95 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
       
       if (gretina){
-        if (bank29 && prompt_timing_gate){
-          //ADDBACK STUFF
+        TVector3 track = s800->Track();
+        if (bank29){
           double timeBank29 = bank29->Timestamp();
-          TVector3 track = s800->Track();
-          int nABHits = gretina->AddbackSize();
           
-          for (int i=0; i < nABHits; i++){
-            TGretinaHit abhit = gretina->GetAddbackHit(i);
-            double abEnergy_corrected = abhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-            
-            if (prompt_timing_gate->IsInside(timeBank29-abhit.GetTime(), abEnergy_corrected)){
-              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
+          //SINGLES
+          int gSize = gretina->Size();
+          for (int i=0; i < gSize; i++){
+            TGretinaHit &hit = gretina->GetGretinaHit(i);
+            double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            double energy = hit.GetDoppler(GValue::Value("BETA"));
+            double theta = hit.GetTheta();
+            int cryID = hit.GetCrystalId();
+            //deal with the crystal ID gaps
+            if (cryID >= 40 && cryID < 52 ){
+              cryID -= 4;
+            } else if (cryID >= 52 && cryID < 72 ) {
+              cryID -=8;
+            } else if (cryID == 76) {
+              cryID -=12;
+            } else if (cryID > 77){
+              cryID -=13;
+            }
+            cryID -= 24;
+
+            //time energy spectrum
+            if (bank29){
+              obj.FillHistogram(dirname,"gamma_corrected_t0_Bank29_time",
+                  600,-600,600,timeBank29-hit.GetTime(),
+                  2500,0,10000,energy_corrected);
+            }
+
+            //Make all the singles spectra
+            obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
+            if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected)){
+              obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+              obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
+              obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID", 43, 0, 43, cryID, 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
+            }
+          }
+
+          //NNADDBACK
+          //loop over multiplicity
+          for (int n=0; n<2; n++){
+            //loop over hits for each multiplicity spectrum
+            int nnSize = gretina->NNAddbackSize(n);
+            for (int i=0; i < nnSize; i++){
+
+              //get hit and hit data 
+              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+              int cryID = nnhit.GetCrystalId();
+              int ringNum = gretina->GetRingNumber(nnhit);
+              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
               
-              //GAMMA GAMMA CORRELATION
-              for (int j=i+1; j < nABHits; j++){
-                if (i==j) continue; //don't do similar events
-                TGretinaHit abHit2 = gretina->GetAddbackHit(j);
-                double abEnergy_corrected2 = abHit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              //make sure hits are prompt
+              if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+                obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, Form("gamma_corrected_n%d_ring%02d_crystal%d_prompt",n,ringNum,cryID),8192,0,8192, nnEnergy_corrected);
                 
-                if (prompt_timing_gate->IsInside(timeBank29-abHit2.GetTime(), abEnergy_corrected2)){
-                  obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, abEnergy_corrected2, 8192,0,8192, abEnergy_corrected);
+                //POLARIZATION
+                if (n>0){
+                  if ( PairHit(nnhit,redPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+
+                  if ( PairHit(nnhit,goldPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+
+                  if ( PairHit(nnhit,bluePairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+                }
+
+                //GAMMA GAMMA CORRELATION
+                for (int j=i+1; j < nnSize; j++){
+                  if (i==j) continue;
+                  TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+                  double nnEnergy_corrected2 = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+                    obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
+                  }
                 }
               }
             }
           }
-
-          //POLARIZATION
-          int nHits = gretina->Size();
-          TVector3 track1 = s800->Track();
-          for (int i=0; i < nHits; i++){   
-            TGretinaHit &hit1 = gretina->GetGretinaHit(i);
-
-            //loop through other hits that make a unique pair without double counting
-            for (int j=i+1; j < nHits; j++){
-              TGretinaHit &hit2 = gretina->GetGretinaHit(j);
-              
-              //ensure that hit1 has the greater energy so that hit1 has the first interaction point
-              if (hit1.GetCoreEnergy() < hit2.GetCoreEnergy()){
-                std::swap(hit1,hit2);
-              }
-
-              double energy1_corrected = hit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
-              double time = bank29->Timestamp()-hit1.GetTime();
-
-              //ensure that the first hit is prompt
-              if (prompt_timing_gate->IsInside(time, energy1_corrected)){
-                TGretinaHit sumHit = TGretinaHit(hit1);
-                sumHit.Add(hit2);
-                
-                double tot_energy = sumHit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track1);
-                
-                if ( PairHit(hit1,hit2,redPairs) )
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
-
-                if ( PairHit(hit1,hit2,goldPairs) )
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
-
-                if ( PairHit(hit1,hit2,bluePairs) )
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
-              }
-            }
-          }
-        }
-        //OTHER STUFF
-        for (unsigned int i = 0; i < gretina->Size(); i++){
-          TGretinaHit &hit = gretina->GetGretinaHit(i);
-          TVector3 track = s800->Track();
-          double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-          double energy = hit.GetDoppler(GValue::Value("BETA"));
-          obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
-          
-          if (bank29){
-            obj.FillHistogram(dirname,"gamma_corrected_t0_Bank29_time",
-                600,-600,600,bank29->Timestamp()-hit.GetTime(),
-                2500,0,10000,energy_corrected);
-          }
-          if (prompt_timing_gate && bank29){
-            double time = bank29->Timestamp()-hit.GetTime();
-            if (prompt_timing_gate->IsInside(time, energy_corrected)){
-              TVector3 position = hit.GetPosition();
-              double theta = position.Theta();
-              
-              obj.FillHistogram(dirname, "gamma_corrected_vs_theta", 8192,0,8192, energy_corrected, 100, 0, 4, theta);
-              obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 4, theta);
-              obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
-            }
-          }
-        }
+        } 
       }
     }
   }
