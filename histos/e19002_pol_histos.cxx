@@ -315,7 +315,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
                 obj.FillHistogram(dirname, 
-                                  Form("gamma_corrected_n%d_ring%d_crystal%d_prompt",n,gretina->GetRingNumber(nnhit),nnhit.GetCrystalId()),
+                                  Form("gamma_corrected_n%d_ring%02d_crystal%d_prompt",n,gretina->GetRingNumber(nnhit),nnhit.GetCrystalId()),
                                   8192,0,8192, nnEnergy_corrected);
               }
             }
