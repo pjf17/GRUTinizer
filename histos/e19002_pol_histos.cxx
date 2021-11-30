@@ -191,6 +191,21 @@ bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pa
   return hit;
 }
 
+bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
+  int cryId1 = abhit.GetCrystalId();
+  int cryId2 = abhit.GetCrystalNeighborId();
+  bool hit = false;
+  
+  for (auto &p : pairs){
+    if ( (cryId1 == p.first && cryId2 == p.second) 
+        || (cryId2 == p.first && cryId1 == p.second) ) {
+        hit = true;
+        break;
+    }
+  }
+  return hit;
+}
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -273,17 +288,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 }
                 
                 if ( PairHit(gHits[i],gHits[j],redPairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair_old", 8192,0,8192, tot_energy);
                   // obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],goldPairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair_old", 8192,0,8192, tot_energy);
                   // obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
 
                 if ( PairHit(gHits[i],gHits[j],bluePairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, tot_energy);
+                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair_old", 8192,0,8192, tot_energy);
                   // obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
                 }
               }
@@ -317,6 +332,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname, 
                                   Form("gamma_corrected_n%d_ring%02d_crystal%d_prompt",n,gretina->GetRingNumber(nnhit),nnhit.GetCrystalId()),
                                   8192,0,8192, nnEnergy_corrected);
+                if (n==1){
+                  if ( PairHit(nnhit,redPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+
+                  if ( PairHit(nnhit,goldPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+
+                  if ( PairHit(nnhit,bluePairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
+                }
               }
             }
           }

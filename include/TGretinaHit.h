@@ -79,6 +79,7 @@ public:
   Float_t  GetTFit()            const { return fWalkCorrection - fTOffset; }
   Float_t  GetTOffset()         const { return fTOffset; }
 
+  Int_t    GetCrystalNeighborId(Int_t i=0) const;
   Int_t    GetCrystalId()       const { return fCrystalId;      }
   Int_t    GetHoleNumber()      const { return fCrystalId/4-1;  }
   Int_t    GetCrystalNumber()   const { return fCrystalId%4;    }
@@ -195,6 +196,7 @@ private:
   Int_t           fCoreCharge[4];
   Int_t   fPad;
   Int_t   fNumberOfInteractions;
+  std::vector<Int_t> fNeighborId; 
   
   mutable Float_t fCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
