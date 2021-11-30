@@ -244,81 +244,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
       if (gretina){    
         if (prompt_timing_gate && bank29){
           double timeBank29 = bank29->Timestamp(); 
-
-          //polarization
-          int nHits = gretina->Size();
-          
-          std::vector<TGretinaHit> gHits;
-          for (int i=0; i < nHits; i++){
-            gHits.push_back(gretina->GetGretinaHit(i));
-          }
-
-          std::sort(gHits.begin(), gHits.end(),
-            [](const TGretinaHit& a, const TGretinaHit& b) {
-              return a.GetCoreEnergy() > b.GetCoreEnergy();
-            });
-
           TVector3 track = s800->Track();
 
-          for (int i=0; i < nHits; i++){
-            //SINGLES
-            double energy_corrected = gHits[i].GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-            obj.FillHistogram(dirname,"singles_crystal_hits",100,0,100,gHits[i].GetCrystalId());
-            if (prompt_timing_gate->IsInside(timeBank29-gHits[i].GetTime(),energy_corrected)){
-              obj.FillHistogram(dirname,"gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-              // if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
-              //   obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
-              // }
-            }
-
-            for (int j=i+1; j < nHits; j++){
-              TGretinaHit sum = TGretinaHit(gHits[i]);
-              sum.Add(gHits[j]);
-
-              double tot_energy = sum.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-              
-              //ensure the hit was prompt and that the hits were close in time
-              if (prompt_timing_gate->IsInside(timeBank29-sum.GetTime(),tot_energy) && 
-                (std::abs(gHits[i].GetTime() - gHits[j].GetTime()) < 44.0) ){
-                
-                int cryID1 = gHits[i].GetCrystalId(); 
-                int cryID2 = gHits[j].GetCrystalId();
-                if (cryID1 < cryID2){
-                  std::swap(cryID1,cryID2);
-                }
-                
-                if ( PairHit(gHits[i],gHits[j],redPairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair_old", 8192,0,8192, tot_energy);
-                  // obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
-                }
-
-                if ( PairHit(gHits[i],gHits[j],goldPairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair_old", 8192,0,8192, tot_energy);
-                  // obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
-                }
-
-                if ( PairHit(gHits[i],gHits[j],bluePairs) ){
-                  obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair_old", 8192,0,8192, tot_energy);
-                  // obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
-                }
-              }
-            } 
-          }
-
-          //ADDBACK STUFF
-          int nABHits = gretina->AddbackSize();
-          
-          for (int i=0; i < nABHits; i++){
-            TGretinaHit abhit = gretina->GetAddbackHit(i);
-            double abEnergy_corrected = abhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-            
-            if (prompt_timing_gate->IsInside(timeBank29-abhit.GetTime(), abEnergy_corrected)){
-              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, abEnergy_corrected);
-              obj.FillHistogram(dirname,"addback_crystal_hits",100,0,100,abhit.GetCrystalId());
-              // if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
-              //   obj.FillHistogram(dirname, Form("corrected_prompt_addback_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, abEnergy_corrected);  
-              // }  
-            }
+          //SINGLES
+          int gSize = gretina->Size();
+          for (int i=0; i < gSize; i++){
+            TGretinaHit &hit = gretina->GetGretinaHit(i);
+            double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
           }
 
           //NNADDBACK
@@ -326,12 +259,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int nnSize = gretina->NNAddbackSize(n);
             for (int i=0; i < nnSize; i++){
               TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+              int cryID = nnhit.GetCrystalId();
+              int ringNum = gretina->GetRingNumber(nnhit);
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              
               if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+                obj.FillHistogram(dirname, "gamma_corrected_nnaddback_prompt", 8192,0,8192, nnEnergy_corrected);
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
-                obj.FillHistogram(dirname, 
-                                  Form("gamma_corrected_n%d_ring%02d_crystal%d_prompt",n,gretina->GetRingNumber(nnhit),nnhit.GetCrystalId()),
-                                  8192,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, Form("gamma_corrected_n%d_ring%02d_crystal%d_prompt",n,ringNum,cryID),8192,0,8192, nnEnergy_corrected);
+                
+                //POLARIZATION
                 if (n==1){
                   if ( PairHit(nnhit,redPairs) ){
                     obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
@@ -348,6 +285,65 @@ void MakeHistograms(TRuntimeObjects& obj) {
               }
             }
           }
+
+          // OLD POLARIZATION METHOD BEFORE NNADBACK
+          // //polarization
+          // int nHits = gretina->Size();
+          
+          // std::vector<TGretinaHit> gHits;
+          // for (int i=0; i < nHits; i++){
+          //   gHits.push_back(gretina->GetGretinaHit(i));
+          // }
+
+          // std::sort(gHits.begin(), gHits.end(),
+          //   [](const TGretinaHit& a, const TGretinaHit& b) {
+          //     return a.GetCoreEnergy() > b.GetCoreEnergy();
+          //   });
+
+          // for (int i=0; i < nHits; i++){
+          //   //SINGLES
+          //   double energy_corrected = gHits[i].GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //   obj.FillHistogram(dirname,"singles_crystal_hits",100,0,100,gHits[i].GetCrystalId());
+          //   if (prompt_timing_gate->IsInside(timeBank29-gHits[i].GetTime(),energy_corrected)){
+          //     obj.FillHistogram(dirname,"gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
+          //     // if (gHits[i].GetCrystalId() >= 44 && gHits[i].GetCrystalId() <= 79){
+          //     //   obj.FillHistogram(dirname,Form("corrected_prompt_singles_cryID%d",gHits[i].GetCrystalId()), 8192,0,8192, energy_corrected);
+          //     // }
+          //   }
+
+          //   for (int j=i+1; j < nHits; j++){
+          //     TGretinaHit sum = TGretinaHit(gHits[i]);
+          //     sum.Add(gHits[j]);
+
+          //     double tot_energy = sum.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              
+          //     //ensure the hit was prompt and that the hits were close in time
+          //     if (prompt_timing_gate->IsInside(timeBank29-sum.GetTime(),tot_energy) && 
+          //       (std::abs(gHits[i].GetTime() - gHits[j].GetTime()) < 44.0) ){
+                
+          //       int cryID1 = gHits[i].GetCrystalId(); 
+          //       int cryID2 = gHits[j].GetCrystalId();
+          //       if (cryID1 < cryID2){
+          //         std::swap(cryID1,cryID2);
+          //       }
+                
+          //       if ( PairHit(gHits[i],gHits[j],redPairs) ){
+          //         obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair_old", 8192,0,8192, tot_energy);
+          //         // obj.FillHistogram(dirname,Form("red_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+          //       }
+
+          //       if ( PairHit(gHits[i],gHits[j],goldPairs) ){
+          //         obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair_old", 8192,0,8192, tot_energy);
+          //         // obj.FillHistogram(dirname,Form("gold_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+          //       }
+
+          //       if ( PairHit(gHits[i],gHits[j],bluePairs) ){
+          //         obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair_old", 8192,0,8192, tot_energy);
+          //         // obj.FillHistogram(dirname,Form("blue_pair_%d_%d",cryID1,cryID2), 8192,0,8192, tot_energy);
+          //       }
+          //     }
+          //   } 
+          // }
         }
       }
     }
