@@ -56,7 +56,7 @@ TVector3 TGretinaHit::GetCrystalPosition()  const {
 }
 
 Int_t TGretinaHit::GetCrystalNeighborId(Int_t i) const {
-  if (i < (int) fNeighborId.size()){
+  if (i < (int) fNeighborId.size() && i >= 0){
     return fNeighborId[i];
   } else {
     return -1;
