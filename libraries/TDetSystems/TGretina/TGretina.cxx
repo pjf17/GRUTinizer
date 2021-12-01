@@ -89,8 +89,7 @@ void TGretina::BuildNNAddback(int EngRange) const {
   }
 
   std::vector<TGretinaHit> temp_hits = gretina_hits;
-  std::vector<TGretinaHit> n0_hits;
-  std::vector<TGretinaHit> n1_hits;
+  std::vector<TGretinaHit> n0_hits, n1_hits, n2_hits, ng_hits;
 
   if(EngRange>=0 && EngRange<4){
     for(auto& hit : temp_hits) {
@@ -98,30 +97,35 @@ void TGretina::BuildNNAddback(int EngRange) const {
     }
   }
   
+  //sort so that the first hit has the greatest energy
+  //this way we can loop through i,j with i < j and know that 
+  //any hit with higher energy cannot be an addback to one with lower energy
   std::sort(temp_hits.begin(), temp_hits.end(),
 	    [](const TGretinaHit& a, const TGretinaHit& b) {
 	      return a.GetCoreEnergy() > b.GetCoreEnergy();
 	    });
   
+  //loop through every hit
   for(unsigned int i=0; i < temp_hits.size(); i++) {
     TGretinaHit &current_hit = temp_hits[i];
     int nNeighborHits = 0;
-    TGretinaHit n1_coinc_hit;
-    unsigned int to_erase;
-    
+    int n1_index, n2_index = -1;
+
+    //only pick unqiue pairs of hits
     for(unsigned int j=i+1; j < temp_hits.size(); j++) {    
-      //to >n1 multiplicity hits
       if (IsNeighbor(current_hit,temp_hits[j])){
         nNeighborHits++;
-        if (nNeighborHits > 1) break;
-        n1_coinc_hit = temp_hits[j];
-        to_erase = j;
+        n1_index = j;
 
-        //check if other_hit has no hits in the neighboring crystals
-        for (unsigned int k=j+1; k < temp_hits.size(); k++){
+        //check every hit k to see if it is a neighbor with j
+        for (unsigned int k=0; k < temp_hits.size(); k++){
+          if (k==i || k==j) continue;
           if (IsNeighbor(temp_hits[j],temp_hits[k])){
             nNeighborHits++;
-            break;
+            //if hit k is a neighbor with hit i then this is an n2 hit
+            if (IsNeighbor(current_hit,temp_hits[k])){
+              n2_index = k;
+            }
           }
         }
       }
@@ -132,13 +136,26 @@ void TGretina::BuildNNAddback(int EngRange) const {
       n0_hits.push_back(current_hit);
     //n1
     } else if (nNeighborHits == 1) {
-      current_hit.Add(n1_coinc_hit);
+      current_hit.Add(temp_hits[n1_index]);
       n1_hits.push_back(current_hit);
-      temp_hits.erase(temp_hits.begin() + to_erase);
+      temp_hits.erase(temp_hits.begin() + n1_index);
+    //n2
+    } else if (nNeighborHits == 2 && n2_index != -1) {
+      current_hit.Add(temp_hits[n1_index]);
+      current_hit.Add(temp_hits[n2_index]);
+      n2_hits.push_back(current_hit);
+      if (n2_index < n1_index) std::swap(n1_index,n2_index);
+      temp_hits.erase(temp_hits.begin() + n2_index);
+      temp_hits.erase(temp_hits.begin() + n1_index);
+    //ng
+    } else {
+      ng_hits.push_back(current_hit);
     }
   }
   nn_hits.push_back(n0_hits);
   nn_hits.push_back(n1_hits);
+  nn_hits.push_back(n2_hits);
+  nn_hits.push_back(ng_hits);
   // std::cout<<"BUILDNNADDBACK EXIT"<<std::endl;
   return;
 }

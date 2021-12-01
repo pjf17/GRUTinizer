@@ -99,6 +99,7 @@ private:
   std::vector<TGretinaHit> gretina_hits;
   mutable std::vector<TGretinaHit> addback_hits; //!
   mutable std::vector<std::vector<TGretinaHit>> nn_hits;
+  //index 0 = n0, 1 = n1, 2 = n2, 3 = ng
 
   static Float_t crmat[32][4][4][4];
   static Float_t m_segpos[2][36][3];
