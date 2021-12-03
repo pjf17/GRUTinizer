@@ -432,7 +432,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
                   //CRDC 2 Y correlation
                   obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 400, -200, 200, crdc_2_y);
-                  obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 600, -300, 300, crdc_2_x,);
+                  obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 600, -300, 300, crdc_2_x);
                 }
 
                 char *multiplicity = Form("%d",n);
