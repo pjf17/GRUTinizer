@@ -346,19 +346,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit &hit = gretina->GetGretinaHit(i);
             double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             double energy = hit.GetDoppler(GValue::Value("BETA"));
+            double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
             int cryID = hit.GetCrystalId();
             //deal with the crystal ID gaps
-            if (cryID >= 40 && cryID < 52 ){
-              cryID -= 4;
-            } else if (cryID >= 52 && cryID < 72 ) {
-              cryID -=8;
-            } else if (cryID == 76) {
-              cryID -=12;
-            } else if (cryID > 77){
-              cryID -=13;
-            }
-            cryID -= 24;
+            // if (cryID >= 40 && cryID < 52 ){
+            //   cryID -= 4;
+            // } else if (cryID >= 52 && cryID < 72 ) {
+            //   cryID -=8;
+            // } else if (cryID == 76) {
+            //   cryID -=12;
+            // } else if (cryID > 77){
+            //   cryID -=13;
+            // }
+            // cryID -= 24;
 
             //time energy spectrum
             if (bank29){
@@ -379,10 +380,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //off prompt
             } else {
               obj.FillHistogram(dirname, "gamma_singles_off-prompt", 8192,0,8192, energy);
-              obj.FillHistogram(dirname, "gamma_corrected_singles_off-prompt", 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_theta_off-prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_off-prompt", 43, 0, 43, cryID, 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
+              obj.FillHistogram(dirname, "core_energy_off-prompt", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
+              obj.FillHistogram(dirname, "core_energy_vs_crystalID_off-prompt", 43, 0, 43, cryID, 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
             }
           }
 
