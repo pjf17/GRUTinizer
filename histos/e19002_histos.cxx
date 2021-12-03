@@ -375,14 +375,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 43, 0, 43, cryID, 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
             //off prompt
             } else {
               obj.FillHistogram(dirname, "gamma_singles_off-prompt", 8192,0,8192, energy);
               obj.FillHistogram(dirname, "core_energy_off-prompt", 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
-              obj.FillHistogram(dirname, "core_energy_vs_crystalID_off-prompt", 43, 0, 43, cryID, 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname, "core_energy_vs_crystalID_off-prompt", 56, 24, 80, cryID, 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
             }
           }
