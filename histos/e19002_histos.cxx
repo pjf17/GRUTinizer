@@ -397,7 +397,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               //get hit and hit data 
               TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
               int cryID = nnhit.GetCrystalId();
-              int ringNum = gretina->GetRingNumber(nnhit);
+              int ringNum = nnhit.GetRingNumber();
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
               
               //make sure hits are prompt
@@ -416,20 +416,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   // }
                 }
 
-                //POLARIZATION
                 if (n == 1){
-                  if ( PairHit(nnhit,redPairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
-                  }
+                  // //POLARIZATION
+                  // if ( PairHit(nnhit,redPairs) ){
+                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+                  // }
 
-                  if ( PairHit(nnhit,goldPairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
-                  }
+                  // if ( PairHit(nnhit,goldPairs) ){
+                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+                  // }
 
-                  if ( PairHit(nnhit,bluePairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
-                  }
+                  // if ( PairHit(nnhit,bluePairs) ){
+                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
+                  // }
                 }
+
                 char *multiplicity = Form("%d",n);
                 if (n == 3) multiplicity = Form("g");
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);

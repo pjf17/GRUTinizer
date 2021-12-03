@@ -50,9 +50,16 @@ const char *TGretinaHit::GetName() const {
   return name.c_str();
 }
 
+Int_t TGretinaHit::GetRingNumber() const {
+  return TGretina::GetRingNumber(fCrystalId);
+}
 
 TVector3 TGretinaHit::GetCrystalPosition()  const { 
   return TGretina::GetCrystalPosition(fCrystalId); 
+}
+
+TVector3 TGretinaHit::GetNeighborPosition(Int_t i)  const { 
+  return TGretina::GetCrystalPosition(fNeighborId[i]); 
 }
 
 Int_t TGretinaHit::GetCrystalNeighborId(Int_t i) const {

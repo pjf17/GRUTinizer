@@ -80,6 +80,7 @@ public:
   Float_t  GetTOffset()         const { return fTOffset; }
 
   Int_t    GetCrystalNeighborId(Int_t i=0) const;
+  Int_t    GetRingNumber() const;
   Int_t    GetCrystalId()       const { return fCrystalId;      }
   Int_t    GetHoleNumber()      const { return fCrystalId/4-1;  }
   Int_t    GetCrystalNumber()   const { return fCrystalId%4;    }
@@ -160,6 +161,7 @@ public:
   TVector3 GetLastPosition()                const;
 
   TVector3 GetCrystalPosition()           const; 
+  TVector3 GetNeighborPosition(Int_t i=0) const; 
 
   //Set segment position; useful for smearing simulated Gretina data
   void SetPosition(unsigned int i, double x, double y, double z);
