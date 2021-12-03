@@ -429,6 +429,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   // if ( PairHit(nnhit,bluePairs) ){
                   //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
                   // }
+
+                  //CRDC 2 Y correlation
+                  obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 400, -200, 200, crdc_2_y);
                 }
 
                 char *multiplicity = Form("%d",n);
