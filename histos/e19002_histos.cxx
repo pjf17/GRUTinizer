@@ -417,20 +417,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 }
 
                 if (n == 1){
-                  // //POLARIZATION
-                  // if ( PairHit(nnhit,redPairs) ){
-                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
-                  // }
+                  //POLARIZATION
+                  if ( PairHit(nnhit,redPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
 
-                  // if ( PairHit(nnhit,goldPairs) ){
-                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
-                  // }
+                  if ( PairHit(nnhit,goldPairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
 
-                  // if ( PairHit(nnhit,bluePairs) ){
-                  //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
-                  // }
+                  if ( PairHit(nnhit,bluePairs) ){
+                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
+                  }
 
-                  //CRDC 2 Y correlation
+                  //CRDC 2 XY correlation
                   obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 400, -200, 200, crdc_2_y);
                   obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 600, -300, 300, crdc_2_x);
                 }

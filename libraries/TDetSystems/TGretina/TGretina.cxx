@@ -134,21 +134,24 @@ void TGretina::BuildNNAddback(int EngRange) const {
     //n0
     if (nNeighborHits == 0){
       n0_hits.push_back(current_hit);
+    } 
     //n1
-    } else if (nNeighborHits == 1) {
+    else if (nNeighborHits == 1) {
       current_hit.Add(temp_hits[n1_index]);
       n1_hits.push_back(current_hit);
       temp_hits.erase(temp_hits.begin() + n1_index);
+    } 
     //n2
-    } else if (nNeighborHits == 2 && n2_index != -1) {
+    else if (nNeighborHits == 2 && n2_index != -1) {
       current_hit.Add(temp_hits[n1_index]);
       current_hit.Add(temp_hits[n2_index]);
       n2_hits.push_back(current_hit);
       if (n2_index < n1_index) std::swap(n1_index,n2_index);
       temp_hits.erase(temp_hits.begin() + n2_index);
       temp_hits.erase(temp_hits.begin() + n1_index);
+    } 
     //ng
-    } else {
+    else {
       ng_hits.push_back(current_hit);
     }
   }
