@@ -328,29 +328,29 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
   // qStash all interaction points
   std::set<interaction_point> ips;
   // Copy other information to self if needed
-  double my_core_energy = fCoreEnergy;
-  if(fCoreEnergy < rhs.fCoreEnergy) {
-    TGretinaHit my_hit(*this);
-    for(unsigned int i=0; i<rhs.fSegments.size(); i++){
-      ips.insert(rhs.fSegments[i]);
-    }
+  // double my_core_energy = fCoreEnergy;
+  // if(fCoreEnergy < rhs.fCoreEnergy) {
+  //   TGretinaHit my_hit(*this);
+  //   for(unsigned int i=0; i<rhs.fSegments.size(); i++){
+  //     ips.insert(rhs.fSegments[i]);
+  //   }
 
-    for(unsigned int i=0; i<fSegments.size(); i++){
-      ips.insert(fSegments[i]);
-    }
-    rhs.Copy(*this);
-    fCoreEnergy += my_core_energy;
-    fNeighbors.push_back(my_hit);
-  } else {
-    for(unsigned int i=0; i<fSegments.size(); i++){
-      ips.insert(fSegments[i]);
-    }
-    for(unsigned int i=0; i<rhs.fSegments.size(); i++){
-      ips.insert(rhs.fSegments[i]);
-    }
-    fCoreEnergy += rhs.fCoreEnergy;
-    fNeighbors.push_back(rhs);
+  //   for(unsigned int i=0; i<fSegments.size(); i++){
+  //     ips.insert(fSegments[i]);
+  //   }
+  //   rhs.Copy(*this);
+  //   fCoreEnergy += my_core_energy;
+  //   fNeighbors.push_back(my_hit);
+  // } else {
+  for(unsigned int i=0; i<fSegments.size(); i++){
+    ips.insert(fSegments[i]);
   }
+  for(unsigned int i=0; i<rhs.fSegments.size(); i++){
+    ips.insert(rhs.fSegments[i]);
+  }
+  fCoreEnergy += rhs.fCoreEnergy;
+  fNeighbors.push_back(rhs);
+  //}
 
   // Fill all interaction points
   fNumberOfInteractions = 0;

@@ -137,8 +137,10 @@ void TGretina::BuildNNAddback(int EngRange) const {
     } 
     //n1
     else if (nNeighborHits == 1) {
-      current_hit.Add(temp_hits[n1_index]);
-      n1_hits.push_back(current_hit);
+      TGretinaHit otherhit = temp_hits[n1_index];
+      // current_hit.Add(temp_hits[n1_index]);
+      otherhit.Add(current_hit);
+      n1_hits.push_back(otherhit);
       temp_hits.erase(temp_hits.begin() + n1_index);
     } 
     //n2
