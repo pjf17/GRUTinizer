@@ -74,20 +74,21 @@ public:
   void BuildFrom(TSmartBuffer& raw);
 
 
-  Double_t GetTime()            const { return (double)Timestamp() + (double)fWalkCorrection; } 
-  Float_t  GetT0()              const { return fWalkCorrection; }
-  Float_t  GetTFit()            const { return fWalkCorrection - fTOffset; }
-  Float_t  GetTOffset()         const { return fTOffset; }
+  Double_t GetTime()               const { return (double)Timestamp() + (double)fWalkCorrection; } 
+  Float_t  GetT0()                 const { return fWalkCorrection; }
+  Float_t  GetTFit()               const { return fWalkCorrection - fTOffset; }
+  Float_t  GetTOffset()            const { return fTOffset; }
 
-  Int_t    GetCrystalNeighborId(Int_t i=0) const;
+  Int_t    GetNeighborCrystalId(Int_t i=0) const;
+  Float_t  GetNeighborCoreEnergy(Int_t i=0) const;
   Int_t    GetRingNumber() const;
-  Int_t    GetCrystalId()       const { return fCrystalId;      }
-  Int_t    GetHoleNumber()      const { return fCrystalId/4-1;  }
-  Int_t    GetCrystalNumber()   const { return fCrystalId%4;    }
-  Float_t  GetCoreEnergy()      const { return fCoreEnergy;     }
-  Int_t    GetCoreCharge(int i) const { return fCoreCharge[i];  }
-  Float_t  GetCoreEnergy(int i) const;
-  virtual Int_t Charge()        const { return GetCoreCharge(3); }
+  Int_t    GetCrystalId()          const { return fCrystalId;      }
+  Int_t    GetHoleNumber()         const { return fCrystalId/4-1;  }
+  Int_t    GetCrystalNumber()      const { return fCrystalId%4;    }
+  Float_t  GetCoreEnergy()         const { return fCoreEnergy;     }
+  Int_t    GetCoreCharge(int i)    const { return fCoreCharge[i];  }
+  Float_t  GetCoreEnergy(int i)    const;
+  virtual Int_t Charge()           const { return GetCoreCharge(3); }
   Int_t GetPad() const { return fPad; }
 
   const char *GetName() const;
@@ -198,7 +199,8 @@ private:
   Int_t           fCoreCharge[4];
   Int_t   fPad;
   Int_t   fNumberOfInteractions;
-  std::vector<Int_t> fNeighborId; 
+  std::vector<Int_t> fNeighborId;
+  std::vector<Float_t> fNeighborCoreEnergy; 
   
   mutable Float_t fCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
