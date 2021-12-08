@@ -202,8 +202,7 @@ private:
   Float_t         fWalkCorrection;   //also called t0.
   Float_t         fTOffset; //  t0 = toffset + tFit
 
-  std::vector<Int_t> fNeighborId;
-  std::vector<Float_t> fNeighborCoreEnergy;
+  std::vector<TGretinaHit> fNeighbors;
 
   std::vector<interaction_point> fSegments;
   ClassDef(TGretinaHit,5)

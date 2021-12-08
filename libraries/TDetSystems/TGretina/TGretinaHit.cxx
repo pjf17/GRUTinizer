@@ -22,8 +22,6 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fPad            = fPad;
   ((TGretinaHit&)rhs).fTOffset           = fTOffset;
   ((TGretinaHit&)rhs).fCrystalId      = fCrystalId;
-  ((TGretinaHit&)rhs).fNeighborId      = fNeighborId;
-  ((TGretinaHit&)rhs).fNeighborCoreEnergy = fNeighborCoreEnergy;
   ((TGretinaHit&)rhs).fCoreEnergy     = fCoreEnergy;
   ((TGretinaHit&)rhs).fCoreCharge[0]  = fCoreCharge[0];
   ((TGretinaHit&)rhs).fCoreCharge[1]  = fCoreCharge[1];
@@ -31,6 +29,7 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fCoreCharge[3]  = fCoreCharge[3];
   ((TGretinaHit&)rhs).fNumberOfInteractions = fNumberOfInteractions;
   ((TGretinaHit&)rhs).fSegments       = fSegments;
+  ((TGretinaHit&)rhs).fNeighbors      = fNeighbors;
 }
 
 Float_t TGretinaHit::GetCoreEnergy(int i) const {
@@ -60,17 +59,12 @@ TVector3 TGretinaHit::GetCrystalPosition()  const {
 }
 
 TGretinaHit TGretinaHit::GetNeighbor(int i) const {
-  TGretinaHit output;
-  this->Copy(output);
-  Int_t tempId = output.fCrystalId;
-  Float_t tempCoreEnergy = output.fCoreEnergy;
-  
-  std::swap(output.fCrystalId,output.fNeighborId[i]);
-  output.fNeighborId[i] = tempId;
-
-  std::swap(output.fCoreEnergy,output.fNeighborCoreEnergy[i]);
-  output.fNeighborCoreEnergy[i] = tempCoreEnergy;
-  return output;
+  if (i < (int) fNeighbors.size() && i >= 0){
+    return fNeighbors[i];
+  } else {
+    std::cout<<"ERROR RETURNING NEIGHBOR HIT"<<std::endl;
+    return fNeighbors[0];
+  }
 }
 
 //TVector3 TGretinaHit::GetSegmentPosition(int i)  const { 
@@ -325,8 +319,8 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
   std::set<interaction_point> ips;
   // Copy other information to self if needed
   double my_core_energy = fCoreEnergy;
-  int my_crystalid = fCrystalId;
   if(fCoreEnergy < rhs.fCoreEnergy) {
+    TGretinaHit my_hit(*this);
     for(unsigned int i=0; i<rhs.fSegments.size(); i++){
       ips.insert(rhs.fSegments[i]);
     }
@@ -336,8 +330,7 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
     }
     rhs.Copy(*this);
     fCoreEnergy += my_core_energy;
-    fNeighborId.push_back(my_crystalid);
-    fNeighborCoreEnergy.push_back(my_core_energy);
+    fNeighbors.push_back(my_hit);
   } else {
     for(unsigned int i=0; i<fSegments.size(); i++){
       ips.insert(fSegments[i]);
@@ -346,8 +339,7 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
       ips.insert(rhs.fSegments[i]);
     }
     fCoreEnergy += rhs.fCoreEnergy;
-    fNeighborId.push_back(rhs.fCrystalId);
-    fNeighborCoreEnergy.push_back(rhs.fCoreEnergy);
+    fNeighbors.push_back(rhs);
   }
 
   // Fill all interaction points
