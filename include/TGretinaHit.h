@@ -74,6 +74,7 @@ public:
   void BuildFrom(TSmartBuffer& raw);
 
   TGretinaHit GetNeighbor(int i=0) const;
+  TGretinaHit GetInitialHit() const;
 
   Double_t GetTime()               const { return (double)Timestamp() + (double)fWalkCorrection; } 
   Float_t  GetT0()                 const { return fWalkCorrection; }
@@ -199,6 +200,7 @@ private:
   Int_t   fNumberOfInteractions; 
   
   mutable Float_t fCoreEnergy;
+  mutable Float_t fInitialCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
   Float_t         fTOffset; //  t0 = toffset + tFit
 

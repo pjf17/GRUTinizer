@@ -433,6 +433,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   //CRDC 2 XY correlation
                   obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 400, -200, 200, crdc_2_y);
                   obj.FillHistogram(dirname, "n1_addback_crdc2_y", 8192,0,8192, nnEnergy_corrected, 600, -300, 300, crdc_2_x);
+
+                  //N1 Neighbor correlations
+                  TGretinaHit nnhit1 = nnhit.GetInitialHit();
+                  TGretinaHit nnhit2 = nnhit.GetNeighbor();
+                  double singleCrystalEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
+                    singleCrystalEnergy = nnhit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  }
+
+                  obj.FillHistogram(dirname, Form("n1_cryID%d_total_energy_vs_single_hit",cryID),1024,0,8192,singleCrystalEnergy,1024,0,8192,nnEnergy_corrected);
                 }
 
                 char *multiplicity = Form("%d",n);

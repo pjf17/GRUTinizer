@@ -23,6 +23,7 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fTOffset           = fTOffset;
   ((TGretinaHit&)rhs).fCrystalId      = fCrystalId;
   ((TGretinaHit&)rhs).fCoreEnergy     = fCoreEnergy;
+  ((TGretinaHit&)rhs).fInitialCoreEnergy = fInitialCoreEnergy;
   ((TGretinaHit&)rhs).fCoreCharge[0]  = fCoreCharge[0];
   ((TGretinaHit&)rhs).fCoreCharge[1]  = fCoreCharge[1];
   ((TGretinaHit&)rhs).fCoreCharge[2]  = fCoreCharge[2];
@@ -67,6 +68,14 @@ TGretinaHit TGretinaHit::GetNeighbor(int i) const {
   }
 }
 
+TGretinaHit TGretinaHit::GetInitialHit() const {
+  TGretinaHit output;
+  this->Copy(output);
+  output.fNeighbors.clear();
+  output.fCoreEnergy = this->fInitialCoreEnergy;
+  return output;
+}
+
 //TVector3 TGretinaHit::GetSegmentPosition(int i)  const { 
 //  if(fSegmentNumber.size()) 
 //    return TGretina::GetSegmentPosition(fCrystalId,fSegmentNumber.at(0));
@@ -87,6 +96,7 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   fWalkCorrection = raw.t0;
   fCrystalId = raw.crystal_id;
   fCoreEnergy = raw.tot_e;
+  fInitialCoreEnergy = raw.tot_e;
 
   //fAddress = (1<<24) + (fCrystalId<<16);
   //fAddress = (1<<24) + ( raw.board_id );
