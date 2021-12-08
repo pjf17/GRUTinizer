@@ -442,7 +442,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   //   singleCrystalEnergy = nnhit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
                   // }
 
-                  obj.FillHistogram(dirname, Form("n1_cryID%d_total_energy_vs_single_hit",cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
+                  obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
                 }
 
                 char *multiplicity = Form("%d",n);
