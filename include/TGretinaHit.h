@@ -73,14 +73,13 @@ public:
 
   void BuildFrom(TSmartBuffer& raw);
 
+  TGretinaHit GetNeighbor(int i=0) const;
 
   Double_t GetTime()               const { return (double)Timestamp() + (double)fWalkCorrection; } 
   Float_t  GetT0()                 const { return fWalkCorrection; }
   Float_t  GetTFit()               const { return fWalkCorrection - fTOffset; }
   Float_t  GetTOffset()            const { return fTOffset; }
 
-  Int_t    GetNeighborCrystalId(Int_t i=0) const;
-  Float_t  GetNeighborCoreEnergy(Int_t i=0) const;
   Int_t    GetRingNumber() const;
   Int_t    GetCrystalId()          const { return fCrystalId;      }
   Int_t    GetHoleNumber()         const { return fCrystalId/4-1;  }
@@ -162,7 +161,6 @@ public:
   TVector3 GetLastPosition()                const;
 
   TVector3 GetCrystalPosition()           const; 
-  TVector3 GetNeighborPosition(Int_t i=0) const; 
 
   //Set segment position; useful for smearing simulated Gretina data
   void SetPosition(unsigned int i, double x, double y, double z);
@@ -198,13 +196,14 @@ private:
   Int_t           fCrystalId;
   Int_t           fCoreCharge[4];
   Int_t   fPad;
-  Int_t   fNumberOfInteractions;
-  std::vector<Int_t> fNeighborId;
-  std::vector<Float_t> fNeighborCoreEnergy; 
+  Int_t   fNumberOfInteractions; 
   
   mutable Float_t fCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
   Float_t         fTOffset; //  t0 = toffset + tFit
+
+  std::vector<Int_t> fNeighborId;
+  std::vector<Float_t> fNeighborCoreEnergy;
 
   std::vector<interaction_point> fSegments;
   ClassDef(TGretinaHit,5)

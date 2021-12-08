@@ -59,28 +59,18 @@ TVector3 TGretinaHit::GetCrystalPosition()  const {
   return TGretina::GetCrystalPosition(fCrystalId); 
 }
 
-TVector3 TGretinaHit::GetNeighborPosition(Int_t i)  const { 
-  if (i < (int) fNeighborId.size() && i >= 0){
-    return TGretina::GetCrystalPosition(fNeighborId[i]);
-  } else {
-    return TVector3(-1,-1,-1);
-  }
-}
+TGretinaHit TGretinaHit::GetNeighbor(int i) const {
+  TGretinaHit output;
+  this->Copy(output);
+  Int_t tempId = output.fCrystalId;
+  Float_t tempCoreEnergy = output.fCoreEnergy;
+  
+  std::swap(output.fCrystalId,output.fNeighborId[i]);
+  output.fNeighborId[i] = tempId;
 
-Int_t TGretinaHit::GetNeighborCrystalId(Int_t i) const {
-  if (i < (int) fNeighborId.size() && i >= 0){
-    return fNeighborId[i];
-  } else {
-    return -1;
-  }
-}
-
-Float_t  TGretinaHit::GetNeighborCoreEnergy(Int_t i) const {
-  if (i < (int) fNeighborCoreEnergy.size() && i >= 0){
-    return fNeighborCoreEnergy[i];
-  } else {
-    return -1;
-  }
+  std::swap(output.fCoreEnergy,output.fNeighborCoreEnergy[i]);
+  output.fNeighborCoreEnergy[i] = tempCoreEnergy;
+  return output;
 }
 
 //TVector3 TGretinaHit::GetSegmentPosition(int i)  const { 

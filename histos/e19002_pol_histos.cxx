@@ -193,7 +193,7 @@ bool PairHit(const TGretinaHit& one, const TGretinaHit &two, std::vector<std::pa
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighborCrystalId();
+  int cryId2 = abhit.GetNeighbor().GetCrystalId();
   bool hit = false;
   
   for (auto &p : pairs){

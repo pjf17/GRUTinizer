@@ -75,7 +75,7 @@ std::vector<std::pair<int,int>> bluePairs = {
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighborCrystalId();
+  int cryId2 = abhit.GetNeighbor().GetCrystalId();
   bool hit = false;
   
   for (auto &p : pairs){
