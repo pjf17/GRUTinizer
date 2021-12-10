@@ -23,14 +23,13 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fTOffset           = fTOffset;
   ((TGretinaHit&)rhs).fCrystalId      = fCrystalId;
   ((TGretinaHit&)rhs).fCoreEnergy     = fCoreEnergy;
-  ((TGretinaHit&)rhs).fInitialCoreEnergy = fInitialCoreEnergy;
   ((TGretinaHit&)rhs).fCoreCharge[0]  = fCoreCharge[0];
   ((TGretinaHit&)rhs).fCoreCharge[1]  = fCoreCharge[1];
   ((TGretinaHit&)rhs).fCoreCharge[2]  = fCoreCharge[2];
   ((TGretinaHit&)rhs).fCoreCharge[3]  = fCoreCharge[3];
   ((TGretinaHit&)rhs).fNumberOfInteractions = fNumberOfInteractions;
   ((TGretinaHit&)rhs).fSegments       = fSegments;
-  ((TGretinaHit&)rhs).fNeighbors      = fNeighbors;
+  ((TGretinaHit&)rhs).fSingles      = fSingles;
 }
 
 Float_t TGretinaHit::GetCoreEnergy(int i) const {
@@ -60,19 +59,17 @@ TVector3 TGretinaHit::GetCrystalPosition()  const {
 }
 
 TGretinaHit TGretinaHit::GetNeighbor(int i) const {
-  if (i < (int) fNeighbors.size() && i >= 0){
-    return fNeighbors[i];
+  if (i < (int) fSingles.size() && i > 0){
+    return fSingles[i];
   } else {
     std::cout<<"ERROR RETURNING NEIGHBOR HIT"<<std::endl;
-    return fNeighbors[0];
+    return fSingles[0];
   }
 }
 
 TGretinaHit TGretinaHit::GetInitialHit() const {
-  TGretinaHit output;
-  this->Copy(output);
-  output.fNeighbors.clear();
-  output.fCoreEnergy = this->fInitialCoreEnergy;
+  TGretinaHit output = fSingles[0];
+  output.fSingles.clear();
   return output;
 }
 
@@ -96,7 +93,6 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   fWalkCorrection = raw.t0;
   fCrystalId = raw.crystal_id;
   fCoreEnergy = raw.tot_e;
-  fInitialCoreEnergy = raw.tot_e;
 
   //fAddress = (1<<24) + (fCrystalId<<16);
   //fAddress = (1<<24) + ( raw.board_id );
@@ -362,6 +358,12 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
 }
 
 void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
+  //copy original hit into singles
+  if (!fSetFirstSingles){
+    TGretinaHit myCopy(*this);
+    fSingles.push_back(myCopy);
+    fSetFirstSingles = true;
+  }
 
   // qStash all interaction points
   std::set<interaction_point> ips;
@@ -373,7 +375,7 @@ void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
     ips.insert(rhs.fSegments[i]);
   }
   fCoreEnergy += rhs.fCoreEnergy;
-  fNeighbors.push_back(rhs);
+  fSingles.push_back(rhs);
 
   // Fill all interaction points
   fNumberOfInteractions = 0;
