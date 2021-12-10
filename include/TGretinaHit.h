@@ -167,6 +167,7 @@ public:
   void SetPosition(unsigned int i, double x, double y, double z);
                                                 
   void Add(const TGretinaHit& other);
+  void NNAdd(const TGretinaHit& other);
   void SetCoreEnergy(float temp) const { fCoreEnergy = temp; }
 
   void TrimSegments(int type); // 0: drop multiple ident int pnts.  1: make into wedge "data"

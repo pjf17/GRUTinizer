@@ -328,20 +328,44 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
   // qStash all interaction points
   std::set<interaction_point> ips;
   // Copy other information to self if needed
-  // double my_core_energy = fCoreEnergy;
-  // if(fCoreEnergy < rhs.fCoreEnergy) {
-  //   TGretinaHit my_hit(*this);
-  //   for(unsigned int i=0; i<rhs.fSegments.size(); i++){
-  //     ips.insert(rhs.fSegments[i]);
-  //   }
+  double my_core_energy = fCoreEnergy;
+  if(fCoreEnergy < rhs.fCoreEnergy) {
+    for(unsigned int i=0; i<rhs.fSegments.size(); i++){
+      ips.insert(rhs.fSegments[i]);
+    }
 
-  //   for(unsigned int i=0; i<fSegments.size(); i++){
-  //     ips.insert(fSegments[i]);
-  //   }
-  //   rhs.Copy(*this);
-  //   fCoreEnergy += my_core_energy;
-  //   fNeighbors.push_back(my_hit);
-  // } else {
+    for(unsigned int i=0; i<fSegments.size(); i++){
+      ips.insert(fSegments[i]);
+    }
+    rhs.Copy(*this);
+    fCoreEnergy += my_core_energy;
+  } else {
+    for(unsigned int i=0; i<fSegments.size(); i++){
+      ips.insert(fSegments[i]);
+    }
+    for(unsigned int i=0; i<rhs.fSegments.size(); i++){
+      ips.insert(rhs.fSegments[i]);
+    }
+    fCoreEnergy += rhs.fCoreEnergy;
+  }
+
+  // Fill all interaction points
+  fNumberOfInteractions = 0;
+  fSegments.clear();
+  for(auto& point : ips){
+    if(fNumberOfInteractions >= MAXHPGESEGMENTS){
+      break;
+    }
+    fSegments.push_back(point);
+    fNumberOfInteractions++;
+  }
+}
+
+void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
+
+  // qStash all interaction points
+  std::set<interaction_point> ips;
+  
   for(unsigned int i=0; i<fSegments.size(); i++){
     ips.insert(fSegments[i]);
   }
@@ -350,7 +374,6 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
   }
   fCoreEnergy += rhs.fCoreEnergy;
   fNeighbors.push_back(rhs);
-  //}
 
   // Fill all interaction points
   fNumberOfInteractions = 0;
