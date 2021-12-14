@@ -434,10 +434,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   TGretinaHit nnhit1 = nnhit.GetInitialHit();
                   TGretinaHit nnhit2 = nnhit.GetNeighbor();
                   double singleCrystalEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-                  // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
-                  //   singleCrystalEnergy = nnhit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-                  // }
-                  obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
+                  if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
+                    singleCrystalEnergy = nnhit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  }
+                  obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
+
+                  //make swapped spectra
+                  nnhit2.NNAdd(nnhit1);
+                  double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_prompt",n), 8192,0,8192, swappedEnergy);
+                  obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_ring%02d_crystal%d_prompt",n,ringNum,cryID),8192,0,8192, swappedEnergy);
                 }
 
                 char *multiplicity = Form("%d",n);
