@@ -365,26 +365,15 @@ void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
     fSetFirstSingles = true;
   }
 
-  // qStash all interaction points
-  std::set<interaction_point> ips;
-  
-  for(unsigned int i=0; i<fSegments.size(); i++){
-    ips.insert(fSegments[i]);
-  }
-  for(unsigned int i=0; i<rhs.fSegments.size(); i++){
-    ips.insert(rhs.fSegments[i]);
-  }
   fCoreEnergy += rhs.fCoreEnergy;
   fSingles.push_back(rhs);
 
   // Fill all interaction points
-  fNumberOfInteractions = 0;
-  fSegments.clear();
-  for(auto& point : ips){
+  for(unsigned int i=0; i<rhs.fSegments.size(); i++){
     if(fNumberOfInteractions >= MAXHPGESEGMENTS){
       break;
     }
-    fSegments.push_back(point);
+    fSegments.push_back(rhs.fSegments[i]);
     fNumberOfInteractions++;
   }
 }
