@@ -70,6 +70,7 @@ TGretinaHit TGretinaHit::GetNeighbor(int i) const {
 TGretinaHit TGretinaHit::GetInitialHit() const {
   TGretinaHit output = fSingles[0];
   output.fSingles.clear();
+  output.fSetFirstSingles = false;
   return output;
 }
 
