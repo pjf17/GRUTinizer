@@ -434,7 +434,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   TGretinaHit nnhit1 = nnhit.GetInitialHit();
                   TGretinaHit nnhit2 = nnhit.GetNeighbor();
                   double singleCrystalEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-                  if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
+                  if ( nnhit1.GetCrystalPosition().Theta() < nnhit2.GetCrystalPosition().Theta() ){
                     singleCrystalEnergy = nnhit1.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
                   }
                   obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
