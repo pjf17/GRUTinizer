@@ -409,7 +409,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 if (n < 3){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
                   //GAMMA GAMMA CORRELATION
-                  for (int j=i+1; j < nnSize; j++){
+                  for (int j=0; j < nnSize; j++){
                     if (i==j) continue;
                     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
                     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
