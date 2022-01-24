@@ -392,7 +392,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //NNADDBACK
           //loop over multiplicity
-          for (int n=0; n<2; n++){
+          for (int n=0; n<3; n++){
             //loop over hits for each multiplicity spectrum
             int nnSize = gretina->NNAddbackSize(n);
             for (int i=0; i < nnSize; i++){
@@ -412,7 +412,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   for (int j=i+1; j < nnSize; j++){
                     if (i==j) continue;
                     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-                    double nnEnergy_corrected2 = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                    double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
                     if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
                       obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
                     }
@@ -449,12 +449,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 //   obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_ring%02d_crystal%d_prompt",n,ringNum,cryID),8192,0,8192, swappedEnergy);
                 //   obj.FillHistogram(dirname, Form("total_energy_swapped_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,nnhit1.GetCoreEnergy(),4096,0,8192,swappedEnergy);
                 // } 
-                else {
+                //else {
                   char *multiplicity = Form("%d",n);
                   if (n == 3) multiplicity = Form("g");
                   obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
-                  obj.FillHistogram(dirname, Form("gamma_corrected_n%s_ring%02d_crystal%d_prompt",multiplicity,ringNum,cryID),8192,0,8192, nnEnergy_corrected);
-                }
+                  //obj.FillHistogram(dirname, Form("gamma_corrected_n%s_ring%02d_crystal%d_prompt",multiplicity,ringNum,cryID),8192,0,8192, nnEnergy_corrected);
+                //}
               }
             }
           }
