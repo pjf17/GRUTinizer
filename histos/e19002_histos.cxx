@@ -327,12 +327,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
       //CORRELATION PLOTS
       if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
         obj.FillHistogram(dirname, "corrobje1_crdc1x", 3000, -3000, 0, tof_obje1_corr,
+                                              600, -300, 300, crdc_1_x);
+
+        obj.FillHistogram(dirname, "obje1_crdc1x", 3000, -3000, 0, tof_obje1,
                                               600, -300, 300, crdc_1_x);                                     
 
         obj.FillHistogram(dirname, "corrobje1_afp", 3000, -3000, 0, tof_obje1_corr,
                                                     1000, -0.1, 0.1, afp);
 
+        obj.FillHistogram(dirname, "obje1_afp", 3000, -3000, 0, tof_obje1,
+                                                    1000, -0.1, 0.1, afp);
+
         obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 3000, -3000, 0, tof_obje1_corr,
+                                        xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
+        
+        obj.FillHistogram(dirname, "obje1_tofxfpobj", 3000, -3000, 0, tof_obje1,
                                         xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
       }
       
