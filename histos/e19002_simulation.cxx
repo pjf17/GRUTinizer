@@ -90,15 +90,36 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
-std::vector<GCutG*> incoming_gates = {};
-std::vector<GCutG*> outgoing_gates = {};
-std::vector<GCutG*> isoline_gates = {};
-GCutG *prompt_timing_gate=0;
-GCutG *afp_gate=0;
-int gates_loaded=0;
+double calcScatteringAngle(const TGretinaHit &hit1, const TGretinaHit &hit2){
+  TVector3 pos1 = hit1.GetPosition();
+  TVector3 diff = hit2.GetPosition() - pos1;
+  return 180.0/TMath::Pi() * diff.Angle(pos1);
+}
+
+double calcComptonAngle(double E1, double E2){
+  double argument = 1 - 511/E2 + 511/(E1 + E2);
+  // if (fabs(argument) > 1) argument = 1 - 511/E1 + 511/(E1 + E2);
+  return TMath::ACos(argument)*180/TMath::Pi();
+}
 
 double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
+}
+
+std::vector<GCutG*> gates_2D = {};
+int gates_loaded=0;
+
+void LoadGates(TRuntimeObjects &obj){
+  TList *gates = &(obj.GetGates());
+  TIter iter(gates);
+  std::cout << "loading gates:" <<std::endl;
+  while(TObject *obj = iter.Next()) {
+    GCutG *gate = (GCutG*)obj;
+    // std::string tag = gate->GetTag();
+    gates_2D.push_back(gate);
+    gates_loaded++;
+  }
+  std::cout << "gates size: " << gates_2D.size() << std::endl;
 }
 
 // extern "C" is needed to prevent name mangling.
@@ -113,6 +134,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
 
+  TList *gates = &(obj.GetGates());
+  if(gates_loaded!=gates->GetSize()) {
+    LoadGates(obj);
+  }
+
   bool stopped = false;
 
   if (!gretina){
@@ -122,7 +148,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     stopped = true;
   }
 
-  std::string dirname("gretsim");
+  std::string dirname("basicsim");
   TVector3 track;
   double yta;
   if (!stopped){
@@ -131,27 +157,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
     
   if (gretina){
+    double FEP = GValue::Value("FEP_EN");
     
     //SINGLES
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
       TGretinaHit &hit = gretina->GetGretinaHit(i);
+
       double energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
       double energy = hit.GetDoppler(GValue::Value("BETA"));
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
       int cryID = hit.GetCrystalId();
-      //deal with the crystal ID gaps
-      // if (cryID >= 40 && cryID < 52 ){
-      //   cryID -= 4;
-      // } else if (cryID >= 52 && cryID < 72 ) {
-      //   cryID -=8;
-      // } else if (cryID == 76) {
-      //   cryID -=12;
-      // } else if (cryID > 77){
-      //   cryID -=13;
-      // }
-      // cryID -= 24;
       
       obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
@@ -160,16 +177,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
       obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
       
-      //gretina map
-      double phi = hit.GetPhiDeg();
-      theta = 180 - hit.GetThetaDeg();
-      obj.FillHistogram("crystals",Form("crystal%d",cryID),180,0,180,theta,360,0,360,phi);
+      //crystal angles
+      obj.FillHistogram(dirname, Form("theta_vs_crystalID_ring%d",gretina->GetRingNumber(cryID)),56,24,80,cryID,180,0,180,hit.GetThetaDeg());
       
     }
 
     //NNADDBACK
     //loop over multiplicity
-    for (int n=0; n<4; n++){
+    for (int n=0; n<2; n++){
+      dirname = "basicsim";
       //loop over hits for each multiplicity spectrum
       int nnSize = gretina->NNAddbackSize(n);
       for (int i=0; i < nnSize; i++){
@@ -186,32 +202,149 @@ void MakeHistograms(TRuntimeObjects& obj) {
         }
 
         if (n == 1) {
-          //GAMMA GAMMA CORRELATION
-          for (int j=0; j < nnSize; j++){
-            if (i==j) continue;
-            TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-            double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
-            obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
-          }
+          // // GAMMA GAMMA CORRELATION
+          // for (int j=0; j < nnSize; j++){
+          //   if (i==j) continue;
+          //   TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+          //   double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+          //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
+          // }
 
           //POLARIZATION
-          if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
-          }
+          // if ( PairHit(nnhit,redPairs) ){
+          //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+          // }
 
-          if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
-          }
+          // if ( PairHit(nnhit,goldPairs) ){
+          //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+          // }
 
-          if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
-          }                  
+          // if ( PairHit(nnhit,bluePairs) ){
+          //   obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
+          // }
+
+          //N1 Neighbor correlations
+          TGretinaHit nnhit1 = nnhit.GetInitialHit();
+          TGretinaHit nnhit2 = nnhit.GetNeighbor();
+          int hit1Ints = nnhit1.NumberOfInteractions();
+          int hit2Ints = nnhit2.NumberOfInteractions();
+
+          //Number of interactions
+          obj.FillHistogram("interactions","nnhit1_interactions",12,0,12,hit1Ints);
+          obj.FillHistogram("interactions","nnhit2_interactions",12,0,12,hit2Ints);
+          
+          //compton analysis
+          double hiHit = nnhit1.GetCoreEnergy();
+          double loHit = nnhit2.GetCoreEnergy();
+          double posAngle = calcScatteringAngle(nnhit1,nnhit2); 
+          double engAngle = calcComptonAngle(hiHit,loHit);
+          
+          // if (fabs(posAngle - engAngle) > 10 && hit1Ints==1 && hit2Ints==1){
+          //   std::swap(nnhit1,nnhit2);
+          // }
+          // nnhit1.NNAdd(nnhit2);
+          // double newEnergy = nnhit1.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+          // obj.FillHistogram("crystal-specific", Form("gamma_corrected_newEnergy_n%d_ring%02d",n,ringNum),8192,0,8192, newEnergy);
+          // obj.FillHistogram("scattering-angles", Form("gamma_corrected_newEnergy_sorted_n%d_vs_scangle_ring%02d",n,ringNum),180,0,180,posAngle, 2000,0,2000,newEnergy);
+
+          obj.FillHistogram("scattering-angles", Form("pos_angles_n%d_ring%02d_prompt",n,ringNum),180,0,180,posAngle);
+          obj.FillHistogram("scattering-angles", Form("eng_angles_n%d_ring%02d_prompt",n,ringNum),180,0,180,engAngle);
+          // obj.FillHistogram("scattering-angles", Form("high_energy_hit_vs_scangle_n%d_ring%02d_crystal%d_prompt",n,ringNum,cryID),180,0,180,posAngle,2000,0,2000,hiHit);
+          // obj.FillHistogram("scattering-angles", Form("low_energy_hit_vs_scangle_n%d_ring%02d_crystal%d_prompt",n,ringNum,cryID),180,0,180,posAngle,2000,0,2000,loHit);
+          // obj.FillHistogram("scattering-angles", Form("tot_energy_hit_vs_scangle_n%d_ring%02d_crystal%d_prompt",n,ringNum,cryID),180,0,180,posAngle,2000,0,2000,loHit+hiHit);
+          
+          //make swapped energy
+          nnhit1 = nnhit.GetInitialHit();
+          nnhit2 = nnhit.GetNeighbor();
+          nnhit2.NNAdd(nnhit1);
+          double swappedEnergy = nnhit2.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+
+          // obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",n), 8192,0,8192, nnEnergy_corrected);
+          // obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_prompt",n), 8192,0,8192, swappedEnergy);
+          obj.FillHistogram("crystal-specific", Form("gamma_corrected_n%d_ring%02d_prompt",n,ringNum),1600,0,1600, nnEnergy_corrected);
+          obj.FillHistogram("crystal-specific", Form("gamma_corrected_n%d_swapped_ring%02d_prompt",n,ringNum),1600,0,1600, swappedEnergy);
+          obj.FillHistogram("scattering-angles", Form("gamma_corrected_n%d_vs_posAngle_ring%02d_prompt",n,ringNum),180,0,180,posAngle, 1600,0,1600,nnEnergy_corrected);
+          obj.FillHistogram("scattering-angles", Form("gamma_corrected_n%d_swapped_vs_posAngle_ring%02d_prompt",n,ringNum),180,0,180,posAngle, 1600,0,1600,swappedEnergy);
+          // obj.FillHistogram("scattering-angles", Form("gamma_corrected_n%d_vs_engAngle_ring%02d_prompt",n,ringNum),180,0,180,engAngle, 1600,0,1600,nnEnergy_corrected);
+          // obj.FillHistogram("scattering-angles", Form("gamma_corrected_n%d_swapped_vs_engAngle_ring%02d_prompt",n,ringNum),180,0,180,engAngle, 1600,0,1600,swappedEnergy);
+
+          //GATED STUFF
+          std::vector<std::pair<std::string,bool>> EnergyGates;
+          EnergyGates.push_back(std::make_pair("defaultE",fabs(nnEnergy_corrected - FEP) < 1.5 * TMath::Sqrt(FEP)));
+          EnergyGates.push_back(std::make_pair("swappedE",fabs(swappedEnergy - FEP) < 1.5 * TMath::Sqrt(FEP)));
+          int nEnergyGates = (int) EnergyGates.size();
+
+          std::vector<std::pair<std::string,bool>> InteractionGates;
+          InteractionGates.push_back(std::make_pair("hiHit_int>1",hit1Ints>1));
+          InteractionGates.push_back(std::make_pair("hiHit_int=1",hit1Ints==1));
+          InteractionGates.push_back(std::make_pair("loHit_int>1",hit2Ints>1));
+          InteractionGates.push_back(std::make_pair("loHit_int=1",hit2Ints==1));
+          InteractionGates.push_back(std::make_pair("bothHit_int>1",hit1Ints>1 && hit2Ints>1));
+          InteractionGates.push_back(std::make_pair("bothHit_int=1",hit1Ints==1 && hit2Ints==1));
+          int nInteractionGates = (int) InteractionGates.size();
+
+          //2D gates
+          for (int g=0; g < gates_loaded; g++){
+            std::string gatename(gates_2D[g]->GetName());
+            double varX, varY = -12345;
+            if (gatename.compare("swappedE_posAngle") == 0){
+              varX = posAngle;
+              varY = swappedEnergy;
+            }
+            if (gatename.compare("engAngle_posAngle") == 0){
+              varX = posAngle;
+              varY = engAngle;
+            }
+            if (gates_2D[g]->IsInside(varX,varY) && varX != -12345 && varY != -12345){
+              obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
+              obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+              obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+              obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle",gatename.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+              obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
+              obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+              obj.FillHistogram(gatename, Form("%s_gated_hiHit",gatename.c_str()),1600,0,1600,hiHit);
+              obj.FillHistogram(gatename, Form("%s_gated_loHit",gatename.c_str()),1600,0,1600,loHit);
+            }
+          }
+          
+          //gate on energy
+          for (int eg=0; eg < nEnergyGates; eg++){
+            if (EnergyGates[eg].second){
+              dirname = EnergyGates[eg].first;
+              // obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
+              // obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+              // obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+              // obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+              // obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
+              // obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+
+              //gate on interactions
+              for (int i=0; i < nInteractionGates; i++){
+                if (InteractionGates[i].second){
+                  dirname = EnergyGates[eg].first + "_" + InteractionGates[i].first;
+                  obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
+                  obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+                  obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+                  obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+                  obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
+                  obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+                }
+              }
+            }
+          }
         }
 
-        char *multiplicity = Form("%d",n);
-        if (n == 3) multiplicity = Form("g");
-        obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+        // char *multiplicity = Form("%d",n);
+        // if (n == 3) multiplicity = Form("g");
+        // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
         // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_ring%02d_crystal%d_prompt",multiplicity,ringNum,cryID),8192,0,8192, nnEnergy_corrected);
+        if (n==0){
+          if (gretsim->GetGretinaSimHit(0).IsFEP()){
+            dirname = "basicsim";
+            obj.FillHistogram(dirname,"gamma_corrected_n0_prompt_fep", 1600,0,1600, nnEnergy_corrected);
+            obj.FillHistogram("crystal-specific", Form("gamma_corrected_n0_ring%02d_crystal%d_prompt_fep",ringNum,cryID),1600,0,1600, nnEnergy_corrected);
+          }
+        }
         
       }
     }
