@@ -185,10 +185,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
     //NNADDBACK
     //loop over multiplicity
     for (int n=0; n<2; n++){
-      dirname = "basicsim";
       //loop over hits for each multiplicity spectrum
       int nnSize = gretina->NNAddbackSize(n);
       for (int i=0; i < nnSize; i++){
+      dirname = "basicsim";
 
         //get hit and hit data 
         TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
@@ -237,7 +237,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double hiHit = nnhit1.GetCoreEnergy();
           double loHit = nnhit2.GetCoreEnergy();
           double posAngle = calcScatteringAngle(nnhit1,nnhit2); 
+          double compPosAngle = calcScatteringAngle(nnhit2,nnhit1);
           double engAngle = calcComptonAngle(hiHit,loHit);
+          double compEngAngle = calcComptonAngle(loHit,hiHit);
           
           // if (fabs(posAngle - engAngle) > 10 && hit1Ints==1 && hit2Ints==1){
           //   std::swap(nnhit1,nnhit2);
@@ -275,37 +277,37 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int nEnergyGates = (int) EnergyGates.size();
 
           std::vector<std::pair<std::string,bool>> InteractionGates;
-          InteractionGates.push_back(std::make_pair("hiHit_int>1",hit1Ints>1));
-          InteractionGates.push_back(std::make_pair("hiHit_int=1",hit1Ints==1));
-          InteractionGates.push_back(std::make_pair("loHit_int>1",hit2Ints>1));
-          InteractionGates.push_back(std::make_pair("loHit_int=1",hit2Ints==1));
+          // InteractionGates.push_back(std::make_pair("hiHit_int>1",hit1Ints>1));
+          // InteractionGates.push_back(std::make_pair("hiHit_int=1",hit1Ints==1));
+          // InteractionGates.push_back(std::make_pair("loHit_int>1",hit2Ints>1));
+          // InteractionGates.push_back(std::make_pair("loHit_int=1",hit2Ints==1));
           InteractionGates.push_back(std::make_pair("bothHit_int>1",hit1Ints>1 && hit2Ints>1));
           InteractionGates.push_back(std::make_pair("bothHit_int=1",hit1Ints==1 && hit2Ints==1));
           int nInteractionGates = (int) InteractionGates.size();
 
           //2D gates
-          for (int g=0; g < gates_loaded; g++){
-            std::string gatename(gates_2D[g]->GetName());
-            double varX, varY = -12345;
-            if (gatename.compare("swappedE_posAngle") == 0){
-              varX = posAngle;
-              varY = swappedEnergy;
-            }
-            if (gatename.compare("engAngle_posAngle") == 0){
-              varX = posAngle;
-              varY = engAngle;
-            }
-            if (gates_2D[g]->IsInside(varX,varY) && varX != -12345 && varY != -12345){
-              obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
-              obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
-              obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
-              obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle",gatename.c_str()),180,0,180,posAngle,180,0,180,engAngle);
-              obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
-              obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
-              obj.FillHistogram(gatename, Form("%s_gated_hiHit",gatename.c_str()),1600,0,1600,hiHit);
-              obj.FillHistogram(gatename, Form("%s_gated_loHit",gatename.c_str()),1600,0,1600,loHit);
-            }
-          }
+          // for (int g=0; g < gates_loaded; g++){
+          //   std::string gatename(gates_2D[g]->GetName());
+          //   double varX, varY = -12345;
+          //   if (gatename.compare("swappedE_posAngle") == 0){
+          //     varX = posAngle;
+          //     varY = swappedEnergy;
+          //   }
+          //   if (gatename.compare("engAngle_posAngle") == 0){
+          //     varX = posAngle;
+          //     varY = engAngle;
+          //   }
+          //   if (gates_2D[g]->IsInside(varX,varY) && varX != -12345 && varY != -12345){
+          //     obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
+          //     obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+          //     obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle_ring%02d",gatename.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+          //     obj.FillHistogram(gatename, Form("%s_gated_engAngle_vs_posAngle",gatename.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+          //     obj.FillHistogram(gatename, Form("%s_gated_loHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
+          //     obj.FillHistogram(gatename, Form("%s_gated_hiHit_vs_posAngle",gatename.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+          //     obj.FillHistogram(gatename, Form("%s_gated_hiHit",gatename.c_str()),1600,0,1600,hiHit);
+          //     obj.FillHistogram(gatename, Form("%s_gated_loHit",gatename.c_str()),1600,0,1600,loHit);
+          //   }
+          // }
           
           //gate on energy
           for (int eg=0; eg < nEnergyGates; eg++){
@@ -314,20 +316,85 @@ void MakeHistograms(TRuntimeObjects& obj) {
               // obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
               // obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
               // obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
-              // obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
               // obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
               // obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+              obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+              if (ringNum == 1 || ringNum == 4 || ringNum == 8 || ringNum == 12){
+                obj.FillHistogram(dirname, Form("%s_gated_defaultE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,nnEnergy_corrected);
+                obj.FillHistogram(dirname, Form("%s_gated_swappedE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,swappedEnergy);
+              }
+
+              //Hit energy difference vs angle calculation difference
+              obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1200,0,1200,hiHit-loHit);
+              obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1000,0,1,(hiHit-loHit)/(hiHit+loHit));
+              obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_(engAngle-posAngle)/sum",dirname.c_str()),360,-1,1,(engAngle-posAngle)/(posAngle+engAngle),1000,0,1,(hiHit-loHit)/(hiHit+loHit));
 
               //gate on interactions
               for (int i=0; i < nInteractionGates; i++){
                 if (InteractionGates[i].second){
                   dirname = EnergyGates[eg].first + "_" + InteractionGates[i].first;
-                  obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
-                  obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
-                  obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
-                  obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+                  // obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,180,0,180,engAngle);
+                  
+                  //Hit vs Angle
                   obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
                   obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+                  if (ringNum == 1 || ringNum == 4 || ringNum == 8 || ringNum == 12){
+                    obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+                    obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+                  }
+                  
+                  //Angle calculation correlation
+                  obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_posAngle",dirname.c_str()),180,0,180,posAngle,180,0,180,engAngle);
+                  obj.FillHistogram(dirname, Form("%s_gated_abs(engAngle-posAngle)",dirname.c_str()),180,0,180,posAngle -engAngle);
+
+                  //Hit energy difference vs angle calculation difference
+                  obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1200,0,1200,hiHit-loHit);
+                  obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1000,0,1,(hiHit-loHit)/(hiHit+loHit));
+                  obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_(engAngle-posAngle)/sum",dirname.c_str()),360,-1,1,(engAngle-posAngle)/(posAngle+engAngle),1000,0,1,(hiHit-loHit)/(hiHit+loHit));
+
+                  //Doppler corrected vs Angle
+                  if (ringNum == 1 || ringNum == 4 || ringNum == 8 || ringNum == 12){
+                    obj.FillHistogram(dirname, Form("%s_gated_defaultE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,nnEnergy_corrected);
+                    obj.FillHistogram(dirname, Form("%s_gated_swappedE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,swappedEnergy);
+                  }
+                  
+                  //2D gates
+                  for (int g=0; g < gates_loaded; g++){
+                    std::string tagname(gates_2D[g]->GetTag());
+                    std::string gatename(gates_2D[g]->GetName());
+                    double varX, varY = -12345;
+                    if (tagname.compare("engAngle_posAngle") == 0){
+                      varX = posAngle;
+                      varY = engAngle;
+                    }
+                    if (varX != -12345 && varY != -12345 && gates_2D[g]->IsInside(varX,varY)){
+                      dirname = EnergyGates[eg].first + "_" + InteractionGates[i].first + "_" + gatename;
+
+                      //Hit vs Angle
+                      obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1200,0,1200,loHit);
+                      obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle",dirname.c_str()),180,0,180,posAngle,1600,0,1600,hiHit);
+                      if (ringNum == 1 || ringNum == 4 || ringNum == 8 || ringNum == 12){
+                        obj.FillHistogram(dirname, Form("%s_gated_loHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1200,0,1200,loHit);
+                        obj.FillHistogram(dirname, Form("%s_gated_hiHit_vs_posAngle_ring%02d",dirname.c_str(),ringNum),180,0,180,posAngle,1600,0,1600,hiHit);
+                      }
+
+                      //Angle Calculation correlations
+                      obj.FillHistogram(dirname, Form("%s_gated_engAngle_vs_complPosAngle",dirname.c_str()),180,0,180,compPosAngle,180,0,180,engAngle);
+                      obj.FillHistogram(dirname, Form("%s_gated_complEngAngle_vs_complPosAngle",dirname.c_str()),180,0,180,compPosAngle,180,0,180,compEngAngle);
+                      obj.FillHistogram(dirname, Form("%s_gated_abs(engAngle-posAngle)",dirname.c_str()),180,0,180,fabs(posAngle -engAngle));
+                      
+                      //Hit energy difference vs angle calculation difference
+                      obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1200,0,1200,hiHit-loHit);
+                      obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_engAngle-posAngle",dirname.c_str()),360,-180,180,engAngle-posAngle,1000,0,1,(hiHit-loHit)/(hiHit+loHit));
+                      obj.FillHistogram(dirname, Form("%s_gated_hiHit-loHit/sum_vs_(engAngle-posAngle)/sum",dirname.c_str()),360,-1,1,(engAngle-posAngle)/(posAngle+engAngle),1000,0,1,(hiHit-loHit)/(hiHit+loHit));
+
+                      // Doppler corrected vs Angle
+                      if (ringNum == 1 || ringNum == 4 || ringNum == 8 || ringNum == 12){
+                        obj.FillHistogram(dirname, Form("%s_gated_defaultE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,nnEnergy_corrected);
+                        obj.FillHistogram(dirname, Form("%s_gated_swappedE_vs_posAngle_ring%02d_prompt",dirname.c_str(),ringNum),180,0,180,posAngle, 1600,0,1600,swappedEnergy);
+                      }
+                    }
+                  }
                 }
               }
             }
