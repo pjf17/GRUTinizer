@@ -179,6 +179,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double energy = hit.GetDoppler(GValue::Value("BETA"));
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
+      double phi = hit.GetPhi();
       int cryID = hit.GetCrystalId();
       
       obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
@@ -190,6 +191,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       //crystal angles
       obj.FillHistogram(dirname, Form("theta_vs_crystalID_ring%d",gretina->GetRingNumber(cryID)),56,24,80,cryID,360,0,180,hit.GetThetaDeg());
+      obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi*TMath::RadToDeg(),360,0,180, theta*TMath::RadToDeg());
 
     }
 
