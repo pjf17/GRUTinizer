@@ -155,6 +155,7 @@ public:
                                                  if(i==-1) return fSegments.at(0).fSeg;
                                                            return fSegments.at(i).fSeg;  }
   Float_t  GetSegmentEng(const int &i)   const { return fSegments.at(i).fEng;  }
+  Int_t    GetSegmentLayer(int i=-1)     const { return std::floor(GetSegmentId(i)/6.0);}
 
   TVector3 GetIntPosition(unsigned int i)   const;  // position of the ith segment, Global coor.
   TVector3 GetLocalPosition(unsigned int i) const;  // position of the ith segment, Local coor.
