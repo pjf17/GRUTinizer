@@ -19,7 +19,6 @@ void MultiPlotter::Add(TH1F* pHist){
     mYMax = 0.0;
     mNHistos++;
     if (mHistos.count(std::string(pHist->GetName()))){
-        std::cout<<"DUPLICATE"<<std::endl;
         std::string hname = Form("%s%d",pHist->GetName(),mNHistos);
         pHist->SetName(hname.c_str());
     }
