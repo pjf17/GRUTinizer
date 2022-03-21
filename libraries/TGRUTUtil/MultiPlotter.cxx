@@ -17,19 +17,21 @@
 
 void MultiPlotter::Add(TH1F* pHist){
     mYMax = 0.0;
-    mHistos.insert( std::pair<std::string,TH1F*>(pHist->GetName(),pHist) );
     mNHistos++;
+    if (mHistos.count(std::string(pHist->GetName()))){
+        std::cout<<"DUPLICATE"<<std::endl;
+        std::string hname = Form("%s%d",pHist->GetName(),mNHistos);
+        pHist->SetName(hname.c_str());
+    }
+    mHistos.insert( std::pair<std::string,TH1F*>(pHist->GetName(),pHist) );
 }
 
 void MultiPlotter::Add(TFile *f, const char *hname){
-    mYMax = 0.0;
     TH1F* h = (TH1F*) f->Get(hname);
-    mHistos.insert( std::pair<std::string,TH1F*>(h->GetName(),h) );
-    mNHistos++;
+    this->Add(h);
 }
 
 void MultiPlotter::Add(TDirectoryFile *f){
-    mYMax = 0.0;
     // print out hists you can choose
     TList *hlist = f->GetListOfKeys();
     std::vector<TKey *> sortedList;
@@ -81,8 +83,7 @@ void MultiPlotter::Add(TDirectoryFile *f){
                         TKey *key = sortedList[nums[i]];
                         TH1F *hout = (TH1F*) key->ReadObj();
                         std::cout<<"added "<<hout->GetName()<<std::endl;
-                        mHistos.insert( std::pair<std::string,TH1F*>(hout->GetName(),hout) );
-                        mNHistos++;
+                        this->Add(hout);
                     }
                 }
             }
