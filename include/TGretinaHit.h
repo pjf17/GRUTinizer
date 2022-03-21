@@ -73,19 +73,22 @@ public:
 
   void BuildFrom(TSmartBuffer& raw);
 
+  TGretinaHit GetNeighbor(int i=1) const;
+  TGretinaHit GetInitialHit() const;
 
-  Double_t GetTime()            const { return (double)Timestamp() + (double)fWalkCorrection; } 
-  Float_t  GetT0()              const { return fWalkCorrection; }
-  Float_t  GetTFit()            const { return fWalkCorrection - fTOffset; }
-  Float_t  GetTOffset()         const { return fTOffset; }
+  Double_t GetTime()               const { return (double)Timestamp() + (double)fWalkCorrection; } 
+  Float_t  GetT0()                 const { return fWalkCorrection; }
+  Float_t  GetTFit()               const { return fWalkCorrection - fTOffset; }
+  Float_t  GetTOffset()            const { return fTOffset; }
 
-  Int_t    GetCrystalId()       const { return fCrystalId;      }
-  Int_t    GetHoleNumber()      const { return fCrystalId/4-1;  }
-  Int_t    GetCrystalNumber()   const { return fCrystalId%4;    }
-  Float_t  GetCoreEnergy()      const { return fCoreEnergy;     }
-  Int_t    GetCoreCharge(int i) const { return fCoreCharge[i];  }
-  Float_t  GetCoreEnergy(int i) const;
-  virtual Int_t Charge()        const { return GetCoreCharge(3); }
+  Int_t    GetRingNumber() const;
+  Int_t    GetCrystalId()          const { return fCrystalId;      }
+  Int_t    GetHoleNumber()         const { return fCrystalId/4-1;  }
+  Int_t    GetCrystalNumber()      const { return fCrystalId%4;    }
+  Float_t  GetCoreEnergy()         const { return fCoreEnergy;     }
+  Int_t    GetCoreCharge(int i)    const { return fCoreCharge[i];  }
+  Float_t  GetCoreEnergy(int i)    const;
+  virtual Int_t Charge()           const { return GetCoreCharge(3); }
   Int_t GetPad() const { return fPad; }
 
   const char *GetName() const;
@@ -152,6 +155,7 @@ public:
                                                  if(i==-1) return fSegments.at(0).fSeg;
                                                            return fSegments.at(i).fSeg;  }
   Float_t  GetSegmentEng(const int &i)   const { return fSegments.at(i).fEng;  }
+  Int_t    GetSegmentLayer(int i=-1)     const { return std::floor(GetSegmentId(i)/6.0);}
 
   TVector3 GetIntPosition(unsigned int i)   const;  // position of the ith segment, Global coor.
   TVector3 GetLocalPosition(unsigned int i) const;  // position of the ith segment, Local coor.
@@ -164,6 +168,7 @@ public:
   void SetPosition(unsigned int i, double x, double y, double z);
                                                 
   void Add(const TGretinaHit& other);
+  void NNAdd(const TGretinaHit& other);
   void SetCoreEnergy(float temp) const { fCoreEnergy = temp; }
 
   void TrimSegments(int type); // 0: drop multiple ident int pnts.  1: make into wedge "data"
@@ -194,11 +199,14 @@ private:
   Int_t           fCrystalId;
   Int_t           fCoreCharge[4];
   Int_t   fPad;
-  Int_t   fNumberOfInteractions;
+  Int_t   fNumberOfInteractions; 
   
   mutable Float_t fCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
   Float_t         fTOffset; //  t0 = toffset + tFit
+
+  std::vector<TGretinaHit> fSingles;
+  bool fSetFirstSingles = false;
 
   std::vector<interaction_point> fSegments;
   ClassDef(TGretinaHit,5)

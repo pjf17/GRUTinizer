@@ -23,6 +23,7 @@ public:
 
   virtual size_t Size() const { return gretina_hits.size(); }
   virtual Int_t AddbackSize(int EngRange=-1) { BuildAddback(EngRange); return addback_hits.size(); }
+  virtual Int_t NNAddbackSize(int multiplicity, int EngRange=-1) { BuildNNAddback(EngRange); return nn_hits[multiplicity].size(); }
   void ResetAddback() { addback_hits.clear();}
 
   virtual void InsertHit(const TDetectorHit& hit);
@@ -31,6 +32,7 @@ public:
   const TGretinaHit& GetGretinaHit(int i) const { return gretina_hits.at(i); }
         TGretinaHit& GetGretinaHit(int i)       { return gretina_hits.at(i); }
   const TGretinaHit& GetAddbackHit(int i) const { return addback_hits.at(i); }
+  const TGretinaHit& GetNNAddbackHit(int multiplicity, int i) const { return nn_hits[multiplicity][i]; }
 
 
   void PrintHit(int i){ gretina_hits.at(i).Print(); }
@@ -38,6 +40,12 @@ public:
   static TVector3 CrystalToGlobal(int cryId,Float_t localX=0,Float_t localY=0,Float_t localZ=0);
   static TVector3 GetSegmentPosition(int cryid,int segment); //return the position of the segemnt in the lab system
   static TVector3 GetCrystalPosition(int cryid); //return the position of the crysal in the lab system
+
+  static bool IsNeighbor(int ID1, int ID2) {SetGretNeighbors(); return gretNeighbors[ID1][ID2];}
+  static bool IsNeighbor(const TGretinaHit &a, const TGretinaHit &b) { return IsNeighbor(a.GetCrystalId(),b.GetCrystalId());}
+
+  static int GetRingNumber(int id){ SetGretRings(); return gretRings[id];}
+  static int GetRingNumber(const TGretinaHit &h){ SetGretRings(); return gretRings[h.GetCrystalId()];}
 
 #ifndef __CINT__ 
   static void SetAddbackCondition(std::function<bool(const TGretinaHit&,const TGretinaHit&)> condition) {
@@ -82,6 +90,7 @@ public:
 
 private:
   void BuildAddback(int EngRange=-1) const;
+  void BuildNNAddback(int EngRange=-1) const;
 #ifndef __CINT__ 
   static std::function<bool(const TGretinaHit&,const TGretinaHit&)> fAddbackCondition;  
 #endif
@@ -89,6 +98,8 @@ private:
 
   std::vector<TGretinaHit> gretina_hits;
   mutable std::vector<TGretinaHit> addback_hits; //!
+  mutable std::vector<std::vector<TGretinaHit>> nn_hits;
+  //index 0 = n0, 1 = n1, 2 = n2, 3 = ng
 
   static Float_t crmat[32][4][4][4];
   static Float_t m_segpos[2][36][3];
@@ -96,6 +107,13 @@ private:
   static void SetSegmentCRMAT();
   static bool fCRMATSet;
 
+  static std::map<int,std::map<int,bool>> gretNeighbors;
+  static void SetGretNeighbors();
+  static bool fNEIGHBORSet;
+
+  static std::map<int,int> gretRings;
+  static void SetGretRings();
+  static bool fRINGSet;
 
   ClassDef(TGretina,3);
 };

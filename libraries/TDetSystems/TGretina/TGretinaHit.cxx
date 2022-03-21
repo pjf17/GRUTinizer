@@ -29,6 +29,7 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fCoreCharge[3]  = fCoreCharge[3];
   ((TGretinaHit&)rhs).fNumberOfInteractions = fNumberOfInteractions;
   ((TGretinaHit&)rhs).fSegments       = fSegments;
+  ((TGretinaHit&)rhs).fSingles      = fSingles;
 }
 
 Float_t TGretinaHit::GetCoreEnergy(int i) const {
@@ -49,9 +50,28 @@ const char *TGretinaHit::GetName() const {
   return name.c_str();
 }
 
+Int_t TGretinaHit::GetRingNumber() const {
+  return TGretina::GetRingNumber(fCrystalId);
+}
 
 TVector3 TGretinaHit::GetCrystalPosition()  const { 
   return TGretina::GetCrystalPosition(fCrystalId); 
+}
+
+TGretinaHit TGretinaHit::GetNeighbor(int i) const {
+  if (i < (int) fSingles.size() && i > 0){
+    return fSingles[i];
+  } else {
+    std::cout<<"ERROR RETURNING NEIGHBOR HIT"<<std::endl;
+    return fSingles[0];
+  }
+}
+
+TGretinaHit TGretinaHit::GetInitialHit() const {
+  TGretinaHit output = fSingles[0];
+  output.fSingles.clear();
+  output.fSetFirstSingles = false;
+  return output;
 }
 
 //TVector3 TGretinaHit::GetSegmentPosition(int i)  const { 
@@ -334,6 +354,27 @@ void TGretinaHit::Add(const TGretinaHit& rhs) {
       break;
     }
     fSegments.push_back(point);
+    fNumberOfInteractions++;
+  }
+}
+
+void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
+  //copy original hit into singles
+  if (!fSetFirstSingles){
+    TGretinaHit myCopy(*this);
+    fSingles.push_back(myCopy);
+    fSetFirstSingles = true;
+  }
+
+  fCoreEnergy += rhs.fCoreEnergy;
+  fSingles.push_back(rhs);
+
+  // Fill all interaction points
+  for(unsigned int i=0; i<rhs.fSegments.size(); i++){
+    if(fNumberOfInteractions >= MAXHPGESEGMENTS){
+      break;
+    }
+    fSegments.push_back(rhs.fSegments[i]);
     fNumberOfInteractions++;
   }
 }

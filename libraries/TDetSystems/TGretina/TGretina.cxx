@@ -31,6 +31,11 @@ TGretina::~TGretina() {
 Float_t TGretina::crmat[32][4][4][4];
 Float_t TGretina::m_segpos[2][36][3];
 bool    TGretina::fCRMATSet = false;
+bool    TGretina::fNEIGHBORSet = false;
+bool    TGretina::fRINGSet = false;
+
+std::map<int,std::map<int,bool>> TGretina::gretNeighbors;
+std::map<int,int> TGretina::gretRings;
 
 bool DefaultAddback(const TGretinaHit& one,const TGretinaHit &two) {
   TVector3 res = one.GetLastPosition()-two.GetPosition();
@@ -76,6 +81,86 @@ void TGretina::BuildAddback(int EngRange) const {
       addback_hits.erase(addback_hits.begin() + erasing);
     }
   }
+}
+
+void TGretina::BuildNNAddback(int EngRange) const {
+  if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
+    return;
+  }
+
+  std::vector<TGretinaHit> temp_hits = gretina_hits;
+  std::vector<TGretinaHit> n0_hits, n1_hits, n2_hits, ng_hits;
+
+  if(EngRange>=0 && EngRange<4){
+    for(auto& hit : temp_hits) {
+      hit.SetCoreEnergy(hit.GetCoreEnergy(EngRange));
+    }
+  }
+  
+  //sort so that the first hit has the greatest energy
+  //this way we can loop through i,j with i < j and know that 
+  //any hit with higher energy cannot be an addback to one with lower energy
+  std::sort(temp_hits.begin(), temp_hits.end(),
+	    [](const TGretinaHit& a, const TGretinaHit& b) {
+	      return a.GetCoreEnergy() > b.GetCoreEnergy();
+	    });
+  
+  //loop through every hit
+  for(unsigned int i=0; i < temp_hits.size(); i++) {
+    TGretinaHit &current_hit = temp_hits[i];
+    int nNeighborHits = 0;
+    int n1_index, n2_index = -1;
+
+    //only pick unqiue pairs of hits
+    for(unsigned int j=i+1; j < temp_hits.size(); j++) {    
+      if (IsNeighbor(current_hit,temp_hits[j])){
+        nNeighborHits++;
+        n1_index = j;
+
+        //check every hit k to see if it is a neighbor with j
+        for (unsigned int k=0; k < temp_hits.size(); k++){
+          if (k==i || k==j) continue;
+          if (IsNeighbor(temp_hits[j],temp_hits[k])){
+            nNeighborHits++;
+            //if hit k is a neighbor with hit i then this is an n2 hit
+            if (IsNeighbor(current_hit,temp_hits[k])){
+              n2_index = k;
+            }
+          }
+        }
+      }
+    }
+    
+    //n0
+    if (nNeighborHits == 0){
+      n0_hits.push_back(current_hit);
+    } 
+    //n1
+    else if (nNeighborHits == 1) {
+      current_hit.NNAdd(temp_hits[n1_index]);
+      n1_hits.push_back(current_hit);
+      temp_hits.erase(temp_hits.begin() + n1_index);
+    } 
+    //n2
+    else if (nNeighborHits == 2 && n2_index != -1) {
+      current_hit.NNAdd(temp_hits[n1_index]);
+      current_hit.NNAdd(temp_hits[n2_index]);
+      n2_hits.push_back(current_hit);
+      if (n2_index < n1_index) std::swap(n1_index,n2_index);
+      temp_hits.erase(temp_hits.begin() + n2_index);
+      temp_hits.erase(temp_hits.begin() + n1_index);
+    } 
+    //ng
+    else {
+      ng_hits.push_back(current_hit);
+    }
+  }
+  nn_hits.push_back(n0_hits);
+  nn_hits.push_back(n1_hits);
+  nn_hits.push_back(n2_hits);
+  nn_hits.push_back(ng_hits);
+  // std::cout<<"BUILDNNADDBACK EXIT"<<std::endl;
+  return;
 }
 
 void TGretina::SetCRMAT() {
@@ -314,6 +399,92 @@ void TGretina::BuildAddbackHits(){
   }
 }
 */
+
+void TGretina::SetGretRings() {
+  if(fRINGSet){
+    return;
+  }
+
+  std::string temp = getenv("GRUTSYS");
+  temp.append("/libraries/TDetSystems/TGretina/gretina-rings.dat");
+  std::ifstream infile;
+  infile.open(temp.c_str());
+  if(!infile.is_open()) {
+    std::cout<<"error with file"<<std::endl;
+    return;
+  }
+
+  std::string line, element;
+  char delim = ' ';
+  
+  //read the table values
+  int nlines = 0;
+  int ringnum =-1;
+  while(getline(infile,line)) {
+    if (nlines%2 == 0){
+      ringnum = std::atoi(line.c_str());
+    } else {
+      std::stringstream ss(line);
+      while(getline(ss,element,delim)){
+        int cryID = std::atoi(element.c_str());
+        gretRings[cryID] = ringnum;
+      }
+    }
+    nlines++;
+  }
+  
+  infile.close();
+  fRINGSet = true;
+  return;
+}
+
+void TGretina::SetGretNeighbors() {
+  if(fNEIGHBORSet){
+    return;
+  }
+
+  std::string temp = getenv("GRUTSYS");
+  temp.append("/libraries/TDetSystems/TGretina/gretina-pairs.dat");
+  std::ifstream infile;
+  infile.open(temp.c_str());
+  if(!infile.is_open()) {
+    std::cout<<"error with file"<<std::endl;
+    return;
+  }
+
+  std::string line;
+  std::vector<int> cryIDs;
+  char delim = '\t';
+  
+  //read the header to get all the crystal id's
+  getline(infile,line);
+  std::stringstream ssids(line);
+  std::string element;
+  
+  while(getline(ssids,element,delim)){
+    cryIDs.push_back( std::atoi(element.c_str()) );
+  }
+  
+  //read the table values
+  while(getline(infile,line)) {
+    std::stringstream ss(line);
+    
+    getline(ss,element,delim);
+    int cryID = std::atoi(element.c_str());
+
+    std::map<int,bool> submap;
+    int i=0;
+    while(getline(ss,element,delim)){
+      submap.insert(std::make_pair(cryIDs[i], std::atoi(element.c_str())));
+      i++;
+    }
+    gretNeighbors[cryID] = submap;
+  }
+  
+  infile.close();
+  fNEIGHBORSet = true;
+  return;
+}
 
 void TGretina::Print(Option_t *opt) const {
   printf(BLUE "GRETINA: size = %i" RESET_COLOR "\n",(int)Size());
