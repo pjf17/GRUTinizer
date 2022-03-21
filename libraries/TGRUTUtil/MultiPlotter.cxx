@@ -98,6 +98,7 @@ void MultiPlotter::Clear(){
     mHistos.clear();
     mNHistos = 0;
     mYMax = 0.0;
+    mCustomColors = false;
 }
 
 void MultiPlotter::List(){
@@ -122,7 +123,7 @@ void MultiPlotter::SetLineWidth(int w){
 }
 
 void MultiPlotter::SetLineColor(std::string key, int c){
-    customColors = true;
+    mCustomColors = true;
     mHistos[key]->SetLineColor(c);
 }
 
@@ -201,7 +202,7 @@ void MultiPlotter::Draw(){
             continue;
         }
         
-        if (!customColors) it->second->SetLineColor(mColors[nloops%9]);
+        if (!mCustomColors) it->second->SetLineColor(mColors[nloops%9]);
         leg->AddEntry(it->second,it->second->GetName(),"l");
         
         if (nloops == 0){

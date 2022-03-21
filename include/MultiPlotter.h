@@ -16,9 +16,9 @@ class MultiPlotter{
         std::string mMaxKey = "";
         
         //drawing settings
-        int mColors[9] = {kBlack,kRed,kBlue,kGreen,kCyan,kViolet,kTeal,kAzure,kSpring};
-        bool customColors = false;
-        int mLineWidth = 2;
+        int mColors[10] = {kBlack,kRed,kBlue,kGreen,kCyan,kViolet,kTeal,kAzure,kSpring,kOrange};
+        bool mCustomColors = false;
+        int mLineWidth = 1;
 
         //functions
         void SortMax();
