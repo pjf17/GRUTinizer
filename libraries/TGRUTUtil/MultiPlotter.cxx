@@ -19,9 +19,14 @@ void MultiPlotter::Add(TH1F* pHist){
     mYMax = 0.0;
     mNHistos++;
     if (mHistos.count(std::string(pHist->GetName()))){
-        std::string hname = Form("%s%d",pHist->GetName(),mNHistos);
+        std::cout<<"Duplicate hist name, add modifier to make it unique."<<std::endl;
+        std::string modifier;
+        std::cout<<"Modifier: ";
+        std::cin>>modifier;
+        std::string hname = std::string(pHist->GetName()) + modifier;
         pHist->SetName(hname.c_str());
     }
+    std::cout<<"added "<<pHist->GetName()<<std::endl;
     mHistos.insert( std::pair<std::string,TH1F*>(pHist->GetName(),pHist) );
 }
 
@@ -81,7 +86,6 @@ void MultiPlotter::Add(TDirectoryFile *f){
                     if (nums[i] < nKeys && nums[i] >= 0){
                         TKey *key = sortedList[nums[i]];
                         TH1F *hout = (TH1F*) key->ReadObj();
-                        std::cout<<"added "<<hout->GetName()<<std::endl;
                         this->Add(hout);
                     }
                 }
