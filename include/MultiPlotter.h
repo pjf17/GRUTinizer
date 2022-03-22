@@ -16,7 +16,7 @@ class MultiPlotter{
         std::string mMaxKey = "";
         
         //drawing settings
-        int mColors[10] = {kBlack,kRed,kBlue,kGreen,kCyan,kViolet,kTeal,kAzure,kSpring,kOrange};
+        int mColors[12] = {kBlack,kRed,kBlue,kGreen,kCyan,kOrange,kViolet,kGray,kYellow+3,kCyan+3,kBlue-3,kRed+3};
         bool mCustomColors = false;
         int mLineWidth = 1;
 
