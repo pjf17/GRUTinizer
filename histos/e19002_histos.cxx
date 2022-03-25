@@ -430,33 +430,35 @@ void MakeHistograms(TRuntimeObjects& obj) {
                     }
                   }
 
+                  //make swapped spectra
+                  TGretinaHit nnhit1 = nnhit.GetInitialHit();
+                  TGretinaHit nnhit2 = nnhit.GetNeighbor();
+                  nnhit2.NNAdd(nnhit1);
+                  double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+
                   //POLARIZATION
                   if ( PairHit(nnhit,redPairs) ){
                     obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_red_pair", 8192,0,8192, swappedEnergy);
                   }
 
                   if ( PairHit(nnhit,goldPairs) ){
                     obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_gold_pair", 8192,0,8192, swappedEnergy);
                   }
 
                   if ( PairHit(nnhit,bluePairs) ){
                     obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname, Form("gamma_corrected_blue_pair_ring%02d",ringNum), 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_blue_pair", 8192,0,8192, swappedEnergy);
                   }
 
-                  //N1 Neighbor correlations
-                  // TGretinaHit nnhit1 = nnhit.GetInitialHit();
-                  // TGretinaHit nnhit2 = nnhit.GetNeighbor();
                   // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
                   // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
                   // //   singleCrystalEnergy = nnhit1.GetCoreEnergy();
                   // // }
                   // obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
-
-                  // //make swapped spectra
-                  // nnhit2.NNAdd(nnhit1);
-                  // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-                  // obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_prompt",n), 8192,0,8192, swappedEnergy);
+                  
+                  obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_prompt",n), 8192,0,8192, swappedEnergy);
                   // obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_ring%02d_crystal%d_prompt",n,ringNum,cryID),8192,0,8192, swappedEnergy);
                   // obj.FillHistogram(dirname, Form("total_energy_swapped_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,nnhit1.GetCoreEnergy(),4096,0,8192,swappedEnergy);                  
                 }
