@@ -24,6 +24,7 @@ class MultiPlotter{
         void SortMax();
         bool ParseInput(char *input, std::vector<int> &nums);
         void doSetLineWidth();
+        bool Exists(std::string key);
 
     public:
         void Add(TH1F* pHist);
@@ -36,7 +37,8 @@ class MultiPlotter{
 
         TH1F *GetClone(std::string key);
         TH1F *Get(std::string key);
-
+        
+        void Rebin(int bg=2);
         void SetLineWidth(int w);
         void SetLineColor(std::string key, int c);
         void SetRange(double xlo, double xhi);

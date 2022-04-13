@@ -95,7 +95,7 @@ void MultiPlotter::Add(TDirectoryFile *f){
 }
 
 void MultiPlotter::Erase(std::string key){
-    mHistos.erase(key);
+    if (Exists(key)) mHistos.erase(key);
 }
 
 void MultiPlotter::Clear(){
@@ -127,8 +127,10 @@ void MultiPlotter::SetLineWidth(int w){
 }
 
 void MultiPlotter::SetLineColor(std::string key, int c){
-    mCustomColors = true;
-    mHistos[key]->SetLineColor(c);
+    if (Exists(key)){
+        mCustomColors = true;
+        mHistos[key]->SetLineColor(c);   
+    }
 }
 
 void MultiPlotter::SetRange(double xlo, double xhi){
@@ -158,6 +160,7 @@ void MultiPlotter::Norm(std::string mode){
     double norm = 0.0;
     if (mode == "area") norm = it->second->Integral();
     else if (mode == "height") norm = it->second->GetMaximum();
+    it++;
     while (it != end){ 
         if (mode == "area") it->second->Scale(norm/it->second->Integral());
         else if (mode == "height") it->second->Scale(norm/it->second->GetMaximum());
@@ -170,7 +173,7 @@ void MultiPlotter::Norm(std::string mode){
 }
 
 void MultiPlotter::Fit(std::string key, TF1 *f){
-    mHistos[key]->Fit(f);
+    if (Exists(key)) mHistos[key]->Fit(f);
 }
 
 void MultiPlotter::Fit(TF1 *f){
@@ -184,7 +187,7 @@ void MultiPlotter::Fit(TF1 *f){
 }
 
 void MultiPlotter::Draw(std::string key){
-    mHistos[key]->Draw("hist");
+    if (Exists(key)) mHistos[key]->Draw("hist");
 }
 
 void MultiPlotter::Draw(){
@@ -222,6 +225,15 @@ void MultiPlotter::Draw(){
     }
 
     leg->Draw("same");
+}
+
+void MultiPlotter::Rebin(int bg){
+    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    while (it != end){
+        it->second->Rebin(bg);
+        it++;
+    }
 }
 
 //PRIVATE FUNCTIONS
@@ -282,4 +294,12 @@ void MultiPlotter::doSetLineWidth(){
         it->second->SetLineWidth(mLineWidth);
         it++;
     }
+}
+
+bool MultiPlotter::Exists(std::string key){
+    bool does_exist = mHistos.count(key);
+    if (!does_exist) {
+        std::cout<<"Error, histogram not found in list"<<std::endl;
+    }
+    return does_exist;
 }
