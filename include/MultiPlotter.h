@@ -3,14 +3,14 @@
 #include <string>
 
 #include "TFile.h"
-#include "TH1F.h"
+#include "TH1D.h"
 #include "TF1.h"
 
 class MultiPlotter{
     private:
         //variables
         int mNHistos = 0;
-        std::map<std::string, TH1F*> mHistos;
+        std::map<std::string, TH1D*> mHistos;
 
         double mYMax = 0.0;
         std::string mMaxKey = "";
@@ -27,7 +27,7 @@ class MultiPlotter{
         bool Exists(std::string key);
 
     public:
-        void Add(TH1F* pHist);
+        void Add(TH1D* pHist);
         void Add(TFile *f, const char *hname);
         void Add(TDirectoryFile *f);
 
@@ -35,8 +35,8 @@ class MultiPlotter{
         void Erase(std::string key);
         void List();
 
-        TH1F *GetClone(std::string key);
-        TH1F *Get(std::string key);
+        TH1D *GetClone(std::string key);
+        TH1D *Get(std::string key);
         
         void Rebin(int bg=2);
         void SetLineWidth(int w);

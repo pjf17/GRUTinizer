@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "TFile.h"
-#include "TH1F.h"
+#include "TH1D.h"
 #include "TKey.h"
 #include "TLegend.h"
 #include "TStyle.h"
@@ -15,7 +15,7 @@
 
 //PUBLIC FUNCTIONS
 
-void MultiPlotter::Add(TH1F* pHist){
+void MultiPlotter::Add(TH1D* pHist){
     mYMax = 0.0;
     mNHistos++;
     if (mHistos.count(std::string(pHist->GetName()))){
@@ -27,11 +27,11 @@ void MultiPlotter::Add(TH1F* pHist){
         pHist->SetName(hname.c_str());
     }
     std::cout<<"added "<<pHist->GetName()<<std::endl;
-    mHistos.insert( std::pair<std::string,TH1F*>(pHist->GetName(),pHist) );
+    mHistos.insert( std::pair<std::string,TH1D*>(pHist->GetName(),pHist) );
 }
 
 void MultiPlotter::Add(TFile *f, const char *hname){
-    TH1F* h = (TH1F*) f->Get(hname);
+    TH1D* h = (TH1D*) f->Get(hname);
     this->Add(h);
 }
 
@@ -85,7 +85,7 @@ void MultiPlotter::Add(TDirectoryFile *f){
                 for (int i=0; i < N; i++){
                     if (nums[i] < nKeys && nums[i] >= 0){
                         TKey *key = sortedList[nums[i]];
-                        TH1F *hout = (TH1F*) key->ReadObj();
+                        TH1D *hout = (TH1D*) key->ReadObj();
                         this->Add(hout);
                     }
                 }
@@ -106,19 +106,19 @@ void MultiPlotter::Clear(){
 }
 
 void MultiPlotter::List(){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         std::cout<<it->first<<std::endl;
         it++;
     }
 }
 
-TH1F* MultiPlotter::GetClone(std::string key){
-    return (TH1F*) mHistos[key]->Clone();
+TH1D* MultiPlotter::GetClone(std::string key){
+    return (TH1D*) mHistos[key]->Clone();
 }
 
-TH1F* MultiPlotter::Get(std::string key){
+TH1D* MultiPlotter::Get(std::string key){
     return mHistos[key];
 }
 
@@ -134,8 +134,8 @@ void MultiPlotter::SetLineColor(std::string key, int c){
 }
 
 void MultiPlotter::SetRange(double xlo, double xhi){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         it->second->GetXaxis()->SetRangeUser(xlo,xhi);
         it++;
@@ -143,8 +143,8 @@ void MultiPlotter::SetRange(double xlo, double xhi){
 }
 
 void MultiPlotter::IterateLineStyle(){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     int style = 1;
     while (it != end){
         it->second->SetLineStyle(style);
@@ -154,8 +154,8 @@ void MultiPlotter::IterateLineStyle(){
 }
 
 void MultiPlotter::Norm(std::string mode){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
 
     double norm = 0.0;
     if (mode == "area") norm = it->second->Integral();
@@ -177,8 +177,8 @@ void MultiPlotter::Fit(std::string key, TF1 *f){
 }
 
 void MultiPlotter::Fit(TF1 *f){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         new TCanvas();
         it->second->Fit(f);
@@ -193,15 +193,15 @@ void MultiPlotter::Draw(std::string key){
 void MultiPlotter::Draw(){
     doSetLineWidth();
     if (mYMax == 0.0) SortMax();
-    std::map<std::string, TH1F*>::iterator max = mHistos.find(mMaxKey);
+    std::map<std::string, TH1D*>::iterator max = mHistos.find(mMaxKey);
     
     //initialize legend
     TLegend *leg = new TLegend(0.72,0.99 - mNHistos*0.06,0.99,0.99);
     gStyle->SetOptStat(0);
     
     //draw all histos
-    std::map<std::string, TH1F*>::iterator it = max;
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = max;
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     int nloops = 0;
     while (it != end || nloops == 0){
         if (it == max && nloops > 0) {
@@ -209,7 +209,7 @@ void MultiPlotter::Draw(){
             continue;
         }
         
-        if (!mCustomColors) it->second->SetLineColor(mColors[nloops%9]);
+        if (!mCustomColors) it->second->SetLineColor(mColors[nloops%12]);
         leg->AddEntry(it->second,it->second->GetName(),"l");
         
         if (nloops == 0){
@@ -228,8 +228,8 @@ void MultiPlotter::Draw(){
 }
 
 void MultiPlotter::Rebin(int bg){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         it->second->Rebin(bg);
         it++;
@@ -239,8 +239,8 @@ void MultiPlotter::Rebin(int bg){
 //PRIVATE FUNCTIONS
 
 void MultiPlotter::SortMax(){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         double tmpMax = it->second->GetMaximum();
         if (tmpMax > mYMax){
@@ -288,8 +288,8 @@ bool MultiPlotter::ParseInput(char *input, std::vector<int> &nums){
 }
 
 void MultiPlotter::doSetLineWidth(){
-    std::map<std::string, TH1F*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1F*>::iterator end = mHistos.end();
+    std::map<std::string, TH1D*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1D*>::iterator end = mHistos.end();
     while (it != end){
         it->second->SetLineWidth(mLineWidth);
         it++;
