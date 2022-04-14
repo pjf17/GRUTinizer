@@ -207,6 +207,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, core_energy);
         if (n == 0){
           obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 8192,0,8192, core_energy);
+          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 8192,0,8192, core_energy);
         }
       }
     }
