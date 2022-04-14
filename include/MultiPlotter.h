@@ -3,14 +3,14 @@
 #include <string>
 
 #include "TFile.h"
-#include "TH1D.h"
+#include "TH1.h"
 #include "TF1.h"
 
 class MultiPlotter{
     private:
         //variables
         int mNHistos = 0;
-        std::map<std::string, TH1D*> mHistos;
+        std::map<std::string, TH1*> mHistos;
 
         double mYMax = 0.0;
         std::string mMaxKey = "";
@@ -19,6 +19,8 @@ class MultiPlotter{
         int mColors[12] = {kBlack,kRed,kBlue,kGreen,kCyan,kOrange,kViolet,kGray,kYellow+3,kCyan+3,kBlue-3,kRed+3};
         bool mCustomColors = false;
         int mLineWidth = 1;
+        double mXlo = -123;
+        double mXhi = -123;
 
         //functions
         void SortMax();
@@ -27,7 +29,7 @@ class MultiPlotter{
         bool Exists(std::string key);
 
     public:
-        void Add(TH1D* pHist);
+        void Add(TH1* pHist);
         void Add(TFile *f, const char *hname);
         void Add(TDirectoryFile *f);
 
@@ -35,13 +37,15 @@ class MultiPlotter{
         void Erase(std::string key);
         void List();
 
-        TH1D *GetClone(std::string key);
-        TH1D *Get(std::string key);
+        TH1 *GetClone(std::string key);
+        TH1 *Get(std::string key);
+        void FitGaus(double xlo, double xhi, Option_t *opt="");
         
         void Rebin(int bg=2);
         void SetLineWidth(int w);
         void SetLineColor(std::string key, int c);
         void SetRange(double xlo, double xhi);
+        void ResetRange();
         void IterateLineStyle();
 
         void Norm(std::string mode="area");
