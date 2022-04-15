@@ -152,41 +152,41 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //POLARIZATION
           if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair_tot", 8192,0,8192, core_energy);
+            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
           }
 
           if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair_tot", 8192,0,8192, core_energy);
+            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
           }
 
           if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair_tot", 8192,0,8192, core_energy);
+            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
           }
-          if (nnhit1.GetCrystalId() == 63 ) {
+          if (nnhit1.GetCrystalId() == 63 || nnhit1.GetCrystalId() == 70) {
             if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_addback_red_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
             }
 
             if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_addback_gold_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
             }
 
             if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_addback_blue_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
             }
           } 
 
-          if (nnhit2.GetCrystalId() == 63 ) {
+          if (nnhit2.GetCrystalId() == 63 || nnhit2.GetCrystalId() == 70) {
             if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_red_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_red_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
             }
 
             if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_gold_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_gold_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
             }
 
             if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_blue_pair", 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_blue_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
             }
           } 
 
