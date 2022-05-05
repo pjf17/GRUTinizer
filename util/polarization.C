@@ -30,8 +30,8 @@ void polarization(TFile *f, std::string folder, int bw){
     }
 
     //normalize
-    double slope[2] = {-8.8404E-6,-3.3327E-06};
-    double incpt[2] = {1.1698,1.1843};
+    double slope[2] = {-8.8686E-6,-3.2959E-06};
+    double incpt[2] = {1.1699,1.1843};
  
     //add and subtract
     std::vector<std::vector<TH1D*>> sum_hists, diff_hists, stat_hists;

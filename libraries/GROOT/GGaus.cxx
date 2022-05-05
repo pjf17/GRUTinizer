@@ -271,15 +271,17 @@ Bool_t GGaus::Fit(TH1 *fithist,Option_t *opt) {
 
 
   fArea = this->Integral(xlow,xhigh) / fithist->GetBinWidth(1);
-  double bgArea = fBGFit.Integral(xlow,xhigh) / fithist->GetBinWidth(1);;
+  fDArea = this->IntegralError(xlow,xhigh,fitres->GetParams(),fitres->GetCovarianceMatrix().GetMatrixArray()) / fithist->GetBinWidth(1);
+  double bgArea = fBGFit.Integral(xlow,xhigh) / fithist->GetBinWidth(1);
+  double bgDArea = fBGFit.IntegralError(xlow,xhigh,&(fitres->GetParams())[3],fitres->GetCovarianceMatrix().GetSub(3,4,3,4).GetMatrixArray()) / fithist->GetBinWidth(1);
+  // fDArea = TMath::Sqrt(fDArea*fDArea + bgDArea*bgDArea);
   fArea -= bgArea;
-
 
   if(xlow>xhigh)
     std::swap(xlow,xhigh);
   fSum = fithist->Integral(fithist->GetXaxis()->FindBin(xlow),
                            fithist->GetXaxis()->FindBin(xhigh)); //* fithist->GetBinWidth(1);
-  fDSum = TMath::Sqrt(fSum);
+  fDSum = TMath::Sqrt(fSum /*+ bgDArea*bgDArea*/);
   fSum -= bgArea;
   fChi2  = TF1::GetChisquare();
   fNdf   = TF1::GetNDF();

@@ -256,7 +256,7 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     std::cout<<"name\tcentroid\tpeak area\tpeak sum err\n";
     while (it != end){
         GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
-        printf("%s\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetSumErr());
+        printf("%s\t%f\t%f\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetAreaErr(),fitR->GetSum(),fitR->GetSumErr());
         it++;
     }
 }
