@@ -30,8 +30,10 @@ void polarization(TFile *f, std::string folder, int bw){
     }
 
     //normalize
-    double slope[2] = {-8.8686E-6,-3.2959E-06};
-    double incpt[2] = {1.1699,1.1843};
+    // double slope[2] = {-8.8686E-6,-3.2959E-06};
+    // double incpt[2] = {1.1699,1.1843};
+    double norm[2] = {1.16267,1.18164};
+    // double norm[2] = {18.0/14,18.0/13};
  
     //add and subtract
     std::vector<std::vector<TH1D*>> sum_hists, diff_hists, stat_hists;
@@ -43,36 +45,35 @@ void polarization(TFile *f, std::string folder, int bw){
                 
                 std::string flag = "dflt";
                 if (i == 1) flag = "swap"; 
-                // int lobin = hists[i][k]->FindBin(1100);
-                // int hibin = hists[i][k]->FindBin(1600);
                 TH1D *hSum = (TH1D*) hists[i][j]->Clone(Form("%s+%s_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
                 TH1D *hDif = (TH1D*) hists[i][j]->Clone(Form("%s-%s_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
                 TH1D *hStat = (TH1D*) hists[i][j]->Clone(Form("%s-%s/(sigma)_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
-                // norm = hists[i][j]->Integral()/hists[i][k]->Integral();
-                // hSum->Add(hists[i][k],hists[i][j]->Integral(lobin,hibin)/hists[i][k]->Integral(lobin,hibin));
-                // hDif->Add(hists[i][k],-1.0*hists[i][j]->Integral(lobin,hibin)/hists[i][k]->Integral(lobin,hibin));
-                // hSum->Add(hists[i][k],norm);
-                // hDif->Add(hists[i][k],-1.0*norm);
+                if (j!=0){
+                    hSum->Scale(norm[0]);
+                    hDif->Scale(norm[0]);
+                }
+                hSum->Add(hists[i][k],norm[k-1]);
+                hDif->Add(hists[i][k],-1.0*norm[k-1]);
 
                 //calc what the expected statistical fluctuation of subtracting the
                 //hist would be if it was all random
-                int nBins = hists[i][j]->GetNbinsX();
-                for (int bin=1; bin <= nBins; bin++){
-                    double binContent = 0.0;
-                    double norm = hists[i][k]->GetBinCenter(bin)*slope[k-1] + incpt[k-1];
+                // int nBins = hists[i][j]->GetNbinsX();
+                // for (int bin=1; bin <= nBins; bin++){
+                //     double binContent = 0.0;
+                //     double norm = hists[i][k]->GetBinCenter(bin)*slope[k-1] + incpt[k-1];
 
-                    binContent = hSum->GetBinContent(bin) + norm*hists[i][k]->GetBinContent(bin);
-                    hSum->SetBinContent(bin,binContent);
+                //     binContent = hSum->GetBinContent(bin) + norm*hists[i][k]->GetBinContent(bin);
+                //     hSum->SetBinContent(bin,binContent);
 
-                    binContent = hDif->GetBinContent(bin) - norm*hists[i][k]->GetBinContent(bin);
-                    hDif->SetBinContent(bin,binContent);
+                //     binContent = hDif->GetBinContent(bin) - norm*hists[i][k]->GetBinContent(bin);
+                //     hDif->SetBinContent(bin,binContent);
 
-                    binContent = 0.0;
-                    if (hists[i][j]->GetBinContent(bin) > 0 || hists[i][k]->GetBinContent(bin) > 0) 
-                        binContent = hDif->GetBinContent(bin)/TMath::Sqrt(hists[i][j]->GetBinContent(bin) + hists[i][k]->GetBinContent(bin)*norm);
+                //     binContent = 0.0;
+                //     if (hists[i][j]->GetBinContent(bin) > 0 || hists[i][k]->GetBinContent(bin) > 0) 
+                //         binContent = hDif->GetBinContent(bin)/TMath::Sqrt(hists[i][j]->GetBinContent(bin) + hists[i][k]->GetBinContent(bin)*norm);
 
-                    hStat->SetBinContent(bin,binContent);
-                }
+                //     hStat->SetBinContent(bin,binContent);
+                // }
 
                 temp_sum_hists.push_back(hSum);
                 temp_diff_hists.push_back(hDif);
@@ -86,19 +87,19 @@ void polarization(TFile *f, std::string folder, int bw){
     //draw stuff
     for (int j=0; j < 3; j++){
         TCanvas *canv = new TCanvas(diff_hists[0][j]->GetName(),diff_hists[0][j]->GetName());
-        canv->Divide(2,3,0.001,0.001);
+        canv->Divide(2,2,0.001,0.001);
         // sum_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
         // diff_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
         // stat_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
-        // sum_hists[0][j]->GetXaxis()->SetRangeUser(400,3000);
-        // diff_hists[0][j]->GetXaxis()->SetRangeUser(400,3000);
-        // stat_hists[0][j]->GetXaxis()->SetRangeUser(400,3000);
+        sum_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
+        diff_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
+        stat_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
         for (int i=0; i < nconfigs; i++){
+            // canv->cd(2-i);
+            // stat_hists[i][j]->Draw();
             canv->cd(2-i);
-            stat_hists[i][j]->Draw();
-            canv->cd(4-i);
             diff_hists[i][j]->Draw();
-            canv->cd(6-i);
+            canv->cd(4-i);
             sum_hists[i][j]->Draw();
         }
         // canv->Write();

@@ -90,6 +90,15 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
+int scatterType(const TGretinaHit& abhit){
+  int cryId1 = abhit.GetCrystalId();
+  int cryId2 = abhit.GetNeighbor().GetCrystalId();
+  int out = 0; //one A and one B
+  if (cryId1%2 == 0 && cryId2%2 == 0) out = -1; //both are B type
+  else if (cryId1%2 != 0 && cryId2%2 != 0) out = 1; //both are A type
+  return out;
+}
+
 double calcScatteringAngle(const TGretinaHit &hit1, const TGretinaHit &hit2){
   TVector3 pos1 = hit1.GetPosition();
   TVector3 diff = hit2.GetPosition() - pos1;

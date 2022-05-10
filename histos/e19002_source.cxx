@@ -146,11 +146,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
           // }
 
-          //make swapped spectra
-          TGretinaHit nnhit1 = nnhit.GetInitialHit();
-          TGretinaHit nnhit2 = nnhit.GetNeighbor();
-          nnhit2.NNAdd(nnhit1);
-
           //POLARIZATION
           if ( PairHit(nnhit,redPairs) ){
             obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
@@ -163,37 +158,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if ( PairHit(nnhit,bluePairs) ){
             obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
           }
-          if (nnhit1.GetCrystalId() == 63 || nnhit1.GetCrystalId() == 70) {
-            if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_addback_red_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
-            }
 
-            if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_addback_gold_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
-            }
-
-            if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_addback_blue_pair_cr%d",nnhit1.GetCrystalId()), 8192,0,8192, core_energy);
-            }
-          } 
-
-          if (nnhit2.GetCrystalId() == 63 || nnhit2.GetCrystalId() == 70) {
-            if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_red_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
-            }
-
-            if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_gold_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
-            }
-
-            if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,Form("gamma_corrected_swapped_addback_blue_pair_cr%d",nnhit2.GetCrystalId()), 8192,0,8192, core_energy);
-            }
-          } 
-
-
-          
-
+          //SCATTER TYPE
+          int id1 = nnhit.GetCrystalId();
+          int id2 = nnhit.GetNeighbor().GetCrystalId();
+          if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
+            obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
+          if ((id1 == 64 && id2 == 66) || (id2 == 64 && id1 == 66)) 
+            obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
+          if ((id1 == 65 && id2 == 66) || (id1 == 65 && id2 == 66))
+            obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
+        
           // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
           // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
           // //   singleCrystalEnergy = nnhit1.GetCoreEnergy();
