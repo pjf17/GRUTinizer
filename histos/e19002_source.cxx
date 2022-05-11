@@ -20,6 +20,19 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::vector<std::map<std::string,std::pair<int,int>>> scatterGroups = {
+  {{"A-A",std::make_pair(65,69)}, {"A-B",std::make_pair(65,68)}, {"B-B",std::make_pair(66,68)}},
+  {{"A-A",std::make_pair(63,67)}, {"A-B",std::make_pair(62,67)}, {"B-B",std::make_pair(62,64)}},
+  {{"A-A",std::make_pair(57,61)}, {"A-B",std::make_pair(57,60)}, {"B-B",std::make_pair(58,60)}},
+  {{"A-A",std::make_pair(47,51)}, {"A-B",std::make_pair(46,51)}, {"B-B",std::make_pair(46,48)}}
+};
+
+bool checkScatterType(const TGretinaHit& abhit, std::pair<int,int> crystals){
+  int cryId1 = abhit.GetCrystalId();
+  int cryId2 = abhit.GetNeighbor().GetCrystalId();
+  return (cryId1 == crystals.first && cryId2 == crystals.second) || (cryId1 == crystals.second && cryId2 == crystals.first);
+}
+
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -160,14 +173,25 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
 
           //SCATTER TYPE
-          int id1 = nnhit.GetCrystalId();
-          int id2 = nnhit.GetNeighbor().GetCrystalId();
-          if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
-            obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
-          if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
-            obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
-          if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
-            obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
+          int ngroups = (int) scatterGroups.size();
+          for (int i=0; i < ngroups; i++){
+            std::map<std::string, std::pair<int,int>>::iterator it = scatterGroups[i].begin();
+            std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
+            while (it != end){
+                if (checkScatterType(nnhit,it->second)){
+                  obj.FillHistogram(dirname,Form("gamma_corrected_n1_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, core_energy);
+                }
+                it++;
+            }
+          }
+          // int id1 = nnhit.GetCrystalId();
+          // int id2 = nnhit.GetNeighbor().GetCrystalId();
+          // if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
+          //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
+          // if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
+          //   obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
+          // if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
+          //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
         
           // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
           // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
