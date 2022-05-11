@@ -164,9 +164,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int id2 = nnhit.GetNeighbor().GetCrystalId();
           if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
             obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
-          if ((id1 == 64 && id2 == 66) || (id2 == 64 && id1 == 66)) 
+          if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
             obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
-          if ((id1 == 65 && id2 == 66) || (id1 == 65 && id2 == 66))
+          if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
             obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
         
           // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
