@@ -252,6 +252,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 it++;
             }
           }
+
+          //totals
+          int id1 = nnhit.GetCrystalId();
+          int id2 = nnhit.GetNeighbor().GetCrystalId();
+          if (id1%2 == 1 && id2%2 == 1)
+            obj.FillHistogram(dirname,Form("gamma_n1_A-A"),8192,0,8192, gEnergy, 1.0/4);
+          else if (id1%2 == 0 && id2%2 == 0)
+            obj.FillHistogram(dirname,Form("gamma_n1_B-B"),8192,0,8192, gEnergy, 1.0/11);
+          else 
+            obj.FillHistogram(dirname,Form("gamma_n1_A-B"),8192,0,8192, gEnergy, 1.0/30);
         }
 
         char *multiplicity = Form("%d",n);
