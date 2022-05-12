@@ -275,15 +275,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname,"gamma_n0_prompt_fep", 1600,0,1600, gEnergy);
             // obj.FillHistogram("crystal-specific", Form("gamma_corrected_n0_ring%02d_crystal%d_prompt_fep",ringNum,cryID),1600,0,1600, gEnergy);
           }
-          if (cryID%2 == 1) {
-            obj.FillHistogram(dirname,"gamma_n0_A", 1600,0,1600, gEnergy);
-            if (isFEP) obj.FillHistogram(dirname,"gamma_n0_A_FEP", 1600,0,1600, gEnergy);
-            else obj.FillHistogram(dirname,"gamma_n0_A_COMPT", 1600,0,1600, gEnergy);
-          }
-          else{
-            obj.FillHistogram(dirname,"gamma_n0_B", 1600,0,1600, gEnergy);
-            if (isFEP) obj.FillHistogram(dirname,"gamma_n0_B_FEP", 1600,0,1600, gEnergy);
-            else obj.FillHistogram(dirname,"gamma_n0_B_COMPT", 1600,0,1600, gEnergy);
+          if (cryID > 40){
+            if (cryID%2 == 1) {
+              obj.FillHistogram(dirname,"gamma_n0_A", 1600,0,1600, gEnergy);
+              if (isFEP) obj.FillHistogram(dirname,"gamma_n0_A_FEP", 1600,0,1600, gEnergy);
+              else obj.FillHistogram(dirname,"gamma_n0_A_COMPT", 1600,0,1600, gEnergy);
+            }
+            else{
+              obj.FillHistogram(dirname,"gamma_n0_B", 1600,0,1600, gEnergy);
+              if (isFEP) obj.FillHistogram(dirname,"gamma_n0_B_FEP", 1600,0,1600, gEnergy);
+              else obj.FillHistogram(dirname,"gamma_n0_B_COMPT", 1600,0,1600, gEnergy);
+            }
           }
           // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 1600,0,1600, gEnergy);
           // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 1600,0,1600, gEnergy);
