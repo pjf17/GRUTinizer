@@ -246,7 +246,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   if (fabs(gammaEn - gEnergy) < 1.5)
                     obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
                   else 
-                    obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                    obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                  obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
                 }
                 it++;
             }
