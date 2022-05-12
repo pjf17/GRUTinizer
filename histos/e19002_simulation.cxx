@@ -186,6 +186,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
     double gammaEn = simHit.GetEn();
+    bool isFEP = simHit.IsFEP();
     // double gammaEnDop = simHit.GetDoppler();
     // double gammaBeta = simHit.GetBeta();
 
@@ -232,7 +233,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         
         //exclude the ng spectrum (n==3)
         if (n < 3){
-          obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, gEnergy);
+          obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 1600,0,1600, gEnergy);
         }
 
         if (n == 1) {
@@ -244,10 +245,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
             while (it != end){
                 if (checkScatterType(nnhit,it->second)){
                   if (fabs(gammaEn - gEnergy) < 1.5)
-                    obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                    obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
                   else 
-                    obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
-                  obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                    obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
+                  obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
                 }
                 it++;
             }
@@ -257,25 +258,35 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int id1 = nnhit.GetCrystalId();
           int id2 = nnhit.GetNeighbor().GetCrystalId();
           if (id1%2 == 1 && id2%2 == 1)
-            obj.FillHistogram(dirname,Form("gamma_n1_A-A"),8192,0,8192, gEnergy, 1.0/4);
+            obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy, 1.0/4);
           else if (id1%2 == 0 && id2%2 == 0)
-            obj.FillHistogram(dirname,Form("gamma_n1_B-B"),8192,0,8192, gEnergy, 1.0/11);
+            obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy, 1.0/11);
           else 
-            obj.FillHistogram(dirname,Form("gamma_n1_A-B"),8192,0,8192, gEnergy, 1.0/30);
+            obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, gEnergy, 1.0/30);
         }
 
         char *multiplicity = Form("%d",n);
         if (n == 3) multiplicity = Form("g");
-        obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, gEnergy);
+        obj.FillHistogram(dirname, Form("gamma_n%s",multiplicity), 1600,0,1600, gEnergy);
 
         if (n==0){
-          if (gretsim->GetGretinaSimHit(0).IsFEP()){
+          if (isFEP){
             dirname = "basicsim";
-            obj.FillHistogram(dirname,"gamma_corrected_n0_prompt_fep", 1600,0,1600, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n0_prompt_fep", 1600,0,1600, gEnergy);
             // obj.FillHistogram("crystal-specific", Form("gamma_corrected_n0_ring%02d_crystal%d_prompt_fep",ringNum,cryID),1600,0,1600, gEnergy);
           }
-          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 8192,0,8192, gEnergy);
-          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 8192,0,8192, gEnergy);
+          if (cryID%2 == 1) {
+            obj.FillHistogram(dirname,"gamma_n0_A", 1600,0,1600, gEnergy);
+            if (isFEP) obj.FillHistogram(dirname,"gamma_n0_A_FEP", 1600,0,1600, gEnergy);
+            else obj.FillHistogram(dirname,"gamma_n0_A_COMPT", 1600,0,1600, gEnergy);
+          }
+          else{
+            obj.FillHistogram(dirname,"gamma_n0_B", 1600,0,1600, gEnergy);
+            if (isFEP) obj.FillHistogram(dirname,"gamma_n0_B_FEP", 1600,0,1600, gEnergy);
+            else obj.FillHistogram(dirname,"gamma_n0_B_COMPT", 1600,0,1600, gEnergy);
+          }
+          // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 1600,0,1600, gEnergy);
+          // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 1600,0,1600, gEnergy);
         }
       }
     }
