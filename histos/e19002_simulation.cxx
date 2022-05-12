@@ -240,16 +240,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
           bool isN1FEP = fabs(gammaEn - gEnergy) < 1.5;
           //POLARIZATION
           if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, gEnergy);
-            if(isN1FEP) obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n1_red_pair", 8192,0,8192, gEnergy);
+            if(isN1FEP) obj.FillHistogram(dirname,"gamma_n1_FEP_red_pair", 8192,0,8192, gEnergy);
           }
           if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, gEnergy);
-            if(isN1FEP) obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n1_gold_pair", 8192,0,8192, gEnergy);
+            if(isN1FEP) obj.FillHistogram(dirname,"gamma_n1_FEP_gold_pair", 8192,0,8192, gEnergy);
           }
           if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, gEnergy);
-            if(isN1FEP) obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n1_blue_pair", 8192,0,8192, gEnergy);
+            if(isN1FEP) obj.FillHistogram(dirname,"gamma_n1_FEP_blue_pair", 8192,0,8192, gEnergy);
           }
 
           //SCATTER TYPE
