@@ -86,6 +86,7 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(65,68),
   std::make_pair(68,71),
   std::make_pair(76,79),
+  std::make_pair(69,70)
 };
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
