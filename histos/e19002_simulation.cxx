@@ -287,7 +287,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               else obj.FillHistogram(dirname,"gamma_n0_B_COMPT", 1600,0,1600, gEnergy);
             }
           }
-          // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 1600,0,1600, gEnergy);
+          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 1600,0,1600, gEnergy);
           // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 1600,0,1600, gEnergy);
         }
       }
