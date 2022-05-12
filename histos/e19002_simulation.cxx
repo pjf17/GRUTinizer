@@ -22,6 +22,19 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::vector<std::map<std::string,std::pair<int,int>>> scatterGroups = {
+  {{"A-A",std::make_pair(65,69)}, {"A-B",std::make_pair(65,68)}, {"B-B",std::make_pair(66,68)}},
+  {{"A-A",std::make_pair(63,67)}, {"A-B",std::make_pair(62,67)}, {"B-B",std::make_pair(62,64)}},
+  {{"A-A",std::make_pair(57,61)}, {"A-B",std::make_pair(57,60)}, {"B-B",std::make_pair(58,60)}},
+  {{"A-A",std::make_pair(47,51)}, {"A-B",std::make_pair(46,51)}, {"B-B",std::make_pair(46,48)}}
+};
+
+bool checkScatterType(const TGretinaHit& abhit, std::pair<int,int> crystals){
+  int cryId1 = abhit.GetCrystalId();
+  int cryId2 = abhit.GetNeighbor().GetCrystalId();
+  return (cryId1 == crystals.first && cryId2 == crystals.second) || (cryId1 == crystals.second && cryId2 == crystals.first);
+}
+
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -173,7 +186,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
     
   if (gretina){
-    double FEP = GValue::Value("FEP_EN");
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
     double gammaEn = simHit.GetEn();
     double gammaEnDop = simHit.GetDoppler();
@@ -184,22 +196,22 @@ void MakeHistograms(TRuntimeObjects& obj) {
     for (int i=0; i < gSize; i++){
       TGretinaHit &hit = gretina->GetGretinaHit(i);
 
-      double energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
-      double energy = hit.GetDoppler(GValue::Value("BETA"));
+      // double energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+      // double energy = hit.GetDoppler(GValue::Value("BETA"));
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
       double phi = hit.GetPhi();
       int cryID = hit.GetCrystalId();
       
       obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
-      obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
-      obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-      obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
-      obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
+      // obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+      // obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
+      // obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
+      // obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
       obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
       
       //crystal angles
-      obj.FillHistogram(dirname, Form("theta_vs_crystalID_ring%d",gretina->GetRingNumber(cryID)),56,24,80,cryID,360,0,180,hit.GetThetaDeg());
+      // obj.FillHistogram(dirname, Form("theta_vs_crystalID_ring%d",gretina->GetRingNumber(cryID)),56,24,80,cryID,360,0,180,hit.GetThetaDeg());
       obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi*TMath::RadToDeg(),360,0,180, theta*TMath::RadToDeg());
 
     }
@@ -216,37 +228,43 @@ void MakeHistograms(TRuntimeObjects& obj) {
         TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
         int cryID = nnhit.GetCrystalId();
         int ringNum = nnhit.GetRingNumber();
-        double nnEnergy_corrected = nnhit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+        double gEnergy = 0;
+        if (stopped) gEnergy = nnhit.GetCoreEnergy();
+        else gEnergy = nnhit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
         
         //exclude the ng spectrum (n==3)
         if (n < 3){
-          obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+          obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, gEnergy);
         }
 
         if (n == 1) {
           //SCATTER TYPE
-          int id1 = nnhit.GetCrystalId();
-          int id2 = nnhit.GetNeighbor().GetCrystalId();
-          if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
-            obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, nnEnergy_corrected); //both are type A
-          if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
-            obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, nnEnergy_corrected); //both are type B
-          if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
-            obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, nnEnergy_corrected); //type A and B
+          int ngroups = (int) scatterGroups.size();
+          for (int i=0; i < ngroups; i++){
+            std::map<std::string, std::pair<int,int>>::iterator it = scatterGroups[i].begin();
+            std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
+            while (it != end){
+                if (checkScatterType(nnhit,it->second)){
+                  obj.FillHistogram(dirname,Form("gamma_corrected_n1_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                }
+                it++;
+            }
+          }
         }
 
         char *multiplicity = Form("%d",n);
         if (n == 3) multiplicity = Form("g");
-        obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, nnEnergy_corrected);
+        obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, gEnergy);
 
         if (n==0){
           if (gretsim->GetGretinaSimHit(0).IsFEP()){
             dirname = "basicsim";
-            obj.FillHistogram(dirname,"gamma_corrected_n0_prompt_fep", 1600,0,1600, nnEnergy_corrected);
-            // obj.FillHistogram("crystal-specific", Form("gamma_corrected_n0_ring%02d_crystal%d_prompt_fep",ringNum,cryID),1600,0,1600, nnEnergy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_n0_prompt_fep", 1600,0,1600, gEnergy);
+            // obj.FillHistogram("crystal-specific", Form("gamma_corrected_n0_ring%02d_crystal%d_prompt_fep",ringNum,cryID),1600,0,1600, gEnergy);
           }
+          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 8192,0,8192, gEnergy);
+          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 8192,0,8192, gEnergy);
         }
-        
       }
     }
   }
