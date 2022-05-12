@@ -202,6 +202,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double theta = hit.GetTheta();
       double phi = hit.GetPhi();
       int cryID = hit.GetCrystalId();
+      if (cryID == 77) continue;
       
       obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
       // obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
