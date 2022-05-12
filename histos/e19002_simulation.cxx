@@ -237,6 +237,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         }
 
         if (n == 1) {
+          bool isN1FEP = fabs(gammaEn - gEnergy) < 1.5;
           //SCATTER TYPE
           int ngroups = (int) scatterGroups.size();
           for (int i=0; i < ngroups; i++){
@@ -244,7 +245,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
             while (it != end){
                 if (checkScatterType(nnhit,it->second)){
-                  if (fabs(gammaEn - gEnergy) < 1.5)
+                  if (isN1FEP)
                     obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
                   else 
                     obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
@@ -257,12 +258,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //totals
           int id1 = nnhit.GetCrystalId();
           int id2 = nnhit.GetNeighbor().GetCrystalId();
-          if (id1%2 == 1 && id2%2 == 1)
+          if (id1%2 == 1 && id2%2 == 1){
             obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy);
-          else if (id1%2 == 0 && id2%2 == 0)
+            if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_A-A_FEP"),1600,0,1600, gEnergy);
+          }
+          else if (id1%2 == 0 && id2%2 == 0){
             obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy);
-          else 
+            if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_B-B_FEP"),1600,0,1600, gEnergy);
+          }
+          else{
             obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, gEnergy);
+            if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_A-B_FEP"),1600,0,1600, gEnergy);
+          } 
         }
 
         char *multiplicity = Form("%d",n);
