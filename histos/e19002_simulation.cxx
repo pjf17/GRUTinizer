@@ -149,8 +149,6 @@ void LoadGates(TRuntimeObjects &obj){
   std::cout << "gates size: " << gates_2D.size() << std::endl;
 }
 
-int THETAMAX = 360;
-
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -179,7 +177,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   std::string dirname("basicsim");
   TVector3 track;
-  double yta;
+  double yta=0;
   if (!stopped){
     track = s800sim->Track(0,0);
     yta = s800sim->GetS800SimHit(0).GetYTA();
@@ -188,8 +186,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
     double gammaEn = simHit.GetEn();
-    double gammaEnDop = simHit.GetDoppler();
-    double gammaBeta = simHit.GetBeta();
+    // double gammaEnDop = simHit.GetDoppler();
+    // double gammaBeta = simHit.GetBeta();
 
     //SINGLES
     int gSize = gretina->Size();
@@ -245,7 +243,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
             std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
             while (it != end){
                 if (checkScatterType(nnhit,it->second)){
-                  obj.FillHistogram(dirname,Form("gamma_corrected_n1_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                  if (fabs(gammaEn - gEnergy) < 1.5)
+                    obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
+                  else 
+                    obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, gEnergy);
                 }
                 it++;
             }
