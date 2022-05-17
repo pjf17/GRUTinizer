@@ -184,6 +184,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 it++;
             }
           }
+
+          //totals
+          if (cryID > 40){ //only use 90 degree quads
+            int id1 = nnhit.GetCrystalId();
+            int id2 = nnhit.GetNeighbor().GetCrystalId();
+            if (id1%2 == 1 && id2%2 == 1){
+              obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, core_energy);
+            }
+            else if (id1%2 == 0 && id2%2 == 0){
+              obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, core_energy);
+            }
+            else{
+              obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, core_energy);
+            }
+          }
           // int id1 = nnhit.GetCrystalId();
           // int id2 = nnhit.GetNeighbor().GetCrystalId();
           // if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
