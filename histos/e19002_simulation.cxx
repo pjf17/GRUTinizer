@@ -232,6 +232,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double gEnergy = 0;
         if (stopped) gEnergy = nnhit.GetCoreEnergy();
         else gEnergy = nnhit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+
+        double thresh = 100;
+        if (nnhit.GetCoreEnergy() < thresh) continue;
         
         //exclude the ng spectrum (n==3)
         if (n < 3){
@@ -239,6 +242,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         }
 
         if (n == 1) {
+          if (nnhit.GetNeighbor().GetCoreEnergy() < thresh) continue;
           bool isN1FEP = fabs(gammaEn - gEnergy) < 1.5;
           //POLARIZATION
           if ( PairHit(nnhit,redPairs) ){
