@@ -221,7 +221,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     //loop over multiplicity
     for (int n=0; n<2; n++){
       //loop over hits for each multiplicity spectrum
-      int nnSize = gretina->NNAddbackSize(n);
+      int nnSize = gretina->NNAddbackSize(n,false);
       for (int i=0; i < nnSize; i++){
         dirname = "basicsim";
 
@@ -283,15 +283,23 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy);
               if (isN1FEP){ 
                 obj.FillHistogram(dirname,Form("gamma_n1_A-A_FEP"),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,"crystal-map_A-A_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
               }
             }
             else if (id1%2 == 0 && id2%2 == 0){
               obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy);
-              if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_B-B_FEP"),1600,0,1600, gEnergy);
+              if (isN1FEP){
+                obj.FillHistogram(dirname,Form("gamma_n1_B-B_FEP"),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,"crystal-map_B-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+              }
             }
             else{
               obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, gEnergy);
-              if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_A-B_FEP"),1600,0,1600, gEnergy);
+              if (isN1FEP){
+                obj.FillHistogram(dirname,Form("gamma_n1_A-B_FEP"),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,"crystal-map_A-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+                obj.FillHistogram(dirname,"gamma_n1_A-B_FEP_first_hit",2,0,1,id1%2);
+              }
             }
           }
         }
