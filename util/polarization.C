@@ -23,9 +23,11 @@ void polarization(TFile *f, std::string folder, int bw){
     }
     
     //rebin to specified bins
-    for (int i=0; i < nconfigs; i++) {
-        for (int j=0; j < 3; j++) {
-            hists[i][j]->Rebin(bw);
+    if (bw != 1){
+        for (int i=0; i < nconfigs; i++) {
+            for (int j=0; j < 3; j++) {
+                hists[i][j]->Rebin(bw);
+            }
         }
     }
 

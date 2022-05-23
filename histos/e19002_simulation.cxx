@@ -259,21 +259,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
 
           //SCATTER TYPE
-          int ngroups = (int) scatterGroups.size();
-          for (int i=0; i < ngroups; i++){
-            std::map<std::string, std::pair<int,int>>::iterator it = scatterGroups[i].begin();
-            std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
-            while (it != end){
-                if (checkScatterType(nnhit,it->second)){
-                  if (isN1FEP)
-                    obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
-                  else 
-                    obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
-                  obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
-                }
-                it++;
-            }
-          }
+          // int ngroups = (int) scatterGroups.size();
+          // for (int i=0; i < ngroups; i++){
+          //   std::map<std::string, std::pair<int,int>>::iterator it = scatterGroups[i].begin();
+          //   std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
+          //   while (it != end){
+          //       if (checkScatterType(nnhit,it->second)){
+          //         if (isN1FEP)
+          //           obj.FillHistogram(dirname,Form("gamma_n1_FEP_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
+          //         else 
+          //           obj.FillHistogram(dirname,Form("gamma_n1_COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
+          //         obj.FillHistogram(dirname,Form("gamma_n1_FEP+COMPT_grp%d_%s",i+1,it->first.c_str()),1600,0,1600, gEnergy);
+          //       }
+          //       it++;
+          //   }
+          // }
 
           //totals
           if (cryID > 40){ //only use 90 degree quads
@@ -281,7 +281,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int id2 = nnhit.GetNeighbor().GetCrystalId();
             if (id1%2 == 1 && id2%2 == 1){
               obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy);
-              if (isN1FEP) obj.FillHistogram(dirname,Form("gamma_n1_A-A_FEP"),1600,0,1600, gEnergy);
+              if (isN1FEP){ 
+                obj.FillHistogram(dirname,Form("gamma_n1_A-A_FEP"),1600,0,1600, gEnergy);
+              }
             }
             else if (id1%2 == 0 && id2%2 == 0){
               obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy);
@@ -307,11 +309,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if (cryID > 40){
             if (cryID%2 == 1) {
               obj.FillHistogram(dirname,"gamma_n0_A", 1600,0,1600, gEnergy);
-              if (isFEP) obj.FillHistogram(dirname,"gamma_n0_A_FEP", 1600,0,1600, gEnergy);
+              obj.FillHistogram(dirname, "crystal-map_A",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+              if (isFEP) {
+                obj.FillHistogram(dirname,"gamma_n0_A_FEP", 1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname, "crystal-map_A_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+              }
             }
             else{
               obj.FillHistogram(dirname,"gamma_n0_B", 1600,0,1600, gEnergy);
-              if (isFEP) obj.FillHistogram(dirname,"gamma_n0_B_FEP", 1600,0,1600, gEnergy);
+              obj.FillHistogram(dirname, "crystal-map_B",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+              if (isFEP) {
+                obj.FillHistogram(dirname,"gamma_n0_B_FEP", 1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname, "crystal-map_B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
+              }
             }
           }
           obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 1600,0,1600, gEnergy);
