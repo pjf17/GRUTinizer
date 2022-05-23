@@ -83,7 +83,7 @@ void TGretina::BuildAddback(int EngRange) const {
   }
 }
 
-void TGretina::BuildNNAddback(int EngRange) const {
+void TGretina::BuildNNAddback(bool SortByEng, int EngRange) const {
   if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
     return;
   }
@@ -100,10 +100,12 @@ void TGretina::BuildNNAddback(int EngRange) const {
   //sort so that the first hit has the greatest energy
   //this way we can loop through i,j with i < j and know that 
   //any hit with higher energy cannot be an addback to one with lower energy
-  std::sort(temp_hits.begin(), temp_hits.end(),
-	    [](const TGretinaHit& a, const TGretinaHit& b) {
-	      return a.GetCoreEnergy() > b.GetCoreEnergy();
-	    });
+  if (SortByEng){
+    std::sort(temp_hits.begin(), temp_hits.end(),
+        [](const TGretinaHit& a, const TGretinaHit& b) {
+          return a.GetCoreEnergy() > b.GetCoreEnergy();
+        });
+  }
   
   //loop through every hit
   for(unsigned int i=0; i < temp_hits.size(); i++) {
