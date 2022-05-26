@@ -252,10 +252,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
 
           if ( PairHit(nnhit,TwoQuadPairs) ){
-            obj.FillHistogram(dirname,"gamma_n1_gap_pair", 8192,0,8192, core_energy);
+            obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
           }
           if ( PairHit(nnhit,OneQuadPairs) ){
-            obj.FillHistogram(dirname,"gamma_n1_no_gap_pair", 8192,0,8192, core_energy);
+            obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
           }
           // int id1 = nnhit.GetCrystalId();
           // int id2 = nnhit.GetNeighbor().GetCrystalId();
