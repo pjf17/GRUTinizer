@@ -324,16 +324,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int quadtype = 0;
           if ( PairHit(nnhit,TwoQuadPairs) ){
             quadtype = 2;
-            obj.FillHistogram(dirname,"gamma_n1_gap_pair", 8192,0,8192, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
-              obj.FillHistogram(dirname,"gamma_n1_FEP_gap_pair", 8192,0,8192, gEnergy);
+              obj.FillHistogram(dirname,"gamma_n1_FEP_qd2_pair", 8192,0,8192, gEnergy);
             }
           }
           if ( PairHit(nnhit,OneQuadPairs) ){
             quadtype = 1;
-            obj.FillHistogram(dirname,"gamma_n1_no_gap_pair", 8192,0,8192, gEnergy);
+            obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
-              obj.FillHistogram(dirname,"gamma_n1_FEP_no_gap_pair", 8192,0,8192, gEnergy);
+              obj.FillHistogram(dirname,"gamma_n1_FEP_qd1_pair", 8192,0,8192, gEnergy);
             }
           }
 
