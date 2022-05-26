@@ -362,6 +362,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy);
               if (isN1FEP){ 
                 obj.FillHistogram(dirname,Form("gamma_n1_q%dAA_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_AA_FEP",quadtype),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_A-A_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_A-A_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
               }
@@ -370,6 +371,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy);
               if (isN1FEP){
                 obj.FillHistogram(dirname,Form("gamma_n1_q%dBB_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_BB_FEP",quadtype),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_B-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_B-B_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
               }
@@ -378,6 +380,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, gEnergy);
               if (isN1FEP){
                 obj.FillHistogram(dirname,Form("gamma_n1_q%dAB_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_AB_FEP",quadtype),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_A-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_A-B_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
                 obj.FillHistogram(dirname,"gamma_n1_A-B_FEP_first_hit",2,0,2,id1%2);
