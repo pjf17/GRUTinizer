@@ -91,10 +91,10 @@ std::vector<std::pair<int,int>> bluePairs = {
 
 std::vector<std::pair<int,int>> TwoQuadPairs = {
   std::make_pair(46,48),
-  std::make_pair(47,51),
   std::make_pair(46,51),
+  std::make_pair(47,51),
   std::make_pair(61,57),
-  std::make_pair(60,58),
+  std::make_pair(58,60),
   std::make_pair(57,60),
   std::make_pair(62,64),
   std::make_pair(63,67),
@@ -112,7 +112,7 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(44,46),
   std::make_pair(48,51),
   std::make_pair(49,50),
-  std::make_pair(49,48),
+  std::make_pair(48,49),
   std::make_pair(50,51),
   std::make_pair(48,50),
   std::make_pair(56,59),
@@ -120,24 +120,24 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(56,57),
   std::make_pair(58,59),
   std::make_pair(56,58),
-  std::make_pair(61,60),
+  std::make_pair(60,61),
   std::make_pair(62,63),
-  std::make_pair(62,61),
+  std::make_pair(61,62),
   std::make_pair(60,63),
   std::make_pair(60,62),
   std::make_pair(64,67),
   std::make_pair(65,66),
-  std::make_pair(65,64),
+  std::make_pair(64,65),
   std::make_pair(66,67),
   std::make_pair(64,66),
-  std::make_pair(69,68),
+  std::make_pair(68,69),
   std::make_pair(70,71),
   std::make_pair(69,70),
   std::make_pair(68,71),
-  std::make_pair(70,68),
-  std::make_pair(78,76),
-  std::make_pair(78,79),
-  std::make_pair(76,79)
+  std::make_pair(68,70),
+  std::make_pair(76,78),
+  std::make_pair(76,79),
+  std::make_pair(78,79)
 };
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
@@ -321,22 +321,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
             }
           }
 
-          int quadtype = 0;
-          if ( PairHit(nnhit,TwoQuadPairs) ){
-            quadtype = 2;
-            obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, gEnergy);
-            if(isN1FEP){
-              obj.FillHistogram(dirname,"gamma_n1_FEP_qd2_pair", 8192,0,8192, gEnergy);
-            }
-          }
-          if ( PairHit(nnhit,OneQuadPairs) ){
-            quadtype = 1;
-            obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, gEnergy);
-            if(isN1FEP){
-              obj.FillHistogram(dirname,"gamma_n1_FEP_qd1_pair", 8192,0,8192, gEnergy);
-            }
-          }
-
           //SCATTER TYPE
           // int ngroups = (int) scatterGroups.size();
           // for (int i=0; i < ngroups; i++){
@@ -355,7 +339,23 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // }
 
           //totals
-          if (cryID > 40){ //only use 90 degree quads
+          if (cryID > 43){ //only use 90 degree quads
+            int quadtype = 0;
+            if ( PairHit(nnhit,TwoQuadPairs) ){
+              quadtype = 2;
+              obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 1600,0,1600, gEnergy);
+              if(isN1FEP){
+                obj.FillHistogram(dirname,"gamma_n1_FEP_qd2_pair", 1600,0,1600, gEnergy);
+              }
+            }
+            if ( PairHit(nnhit,OneQuadPairs) ){
+              quadtype = 1;
+              obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 1600,0,1600, gEnergy);
+              if(isN1FEP){
+                obj.FillHistogram(dirname,"gamma_n1_FEP_qd1_pair", 1600,0,1600, gEnergy);
+              }
+            }
+
             int id1 = nnhit.GetCrystalId();
             int id2 = nnhit.GetNeighbor().GetCrystalId();
             if (id1%2 == 1 && id2%2 == 1){
