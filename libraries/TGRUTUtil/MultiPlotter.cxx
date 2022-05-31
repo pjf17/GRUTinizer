@@ -175,16 +175,18 @@ void MultiPlotter::Norm(std::string mode){
     mMaxKey = "";
 }
 
-void MultiPlotter::Fit(std::string key, TF1 *f){
-    if (Exists(key)) mHistos[key]->Fit(f);
+void MultiPlotter::Fit(std::string key, TF1 *f, double xlo, double xhi){
+    f->SetRange(xlo,xhi);
+    if (Exists(key)) mHistos[key]->Fit(f,"R");
 }
 
-void MultiPlotter::Fit(TF1 *f){
+void MultiPlotter::Fit(TF1 *f, double xlo, double xhi){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
+    f->SetRange(xlo,xhi);
     while (it != end){
         new TCanvas();
-        it->second->Fit(f);
+        it->second->Fit(f,"R");
         it++;
     }
 }
