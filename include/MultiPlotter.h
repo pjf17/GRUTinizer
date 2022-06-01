@@ -39,7 +39,6 @@ class MultiPlotter{
 
         TH1 *GetClone(std::string key);
         TH1 *Get(std::string key);
-        void FitGaus(double xlo, double xhi, Option_t *opt="");
         
         void Rebin(int bg=2);
         void SetLineWidth(int w);
@@ -52,6 +51,8 @@ class MultiPlotter{
 
         void Fit(std::string key, TF1 *f, double xlo, double xhi);
         void Fit(TF1 *f, double xlo, double xhi);
+        void FitPearson(double xlo, double xhi, double h, double c, double w);
+        void FitGaus(double xlo, double xhi, Option_t *opt="");
         
         void Draw(std::string key);
         void Draw();

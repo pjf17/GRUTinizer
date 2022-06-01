@@ -12,6 +12,8 @@
 #include "TCanvas.h"
 #include "GGaus.h"
 #include "GRootCommands.h"
+#include "TMath.h"
+#include "TFitResult.h"
 
 #include "MultiPlotter.h"
 
@@ -186,7 +188,53 @@ void MultiPlotter::Fit(TF1 *f, double xlo, double xhi){
     f->SetRange(xlo,xhi);
     while (it != end){
         new TCanvas();
+        std::cout<<it->first<<std::endl;
         it->second->Fit(f,"R");
+        it++;
+    }
+}
+
+void MultiPlotter::FitPearson(double xlo, double xhi, double h, double c, double w){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    TF1 *pearsonbkg = new TF1("pearsonbkg","[4] + [5]*x + [0]/TMath::Power( 1 + (TMath::Power(2,1/[3]) - 1)*TMath::Power((2*x-2*[1])/[2],2) ,[3])",xlo,xhi);
+    TF1 *bkg = new TF1("bkg","[0] + [1]*x",xlo,xhi);
+    pearsonbkg->SetParameter(0,h);
+    pearsonbkg->SetParameter(1,c);
+    pearsonbkg->SetParameter(2,w);
+    pearsonbkg->SetParameter(3,2);
+    pearsonbkg->SetParameter(4,5000);
+    pearsonbkg->SetParameter(5,-2);
+    pearsonbkg->SetParLimits(0,0,10000000);
+
+    while (it != end){
+        new TCanvas();
+        std::cout<<it->first<<std::endl;
+        TFitResultPtr fitres = it->second->Fit(pearsonbkg,"RS");
+        double area = pearsonbkg->Integral(xlo,xhi) / it->second->GetBinWidth(1);
+        double dArea = pearsonbkg->IntegralError(xlo,xhi,fitres->GetParams(),fitres->GetCovarianceMatrix().GetMatrixArray()) / it->second->GetBinWidth(1);
+        
+        bkg->SetParameters(&pearsonbkg->GetParameters()[4]);
+        double bgArea = bkg->Integral(xlo,xhi) / it->second->GetBinWidth(1);
+        double bgDArea = bkg->IntegralError(xlo,xhi,&(fitres->GetParams())[4],fitres->GetCovarianceMatrix().GetSub(4,5,4,5).GetMatrixArray()) / it->second->GetBinWidth(1);
+
+        double counts = area - bgArea;
+        double dCounts = TMath::Sqrt(dArea*dArea + bgDArea*bgDArea);
+        printf("Counts\tCountsErr\tArea\tAreaErr\tBkg\tBkgErr\n");
+        printf("%f\t%f\t%f\t%f\t%f\t%f\n",counts,dCounts,area,dArea,bgArea,bgDArea);
+        it++;
+    }
+}
+
+void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    std::string sOpt = opt;
+    sOpt.append("no-print");
+    std::cout<<"name\tcentroid\tpeak area\tpeak sum err\n";
+    while (it != end){
+        GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
+        printf("%s\t%f\t%f\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetAreaErr(),fitR->GetSum(),fitR->GetSumErr());
         it++;
     }
 }
@@ -248,19 +296,6 @@ void MultiPlotter::Rebin(int bg){
         it++;
     }
     mYMax = 0.0;
-}
-
-void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
-    std::map<std::string, TH1*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1*>::iterator end = mHistos.end();
-    std::string sOpt = opt;
-    sOpt.append("no-print");
-    std::cout<<"name\tcentroid\tpeak area\tpeak sum err\n";
-    while (it != end){
-        GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
-        printf("%s\t%f\t%f\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetAreaErr(),fitR->GetSum(),fitR->GetSumErr());
-        it++;
-    }
 }
 
 //PRIVATE FUNCTIONS
