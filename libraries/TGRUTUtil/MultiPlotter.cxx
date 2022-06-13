@@ -203,7 +203,7 @@ void MultiPlotter::FitPearson(double xlo, double xhi, double h, double c, double
     pearsonbkg->SetParameter(1,c);
     pearsonbkg->SetParameter(2,w);
     pearsonbkg->SetParameter(3,2);
-    pearsonbkg->SetParameter(4,5000);
+    pearsonbkg->SetParameter(4,500);
     pearsonbkg->SetParameter(5,-2);
     pearsonbkg->SetParLimits(0,0,10000000);
 
@@ -220,6 +220,7 @@ void MultiPlotter::FitPearson(double xlo, double xhi, double h, double c, double
 
         double counts = area - bgArea;
         double dCounts = TMath::Sqrt(dArea*dArea + bgDArea*bgDArea);
+        printf("Chi2: %f NDF: %d Chi2/NDF: %f\n",fitres->Chi2(),fitres->Ndf(),fitres->Chi2()/(1.0*fitres->Ndf()));
         printf("Counts\tCountsErr\tArea\tAreaErr\tBkg\tBkgErr\n");
         printf("%f\t%f\t%f\t%f\t%f\t%f\n",counts,dCounts,area,dArea,bgArea,bgDArea);
         it++;

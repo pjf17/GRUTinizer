@@ -4,14 +4,14 @@
 #include "TFile.h"
 #include "TH1D.h"
 
-int nconfigs = 1;
+int nconfigs = 2;
 
 void polarization(TFile *f, std::string folder, int bw){
     std::vector< std::vector<TH1D*>> hists;
     for (int i=0; i < nconfigs; i++){
         std::string hpath = folder;
-        if (i == 1) hpath += "/gamma_corrected_swapped_addback";
-        else hpath += "/gamma_corrected_addback";
+        if (i == 1) hpath += "/gamma_corrected_swapped_addback_prompt";
+        else hpath += "/gamma_corrected_addback_prompt";
         std::vector<TH1D*> temp_hists;
         temp_hists.push_back( (TH1D*) f->Get(Form("%s_%s",hpath.c_str(),"red_pair")));
         temp_hists.back()->SetNameTitle("red","red");
@@ -90,9 +90,9 @@ void polarization(TFile *f, std::string folder, int bw){
     for (int j=0; j < 3; j++){
         TCanvas *canv = new TCanvas(diff_hists[0][j]->GetName(),diff_hists[0][j]->GetName());
         canv->Divide(2,2,0.001,0.001);
-        // sum_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
-        // diff_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
-        // stat_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
+        sum_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
+        diff_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
+        stat_hists[1][j]->GetXaxis()->SetRangeUser(0,800);
         sum_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
         diff_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
         stat_hists[0][j]->GetXaxis()->SetRangeUser(0,1600);
