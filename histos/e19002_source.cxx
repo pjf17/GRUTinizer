@@ -210,19 +210,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
           // }
 
-          //POLARIZATION
-          if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
-          }
-
-          if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
-          }
-
-          if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
-          }
-
           //SCATTER TYPE
           int ngroups = (int) scatterGroups.size();
           for (int i=0; i < ngroups; i++){
@@ -235,6 +222,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 it++;
             }
           }
+
+          char *type = "??";
+          int nquad = 0;
 
           //totals
           if (cryID > 40){ //only use 90 degree quads
@@ -256,6 +246,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
           if ( PairHit(nnhit,OneQuadPairs) ){
             obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
+          }
+
+          //POLARIZATION
+          if ( PairHit(nnhit,redPairs) ){
+            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
+          }
+
+          if ( PairHit(nnhit,goldPairs) ){
+            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
+          }
+
+          if ( PairHit(nnhit,bluePairs) ){
+            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
           }
           // int id1 = nnhit.GetCrystalId();
           // int id2 = nnhit.GetNeighbor().GetCrystalId();

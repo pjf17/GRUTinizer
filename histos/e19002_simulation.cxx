@@ -316,18 +316,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //totals
           int id1 = nnhit.GetCrystalId();
           int id2 = nnhit.GetNeighbor().GetCrystalId();
-          int quadtype = 0;
-          char *scatType = "00";
+          int quadType = 0;
+          std::string scatType = "00";
           if (id1 > 43 && id2 > 43){ //only use 90 degree quads
             if ( PairHit(nnhit,TwoQuadPairs) ){
-              quadtype = 2;
+              quadType = 2;
               obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 1600,0,1600, gEnergy);
               if(isN1FEP){
                 obj.FillHistogram(dirname,"gamma_n1_FEP_qd2_pair", 1600,0,1600, gEnergy);
               }
             }
             if ( PairHit(nnhit,OneQuadPairs) ){
-              quadtype = 1;
+              quadType = 1;
               obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 1600,0,1600, gEnergy);
               if(isN1FEP){
                 obj.FillHistogram(dirname,"gamma_n1_FEP_qd1_pair", 1600,0,1600, gEnergy);
@@ -338,7 +338,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               scatType = "AA";
               obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, gEnergy);
               if (isN1FEP){ 
-                obj.FillHistogram(dirname,Form("gamma_n1_q%dAA_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_q%dAA_FEP",quadType),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,Form("gamma_n1_AA_FEP"),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_A-A_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_A-A_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
@@ -348,7 +348,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               scatType = "BB";
               obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, gEnergy);
               if (isN1FEP){
-                obj.FillHistogram(dirname,Form("gamma_n1_q%dBB_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_q%dBB_FEP",quadType),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,Form("gamma_n1_BB_FEP"),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_B-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_B-B_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
@@ -358,7 +358,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               scatType = "AB";
               obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, gEnergy);
               if (isN1FEP){
-                obj.FillHistogram(dirname,Form("gamma_n1_q%dAB_FEP",quadtype),1600,0,1600, gEnergy);
+                obj.FillHistogram(dirname,Form("gamma_n1_q%dAB_FEP",quadType),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,Form("gamma_n1_AB_FEP"),1600,0,1600, gEnergy);
                 obj.FillHistogram(dirname,"crystal-map_A-B_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
                 obj.FillHistogram(dirname,"crystal-map_A-B_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
@@ -372,7 +372,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname,"gamma_n1_red_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_red_pair_FEP", 8192,0,8192, gEnergy);
-              obj.FillHistogram(dirname,Form("gamma_n1_red_pair_%s_FEP",scatType), 8192,0,8192, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_red_pair_%s_FEP",scatType.c_str()), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_red_pair_q%d_FEP",quadType), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_red_pair_q%d%s_FEP",quadType,scatType.c_str()), 2000,0,2000, gEnergy);
               obj.FillHistogram(dirname,"crystal-map_red_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
               obj.FillHistogram(dirname,"crystal-map_red_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
             }
@@ -381,7 +383,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname,"gamma_n1_gold_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_gold_pair_FEP", 8192,0,8192, gEnergy);
-              obj.FillHistogram(dirname,Form("gamma_n1_gold_pair_%s_FEP",scatType), 8192,0,8192, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_gold_pair_%s_FEP",scatType.c_str()), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_gold_pair_q%d_FEP",quadType), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_gold_pair_q%d%s_FEP",quadType,scatType.c_str()), 2000,0,2000, gEnergy);
               obj.FillHistogram(dirname,"crystal-map_gold_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
               obj.FillHistogram(dirname,"crystal-map_gold_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
             }
@@ -390,7 +394,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname,"gamma_n1_blue_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_blue_pair_FEP", 8192,0,8192, gEnergy);
-              obj.FillHistogram(dirname,Form("gamma_n1_blue_pair_%s_FEP",scatType), 8192,0,8192, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_blue_pair_%s_FEP",scatType.c_str()), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_blue_pair_q%d_FEP",quadType), 2000,0,2000, gEnergy);
+              obj.FillHistogram(dirname,Form("gamma_n1_blue_pair_q%d%s_FEP",quadType,scatType.c_str()), 2000,0,2000, gEnergy);
               obj.FillHistogram(dirname,"crystal-map_blue_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
               obj.FillHistogram(dirname,"crystal-map_blue_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
             }
