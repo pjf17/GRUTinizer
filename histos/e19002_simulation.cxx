@@ -147,7 +147,7 @@ std::vector<std::pair<int,int>> EnhancedPairs = {
   std::make_pair(57,58),
   std::make_pair(64,67),
   std::make_pair(65,66),
-}
+};
 
 std::map<int,int> SCATTERPAIRS;
 
