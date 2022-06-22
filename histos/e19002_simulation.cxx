@@ -134,7 +134,7 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(78,79)
 };
 
-std::vector<std::pair<int,int>> EnhancedPairs = {
+std::vector<std::pair<int,int>> OneQuadPlus = {
   std::make_pair(44,47),
   std::make_pair(45,46),
   std::make_pair(60,63),
@@ -146,7 +146,31 @@ std::vector<std::pair<int,int>> EnhancedPairs = {
   std::make_pair(56,59),
   std::make_pair(57,58),
   std::make_pair(64,67),
-  std::make_pair(65,66),
+  std::make_pair(65,66)
+};
+
+std::vector<std::pair<int,int>> OneQuadDefault = {
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(44,46),
+  std::make_pair(48,51),
+  std::make_pair(48,49),
+  std::make_pair(50,51),
+  std::make_pair(48,50),
+  std::make_pair(56,57),
+  std::make_pair(58,59),
+  std::make_pair(56,58),
+  std::make_pair(60,61),
+  std::make_pair(62,63),
+  std::make_pair(60,62),
+  std::make_pair(64,65),
+  std::make_pair(66,67),
+  std::make_pair(64,66),
+  std::make_pair(68,69),
+  std::make_pair(70,71),
+  std::make_pair(68,70),
+  std::make_pair(76,78),
+  std::make_pair(78,79)
 };
 
 std::map<int,int> SCATTERPAIRS;
@@ -372,6 +396,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname,"gamma_n1_FEP_qd1_pair", 1600,0,1600, gEnergy);
               }
             }
+            if ( PairHit(nnhit,OneQuadPlus) ){
+              obj.FillHistogram(dirname,"gamma_n1_qd1plus_pair", 1600,0,1600, gEnergy);
+              if(isN1FEP){
+                obj.FillHistogram(dirname,"gamma_n1_FEP_qd1plus_pair", 1600,0,1600, gEnergy);
+              }
+            }
+            if ( PairHit(nnhit,OneQuadDefault) ){
+              obj.FillHistogram(dirname,"gamma_n1_qd1def_pair", 1600,0,1600, gEnergy);
+              if(isN1FEP){
+                obj.FillHistogram(dirname,"gamma_n1_FEP_qd1def_pair", 1600,0,1600, gEnergy);
+              }
+            }
 
             if (id1%2 == 1 && id2%2 == 1){
               scatType = "AA";
@@ -407,7 +443,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
 
           //Enhanced pairs
-          if ( PairHit(nnhit,EnhancedPairs)){
+          if ( PairHit(nnhit,OneQuadPlus)){
             obj.FillHistogram(dirname,"crystal-map_enhanced_FEP",360,0,360,nnhit.GetPhiDeg(),180,0,180,nnhit.GetThetaDeg());
             obj.FillHistogram(dirname,"crystal-map_enhanced_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
           }
