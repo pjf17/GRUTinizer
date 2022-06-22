@@ -367,8 +367,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
             }
           }
 
+          std::string color = "nothing";
            //POLARIZATION
           if ( PairHit(nnhit,redPairs) ){
+            color = "red";
             obj.FillHistogram(dirname,"gamma_n1_red_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_red_pair_FEP", 8192,0,8192, gEnergy);
@@ -382,6 +384,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             }
           }
           if ( PairHit(nnhit,goldPairs) ){
+            color = "gold";
             obj.FillHistogram(dirname,"gamma_n1_gold_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_gold_pair_FEP", 8192,0,8192, gEnergy);
@@ -395,6 +398,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             }
           }
           if ( PairHit(nnhit,bluePairs) ){
+            color = "blue";
             obj.FillHistogram(dirname,"gamma_n1_blue_pair", 8192,0,8192, gEnergy);
             if(isN1FEP){
               obj.FillHistogram(dirname,"gamma_n1_blue_pair_FEP", 8192,0,8192, gEnergy);
@@ -406,6 +410,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname,"crystal-map_blue_FEP",360,0,360,nnhit.GetNeighbor().GetPhiDeg(),180,0,180,nnhit.GetNeighbor().GetThetaDeg());
               }
             }
+          }
+          if (isN1FEP){
+            int pairCombo = id1*100 + id2;
+            obj.FillHistogram(dirname,"n1_90degRing_pair_counts",10000,0,10000,pairCombo);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",color.c_str()),10000,0,10000,pairCombo);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",color.c_str(),quadType),10000,0,10000,pairCombo);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",scatType.c_str()),10000,0,10000,pairCombo);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",scatType.c_str(),quadType),10000,0,10000,pairCombo);
           }
         }
 
