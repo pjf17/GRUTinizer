@@ -23,24 +23,28 @@
 #include "GValue.h"
 
 std::vector<std::pair<int,int>> redPairs = {
-  std::make_pair(46,44),
-  std::make_pair(46,48),
+  //1qAB
   std::make_pair(48,49),
   std::make_pair(50,51),
-  std::make_pair(51,47),
   std::make_pair(56,57),
-  std::make_pair(57,61),
   std::make_pair(59,58),
-  std::make_pair(60,58),
-  std::make_pair(60,62),
-  std::make_pair(64,62),
   std::make_pair(64,65),
-  std::make_pair(69,65),
-  std::make_pair(63,67),
   std::make_pair(66,67),
-  std::make_pair(66,68),
+  //1qBB
+  std::make_pair(46,44),
+  std::make_pair(60,62),
   std::make_pair(70,68),
-  std::make_pair(78,76)
+  std::make_pair(78,76),
+  //2qAA
+  std::make_pair(51,47),
+  std::make_pair(63,67),
+  std::make_pair(57,61),
+  std::make_pair(69,65),
+  //2qBB
+  std::make_pair(60,58),
+  std::make_pair(66,68),
+  std::make_pair(64,62),
+  std::make_pair(46,48)
 };
 
 std::vector<std::pair<int,int>> goldPairs = {
@@ -56,24 +60,27 @@ std::vector<std::pair<int,int>> goldPairs = {
   std::make_pair(65,66),
   std::make_pair(69,68),
   std::make_pair(70,71),
-  std::make_pair(78,79),
+  std::make_pair(78,79)
 };
 
 std::vector<std::pair<int,int>> bluePairs = {
+  //1qAB
   std::make_pair(44,47),
   std::make_pair(45,46),
-  std::make_pair(46,51),
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(57,60),
   std::make_pair(60,63),
   std::make_pair(61,62),
-  std::make_pair(62,67),
-  std::make_pair(64,66),
-  std::make_pair(65,68),
   std::make_pair(68,71),
   std::make_pair(76,79),
-  std::make_pair(69,70)
+  std::make_pair(69,70),
+  //1qBB
+  std::make_pair(48,50),
+  std::make_pair(56,58),
+  std::make_pair(64,66),
+  //2qAB
+  std::make_pair(57,60),
+  std::make_pair(62,67),
+  std::make_pair(65,68),
+  std::make_pair(46,51)
 };
 
 std::vector<std::pair<int,int>> TwoQuadPairs = {
@@ -430,11 +437,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
           if (isN1FEP && id1 > 43 && id2 > 43){
             int pairCombo = id1*100 + id2;
-            obj.FillHistogram(dirname,"n1_90degRing_pair_counts",50,0,50,SCATTERPAIRS[pairCombo]);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",color.c_str()),50,0,50,SCATTERPAIRS[pairCombo]);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",color.c_str(),quadType),50,0,50,SCATTERPAIRS[pairCombo]);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",scatType.c_str()),50,0,50,SCATTERPAIRS[pairCombo]);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",scatType.c_str(),quadType),50,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,"n1_90degRing_pair_counts",100,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",color.c_str()),100,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",color.c_str(),quadType),100,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",scatType.c_str()),100,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",scatType.c_str(),quadType),100,0,50,SCATTERPAIRS[pairCombo]);
           }
         }
 
