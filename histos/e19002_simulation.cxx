@@ -48,16 +48,16 @@ std::vector<std::pair<int,int>> redPairs = {
 };
 
 std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(48,51),
   std::make_pair(49,50),
   std::make_pair(56,59),
   std::make_pair(57,58),
-  std::make_pair(61,60),
-  std::make_pair(62,63),
   std::make_pair(64,67),
   std::make_pair(65,66),
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(48,51),
+  std::make_pair(61,60),
+  std::make_pair(62,63),
   std::make_pair(69,68),
   std::make_pair(70,71),
   std::make_pair(78,79)
