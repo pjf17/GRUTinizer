@@ -22,19 +22,6 @@
 #include "TChannel.h"
 #include "GValue.h"
 
-std::vector<std::map<std::string,std::pair<int,int>>> scatterGroups = {
-  {{"A-A",std::make_pair(65,69)}, {"A-B",std::make_pair(65,68)}, {"B-B",std::make_pair(66,68)}},
-  {{"A-A",std::make_pair(63,67)}, {"A-B",std::make_pair(62,67)}, {"B-B",std::make_pair(62,64)}},
-  {{"A-A",std::make_pair(57,61)}, {"A-B",std::make_pair(57,60)}, {"B-B",std::make_pair(58,60)}},
-  {{"A-A",std::make_pair(47,51)}, {"A-B",std::make_pair(46,51)}, {"B-B",std::make_pair(46,48)}}
-};
-
-bool checkScatterType(const TGretinaHit& abhit, std::pair<int,int> crystals){
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  return (cryId1 == crystals.first && cryId2 == crystals.second) || (cryId1 == crystals.second && cryId2 == crystals.first);
-}
-
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -140,6 +127,35 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(78,79)
 };
 
+std::map<int,int> SCATTERPAIRS;
+
+void makemap(){
+  int index = 0;
+  for (auto &p : redPairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+  index++;
+  for (auto &p : bluePairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+  index++;
+  for (auto &p : goldPairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+}
+
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = abhit.GetCrystalId();
   int cryId2 = abhit.GetNeighbor().GetCrystalId();
@@ -234,7 +250,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
     track = s800sim->Track(0,0);
     yta = s800sim->GetS800SimHit(0).GetYTA();
   }
-    
+  
+  makemap();
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
     double gammaEn = simHit.GetEn();
@@ -411,13 +428,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
               }
             }
           }
-          if (isN1FEP){
+          if (isN1FEP && id1 > 43 && id2 > 43){
             int pairCombo = id1*100 + id2;
-            obj.FillHistogram(dirname,"n1_90degRing_pair_counts",10000,0,10000,pairCombo);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",color.c_str()),10000,0,10000,pairCombo);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",color.c_str(),quadType),10000,0,10000,pairCombo);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",scatType.c_str()),10000,0,10000,pairCombo);
-            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",scatType.c_str(),quadType),10000,0,10000,pairCombo);
+            obj.FillHistogram(dirname,"n1_90degRing_pair_counts",50,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",color.c_str()),50,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",color.c_str(),quadType),50,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s",scatType.c_str()),50,0,50,SCATTERPAIRS[pairCombo]);
+            obj.FillHistogram(dirname,Form("n1_90degRing_pair_counts_%s_q%d",scatType.c_str(),quadType),50,0,50,SCATTERPAIRS[pairCombo]);
           }
         }
 
