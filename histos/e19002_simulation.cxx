@@ -382,10 +382,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int quadType = 0;
           std::string scatType = "00";
           if (id1 > 43 && id2 > 43){ //only use 90 degree quads
-            TVector3 pos1 = nnhit.GetPosition();
-            TVector3 pos2 = nnhit.GetNeighbor().GetPosition();
-            obj.FillHistogram(dirname,"xy_crystal_map",100,0,10000,pos1.X(),100,0,10000,pos1.Y());
-            obj.FillHistogram(dirname,"xy_crystal_map",100,0,10000,pos2.X(),100,0,10000,pos2.Y());
             if ( PairHit(nnhit,TwoQuadPairs) ){
               quadType = 2;
               obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 1600,0,1600, gEnergy);

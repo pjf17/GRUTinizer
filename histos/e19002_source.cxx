@@ -20,79 +20,73 @@
 #include "TChannel.h"
 #include "GValue.h"
 
-std::vector<std::map<std::string,std::pair<int,int>>> scatterGroups = {
-  {{"A-A",std::make_pair(65,69)}, {"A-B",std::make_pair(65,68)}, {"B-B",std::make_pair(66,68)}},
-  {{"A-A",std::make_pair(63,67)}, {"A-B",std::make_pair(62,67)}, {"B-B",std::make_pair(62,64)}},
-  {{"A-A",std::make_pair(57,61)}, {"A-B",std::make_pair(57,60)}, {"B-B",std::make_pair(58,60)}},
-  {{"A-A",std::make_pair(47,51)}, {"A-B",std::make_pair(46,51)}, {"B-B",std::make_pair(46,48)}}
-};
-
-bool checkScatterType(const TGretinaHit& abhit, std::pair<int,int> crystals){
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  return (cryId1 == crystals.first && cryId2 == crystals.second) || (cryId1 == crystals.second && cryId2 == crystals.first);
-}
-
 std::vector<std::pair<int,int>> redPairs = {
-  std::make_pair(46,44),
-  std::make_pair(46,48),
+  //1qAB
   std::make_pair(48,49),
   std::make_pair(50,51),
-  std::make_pair(51,47),
   std::make_pair(56,57),
-  std::make_pair(57,61),
   std::make_pair(59,58),
-  std::make_pair(60,58),
-  std::make_pair(60,62),
-  std::make_pair(64,62),
   std::make_pair(64,65),
-  std::make_pair(69,65),
-  std::make_pair(63,67),
   std::make_pair(66,67),
-  std::make_pair(66,68),
+  //1qBB
+  std::make_pair(46,44),
+  std::make_pair(60,62),
   std::make_pair(70,68),
-  std::make_pair(78,76)
+  std::make_pair(78,76),
+  //2qAA
+  std::make_pair(51,47),
+  std::make_pair(63,67),
+  std::make_pair(57,61),
+  std::make_pair(69,65),
+  //2qBB
+  std::make_pair(60,58),
+  std::make_pair(66,68),
+  std::make_pair(64,62),
+  std::make_pair(46,48)
 };
 
 std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(48,51),
   std::make_pair(49,50),
   std::make_pair(56,59),
   std::make_pair(57,58),
-  std::make_pair(61,60),
-  std::make_pair(62,63),
   std::make_pair(64,67),
   std::make_pair(65,66),
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(48,51),
+  std::make_pair(61,60),
+  std::make_pair(62,63),
   std::make_pair(69,68),
   std::make_pair(70,71),
-  std::make_pair(78,79),
+  std::make_pair(78,79)
 };
 
 std::vector<std::pair<int,int>> bluePairs = {
+  //1qAB
   std::make_pair(44,47),
   std::make_pair(45,46),
-  std::make_pair(46,51),
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(57,60),
   std::make_pair(60,63),
   std::make_pair(61,62),
-  std::make_pair(62,67),
-  std::make_pair(64,66),
-  std::make_pair(65,68),
   std::make_pair(68,71),
   std::make_pair(76,79),
-  std::make_pair(69,70)
+  std::make_pair(69,70),
+  //1qBB
+  std::make_pair(48,50),
+  std::make_pair(56,58),
+  std::make_pair(64,66),
+  //2qAB
+  std::make_pair(57,60),
+  std::make_pair(62,67),
+  std::make_pair(65,68),
+  std::make_pair(46,51)
 };
 
 std::vector<std::pair<int,int>> TwoQuadPairs = {
   std::make_pair(46,48),
-  std::make_pair(47,51),
   std::make_pair(46,51),
+  std::make_pair(47,51),
   std::make_pair(61,57),
-  std::make_pair(60,58),
+  std::make_pair(58,60),
   std::make_pair(57,60),
   std::make_pair(62,64),
   std::make_pair(63,67),
@@ -110,7 +104,7 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(44,46),
   std::make_pair(48,51),
   std::make_pair(49,50),
-  std::make_pair(49,48),
+  std::make_pair(48,49),
   std::make_pair(50,51),
   std::make_pair(48,50),
   std::make_pair(56,59),
@@ -118,25 +112,93 @@ std::vector<std::pair<int,int>> OneQuadPairs = {
   std::make_pair(56,57),
   std::make_pair(58,59),
   std::make_pair(56,58),
-  std::make_pair(61,60),
+  std::make_pair(60,61),
   std::make_pair(62,63),
-  std::make_pair(62,61),
+  std::make_pair(61,62),
   std::make_pair(60,63),
   std::make_pair(60,62),
   std::make_pair(64,67),
   std::make_pair(65,66),
-  std::make_pair(65,64),
+  std::make_pair(64,65),
   std::make_pair(66,67),
   std::make_pair(64,66),
-  std::make_pair(69,68),
+  std::make_pair(68,69),
   std::make_pair(70,71),
   std::make_pair(69,70),
   std::make_pair(68,71),
-  std::make_pair(70,68),
-  std::make_pair(78,76),
-  std::make_pair(78,79),
-  std::make_pair(76,79)
+  std::make_pair(68,70),
+  std::make_pair(76,78),
+  std::make_pair(76,79),
+  std::make_pair(78,79)
 };
+
+std::vector<std::pair<int,int>> OneQuadPlus = {
+  std::make_pair(44,47),
+  std::make_pair(45,46),
+  std::make_pair(60,63),
+  std::make_pair(61,62),
+  std::make_pair(68,71),
+  std::make_pair(76,79),
+  std::make_pair(69,70),
+  std::make_pair(49,50),
+  std::make_pair(56,59),
+  std::make_pair(57,58),
+  std::make_pair(64,67),
+  std::make_pair(65,66)
+};
+
+std::vector<std::pair<int,int>> OneQuadDefault = {
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(44,46),
+  std::make_pair(48,51),
+  std::make_pair(48,49),
+  std::make_pair(50,51),
+  std::make_pair(48,50),
+  std::make_pair(56,57),
+  std::make_pair(58,59),
+  std::make_pair(56,58),
+  std::make_pair(60,61),
+  std::make_pair(62,63),
+  std::make_pair(60,62),
+  std::make_pair(64,65),
+  std::make_pair(66,67),
+  std::make_pair(64,66),
+  std::make_pair(68,69),
+  std::make_pair(70,71),
+  std::make_pair(68,70),
+  std::make_pair(76,78),
+  std::make_pair(78,79)
+};
+
+std::map<int,int> SCATTERPAIRS;
+
+void makemap(){
+  int index = 0;
+  for (auto &p : redPairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+  index++;
+  for (auto &p : bluePairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+  index++;
+  for (auto &p : goldPairs){
+    int label1 = p.first*100 + p.second;
+    int label2 = p.first + p.second*100;
+    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
+    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
+    index++;
+  }
+}
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = abhit.GetCrystalId();
@@ -165,6 +227,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   int numobj = list->GetSize();
 
   std::string dirname  = "gretina";
+  makemap();
 
   if (gretina){
     //SINGLES
@@ -210,22 +273,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
           // }
 
-          //SCATTER TYPE
-          int ngroups = (int) scatterGroups.size();
-          for (int i=0; i < ngroups; i++){
-            std::map<std::string, std::pair<int,int>>::iterator it = scatterGroups[i].begin();
-            std::map<std::string, std::pair<int,int>>::iterator end = scatterGroups[i].end();
-            while (it != end){
-                if (checkScatterType(nnhit,it->second)){
-                  obj.FillHistogram(dirname,Form("gamma_corrected_n1_grp%d_%s",i+1,it->first.c_str()),8192,0,8192, core_energy);
-                }
-                it++;
-            }
-          }
-
-          char *type = "??";
-          int nquad = 0;
-
           //totals
           if (cryID > 40){ //only use 90 degree quads
             int id1 = nnhit.GetCrystalId();
@@ -244,7 +291,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if ( PairHit(nnhit,TwoQuadPairs) ){
             obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
           }
-          if ( PairHit(nnhit,OneQuadPairs) ){
+          if ( PairHit(nnhit,OneQuadPlus) ){
+            obj.FillHistogram(dirname,"gamma_n1_qd1_preferred_pair", 8192,0,8192, core_energy);
+          }
+          if ( PairHit(nnhit,OneQuadDefault) ){
             obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
           }
 
