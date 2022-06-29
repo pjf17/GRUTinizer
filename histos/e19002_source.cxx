@@ -182,7 +182,6 @@ void makemap(){
     SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
     index++;
   }
-  index++;
   for (auto &p : bluePairs){
     int label1 = p.first*100 + p.second;
     int label2 = p.first + p.second*100;
@@ -190,7 +189,6 @@ void makemap(){
     SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
     index++;
   }
-  index++;
   for (auto &p : goldPairs){
     int label1 = p.first*100 + p.second;
     int label2 = p.first + p.second*100;
@@ -287,7 +285,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, core_energy);
             }
             int scatterlabel = id1*100 + id2;
-            obj.FillHistogram(dirname,Form("gamma_n1_90deg_quads_pair%d",SCATTERPAIRS[scatterlabel]),1600,0,1600, core_energy);
+            obj.FillHistogram(dirname,Form("gamma_n1_90deg_quads_pair%02d",SCATTERPAIRS[scatterlabel]),1600,0,1600, core_energy);
           }
 
           if ( PairHit(nnhit,TwoQuadPairs) ){
