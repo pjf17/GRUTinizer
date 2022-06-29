@@ -274,9 +274,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // }
 
           //totals
-          if (cryID > 40){ //only use 90 degree quads
-            int id1 = nnhit.GetCrystalId();
-            int id2 = nnhit.GetNeighbor().GetCrystalId();
+          int id1 = nnhit.GetCrystalId();
+          int id2 = nnhit.GetNeighbor().GetCrystalId();
+          if (id1 > 43 && id2 > 43){ //only use 90 degree quads
             if (id1%2 == 1 && id2%2 == 1){
               obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, core_energy);
             }
@@ -286,6 +286,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             else{
               obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, core_energy);
             }
+            int scatterlabel = id1*100 + id2;
+            obj.FillHistogram(dirname,Form("gamma_n1_90deg_quads_pair%d",SCATTERPAIRS[scatterlabel]),1600,0,1600, core_energy);
           }
 
           if ( PairHit(nnhit,TwoQuadPairs) ){
@@ -310,6 +312,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if ( PairHit(nnhit,bluePairs) ){
             obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
           }
+
           // int id1 = nnhit.GetCrystalId();
           // int id2 = nnhit.GetNeighbor().GetCrystalId();
           // if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
