@@ -333,7 +333,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
     //NNADDBACK
     //loop over multiplicity
-    for (int n=0; n<2; n++){
+    for (int n=0; n<4; n++){
       //loop over hits for each multiplicity spectrum
       int nnSize = gretina->NNAddbackSize(n,false);
       for (int i=0; i < nnSize; i++){
