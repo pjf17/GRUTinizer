@@ -17,6 +17,31 @@
 
 #include "MultiPlotter.h"
 
+class ExclusionFit {
+    public:
+        ExclusionFit(double pXlo,double pXhi) {mXlo = pXlo; mXhi = pXhi;}
+        void SetExclusion(double pXlo,double pXhi) {mXlo = pXlo; mXhi = pXhi;}
+        double operator() (double *x, double *par){
+            if (x[0] > mXlo && x[0] < mXhi){
+                TF1::RejectPoint();
+            }
+            return /*par[0] + par[1]*x[0] + par[2]*x[0]*x[0];*/ par[0]*TMath::Exp(par[1]*x[0]);
+        }
+        void Fit(TH1D *h, double xlo, double xhi){
+            TF1 *f = new TF1("fit",this,xlo,xhi,2);
+            TFitResultPtr fitres = h->Fit(f,"SMLRQ");
+            double bkg = f->Integral(mXlo,mXhi) / h->GetBinWidth(1);
+            double dBkg = f->IntegralError(xlo,xhi,fitres->GetParams(),fitres->GetCovarianceMatrix().GetMatrixArray()) / h->GetBinWidth(1);
+            double sigbkg = h->Integral(h->GetBin(mXlo),h->GetBin(mXhi));
+            double dSigbkg = TMath::Sqrt(sigbkg);
+            double sig = sigbkg-bkg;
+            double dSig = TMath::Sqrt(dBkg*dBkg + dSigbkg*dSigbkg);
+            std::cout<<sig<<" "<<dSig<<std::endl;
+        }
+    private:
+        double mXlo, mXhi;
+};
+
 //PUBLIC FUNCTIONS
 
 void MultiPlotter::Add(TH1* pHist){
@@ -240,11 +265,20 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     }
 }
 
+void MultiPlotter::FitExclusion(double exlo, double exhi, double rlo, double rhi){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    while (it != end){
+        ExclusionFit ex(exlo,exhi);
+        ex.Fit((TH1D*)it->second,rlo,rhi);
+    }
+}
+
 void MultiPlotter::Draw(std::string key){
     if (Exists(key)) mHistos[key]->Draw("hist");
 }
 
-void MultiPlotter::Draw(){
+void MultiPlotter::Draw(int ndraw, int noffset){
     doSetLineWidth();
     if (mYMax == 0.0) SortMax();
     std::map<std::string, TH1*>::iterator max = mHistos.find(mMaxKey);
@@ -263,7 +297,7 @@ void MultiPlotter::Draw(){
     std::map<std::string, TH1*>::iterator it = max;
     std::map<std::string, TH1*>::iterator end = mHistos.end();
     int nloops = 0;
-    while (it != end || nloops == 0){
+    while ((it != end || nloops == 0) && nloops < ndraw){
         if (it == max && nloops > 0) {
             it++;
             continue;
@@ -277,6 +311,7 @@ void MultiPlotter::Draw(){
         if (nloops == 0){
             it->second->Draw("hist");
             it = mHistos.begin();
+            for (int j=0; j < noffset; j++) it++;
             nloops++;
         }
         else{
@@ -297,6 +332,21 @@ void MultiPlotter::Rebin(int bg){
         it++;
     }
     mYMax = 0.0;
+}
+
+void MultiPlotter::Scroll(std::string control){
+    std::map<std::string, TH1*>::iterator begin = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    static std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    int xlo = it->second->GetXaxis()->GetFirst();
+    int xhi = it->second->GetXaxis()->GetLast();
+    int ylo = it->second->GetYaxis()->GetFirst();
+    int yhi = it->second->GetYaxis()->GetLast();
+    if (control.compare(".")==0 && it!=end) it++;
+    if (control.compare(",")==0 && it!=begin) it--;
+    it->second->GetXaxis()->SetRange(xlo,xhi);
+    it->second->GetYaxis()->SetRange(ylo,yhi);
+    it->second->Draw();
 }
 
 //PRIVATE FUNCTIONS

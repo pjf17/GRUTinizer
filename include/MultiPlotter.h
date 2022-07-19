@@ -41,6 +41,7 @@ class MultiPlotter{
         TH1 *Get(std::string key);
         
         void Rebin(int bg=2);
+        void Scroll(std::string control=" ");
         void SetLineWidth(int w);
         void SetLineColor(std::string key, int c);
         void SetRange(double xlo, double xhi);
@@ -53,7 +54,8 @@ class MultiPlotter{
         void Fit(TF1 *f, double xlo, double xhi);
         void FitPearson(double xlo, double xhi, double h, double c, double w);
         void FitGaus(double xlo, double xhi, Option_t *opt="");
+        void FitExclusion(double exlo, double exhi, double rlo, double rhi);
         
         void Draw(std::string key);
-        void Draw();
+        void Draw(int ndraw=100000, int noffset=0);
 };
