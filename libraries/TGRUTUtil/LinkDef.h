@@ -20,7 +20,7 @@
 #pragma link C++ function CalculateParameters;
 #pragma link C++ function MakeVectorFromFile;
 
-
+#pragma link C++ class MultiPlotter+;
 
 #pragma link C++ function operator+(const TVariable&,const TVariable&);
 #pragma link C++ function operator+(const TVariable&,double);

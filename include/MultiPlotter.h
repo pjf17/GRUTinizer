@@ -1,3 +1,6 @@
+#ifndef MULTIPLOTTER__H
+#define MULTIPLOTTER__H
+
 #include <map>
 #include <vector>
 #include <string>
@@ -58,4 +61,9 @@ class MultiPlotter{
         
         void Draw(std::string key);
         void Draw(int ndraw=100000, int noffset=0);
+
+    protected:
+        ClassDef(MultiPlotter,3);
 };
+
+#endif
