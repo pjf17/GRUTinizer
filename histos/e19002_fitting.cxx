@@ -214,7 +214,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
 
   
-  if (gretina && gretsim){
+  if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
     double gammaEn = simHit.GetEn();
     double beta = GValue::Value("BETA");
