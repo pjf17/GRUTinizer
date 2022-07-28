@@ -117,7 +117,7 @@ TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_
   
   int count = 0;
   while (1) {
-    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"MES","",fit_low_x,fit_high_x));
+    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",fit_low_x,fit_high_x));
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -200,22 +200,20 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
       hlims[energies.back()] = (double)ph;
     
       std::cout << energies.back() << "\t" << shifts[energies.back()] << "\t" << params[energies.back()] << "\t"
-		<< peaks[energies.back()] << "\t" << comps[energies.back()] << "\t" << fix[energies.back()]
-		<< "\t" << llims[energies.back()] << "\t" << hlims[energies.back()];
+		            << peaks[energies.back()] << "\t" << comps[energies.back()] << "\t" << fix[energies.back()]
+		            << "\t" << llims[energies.back()] << "\t" << hlims[energies.back()];
       
       if(en < fit_low_x || en > fit_high_x) {
-	std::cout << "\tOutside fit range (" << fit_low_x << "," << fit_high_x << ")!";
+	      std::cout << "\tOutside fit range (" << fit_low_x << "," << fit_high_x << ")!";
       }
       std::cout << "\n";
 
       if(!fix[energies.back()] && (!peaks[energies.back()] || !comps[energies.back()])) {
-	std::cout << "\tThe " << energies.back() << " keV peak has a free scaling parameter, but either the peak("
-		  << peaks[energies.back()] << ") or compton(" << comps[energies.back()] << ") is not included!!"
-		  << std::endl;
+	      std::cout << "\tThe " << energies.back() << " keV peak has a free scaling parameter, but either the peak("
+                  << peaks[energies.back()] << ") or compton(" << comps[energies.back()] << ") is not included!!"
+                  << std::endl;
       }
-      
     }
-    
   }
   
   std::cout << "\n";
@@ -239,7 +237,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
         fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T_fep"));
       }
       else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-	fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T_bg"));
+	      fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T_bg"));
       }
       fep_hists.push_back((GH1D*)(((TH1*)f->Get("gretsim/gretina_B&T_fep"))->Clone()));
       com_hists.push_back((GH1D*)(((TH1*)f->Get("gretsim/gretina_B&T_bg"))->Clone()));
@@ -249,41 +247,38 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
       TFile* fw = new TFile(Form("wider/hist%04d.root",energies.at(i)),"read");
       if(!fw->IsZombie()) {
 
-	fit_hists.back()->Scale(NARROW_SCALE);
+        fit_hists.back()->Scale(NARROW_SCALE);
         fep_hists.back()->Scale(NARROW_SCALE);
         com_hists.back()->Scale(NARROW_SCALE);
 	
-	TH1* hw;
-	TH1* hw_fep;
-	TH1* hw_com;
-	if(peaks[energies.at(i)] && comps[energies.at(i)]) {
+        TH1* hw;
+        TH1* hw_fep;
+        TH1* hw_com;
+        if(peaks[energies.at(i)] && comps[energies.at(i)]) {
           hw = (GH1D*)fw->Get("gretsim/gretina_B&T&Y&D");
         }
-	else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-	  hw = (GH1D*)fw->Get("gretsim/gretina_B&T_fep");
+        else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
+          hw = (GH1D*)fw->Get("gretsim/gretina_B&T_fep");
         }
-	else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-	  hw = (GH1D*)fw->Get("gretsim/gretina_B&T_bg");
+        else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
+          hw = (GH1D*)fw->Get("gretsim/gretina_B&T_bg");
         }
 
-	hw_fep = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_fep"))->Clone());
-	hw_com = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_bg"))->Clone());
-	hw->Sumw2();
+        hw_fep = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_fep"))->Clone());
+        hw_com = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_bg"))->Clone());
+        hw->Sumw2();
 
-	hw->Scale(WIDE_SCALE);
-	hw_fep->Scale(WIDE_SCALE);
-	hw_com->Scale(WIDE_SCALE);
+        hw->Scale(WIDE_SCALE);
+        hw_fep->Scale(WIDE_SCALE);
+        hw_com->Scale(WIDE_SCALE);
 
-	fit_hists.back()->Add(hw);
-	fep_hists.back()->Add(hw_fep);
-	com_hists.back()->Add(hw_com);
-	
+        fit_hists.back()->Add(hw);
+        fep_hists.back()->Add(hw_fep);
+        com_hists.back()->Add(hw_com);
       }
-
-      
       else {
-	std::cout << "The histogram file for the wide component of the " << energies.at(i)
-		  << " keV peak was not found! It will not be included!" << std::endl;
+        std::cout << "The histogram file for the wide component of the " << energies.at(i)
+                  << " keV peak was not found! It will not be included!" << std::endl;
       }
 
       //Do not change this naming convention. It will break the next loop.
@@ -292,20 +287,16 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
       com_hists.back()->SetName(Form("com_hist%04i",energies.at(i)));
 
       fit_hists.back()->GetXaxis()->SetLimits(fit_hists.back()->GetXaxis()->GetXmin()+shifts[energies.at(i)],
-				              fit_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]
-					     );
+				              fit_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]);
 
       fep_hists.back()->GetXaxis()->SetLimits(fep_hists.back()->GetXaxis()->GetXmin()+shifts[energies.at(i)],
-				              fep_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]
-					     );
+				              fep_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]);
 
       com_hists.back()->GetXaxis()->SetLimits(com_hists.back()->GetXaxis()->GetXmin()+shifts[energies.at(i)],
-				              com_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]
-					     );
+				              com_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]);
       fit_hists.back()->Rebin(REBIN_FACTOR);
       fep_hists.back()->Rebin(REBIN_FACTOR);
       com_hists.back()->Rebin(REBIN_FACTOR); 
-      
     }
     else {
       std::cout << "The histogram file for the " << energies.at(i) << " keV peak was not found!" << std::endl;
@@ -369,7 +360,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     }
     else {
       std::cout << "Histogram file for " << bg_energies.at(i) << " stopped line was not found! It will not be included."
-		<< std::endl;
+                << std::endl;
     }
   }
 
