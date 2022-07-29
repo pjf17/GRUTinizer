@@ -59,6 +59,7 @@ TVector3 TGretinaHit::GetCrystalPosition()  const {
 }
 
 TGretinaHit TGretinaHit::GetNeighbor(int i) const {
+  i+=1; //ensure we never return the original hit
   if (i < (int) fSingles.size() && i > 0){
     return fSingles[i];
   } else {

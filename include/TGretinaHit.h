@@ -73,8 +73,9 @@ public:
 
   void BuildFrom(TSmartBuffer& raw);
 
-  TGretinaHit GetNeighbor(int i=1) const;
+  TGretinaHit GetNeighbor(int i=0) const;
   TGretinaHit GetInitialHit() const;
+  Int_t GetNNeighborHits() const {return fSingles.size()-1;} //don't count first hit
 
   Double_t GetTime()               const { return (double)Timestamp() + (double)fWalkCorrection; } 
   Float_t  GetT0()                 const { return fWalkCorrection; }
