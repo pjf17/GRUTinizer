@@ -157,15 +157,15 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
-bool efficiencyCorrection(TRandom3 *rand, const TGretinaHit &hit1, int nnMultiplicity = -1){
+bool efficiencyCorrection(TRandom3 *rand, const TGretinaHit &hit1, int nNeighborHits=-1){
   double thresh_param1 = GValue::Value(Form("DET%i_THRESH1",detMap[hit1.GetCrystalId()]));
   double thresh_param2 = GValue::Value(Form("DET%i_THRESH2",detMap[hit1.GetCrystalId()]));
   double EfficiencyCorrection = (1+TMath::TanH((hit1.GetCoreEnergy()-thresh_param1)/thresh_param2))/2;
   double_t rDraw = rand->Uniform();
   bool value = rDraw <= EfficiencyCorrection;
   
-  for (int n = 0; n < nnMultiplicity; n++){
-    value = value && efficiencyCorrection(rand,hit1.GetNeighbor(n+1));
+  for (int n = 0; n < nNeighborHits; n++){
+    value = value && efficiencyCorrection(rand,hit1.GetNeighbor(n));
   }
 
   return value;
@@ -199,7 +199,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
 
   //S800 coordinates
-  std::string dirname("s800sim");
+  std::string dirname = "s800sim";
   obj.FillHistogram(dirname,"ata", 600,-100,100, s800sim->GetS800SimHit(0).GetATA());
   obj.FillHistogram(dirname,"bta", 600,-100,100, s800sim->GetS800SimHit(0).GetBTA());
   obj.FillHistogram(dirname,"yta", 1000,-3,3, s800sim->GetS800SimHit(0).GetYTA());
@@ -212,7 +212,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
     track = s800sim->Track(0,0);
     yta = s800sim->GetS800SimHit(0).GetYTA();
   }
-
   
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
@@ -299,7 +298,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         int cryID = nnhit.GetCrystalId();
         if (cryID == 77) continue;
 
-        if (efficiencyCorrection(rand_gen,nnhit,n)){
+        if (efficiencyCorrection(rand_gen,nnhit,nnhit.GetNNeighborHits())){
           double energy_track_yta_dta;
           double energy_track_yta;
           double energy_track;
