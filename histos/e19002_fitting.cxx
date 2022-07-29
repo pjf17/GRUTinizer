@@ -239,12 +239,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int number = detMap[cryID];
       if (cryID == 77) continue;
 
-      TVector3 local_pos(hit.GetLocalPosition(0));
-      double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
-      double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-      double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-      hit.SetPosition(0,smear_x,smear_y,smear_z);
-
       double energy_track_yta_dta;
       double energy_track_yta;
       double energy_track;
@@ -258,6 +252,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
         energy_track = energy_track_yta = energy_track_yta_dta = hit.GetDoppler(beta);
       }
 
+      TVector3 local_pos(hit.GetLocalPosition(0));
+      double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+      double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+      double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+      hit.SetPosition(0,smear_x,smear_y,smear_z);
+
+      double energy_track_yta_dta_smeared = hit.GetDoppler(beta, &track);
+      double energy_track_yta_smeared = hit.GetDopplerYta(beta, yta, &track);
+      double energy_track_smeared = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
+
       //efficiency correction
       if (efficiencyCorrection(rand_gen,hit)){
         obj.FillHistogram(dirname,"HitTheta_v_HitPhi",360,0,360,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
@@ -270,6 +274,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname,"gretina_B&T",10000,0,10000,energy_track);
         obj.FillHistogram(dirname,"gretina_B&T&Y",10000,0,10000,energy_track_yta);
         obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
+
+        obj.FillHistogram(dirname,"gretina_B&T_smeared",10000,0,10000,energy_track_smeared);
+        obj.FillHistogram(dirname,"gretina_B&T&Y_smeared",10000,0,10000,energy_track_yta_smeared);
+        obj.FillHistogram(dirname,"gretina_B&T&Y&D_smeared",10000,0,10000,energy_track_yta_dta_smeared);
 
         //organization
         // if(detMap[cryID] < 17) {
