@@ -215,9 +215,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
   
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
-    double gammaEn = simHit.GetEn();
+    double gammaEn = GValue::Value("FEP_EN");
     double beta = GValue::Value("BETA");
     bool isFEP = simHit.IsFEP();
+
+    double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+    if(SIGMA > 3.8) {
+      SIGMA = 3.8;
+    }
+    if(gammaEn < 150.) {
+      SIGMA = 6.0;
+    }
 
     //SINGLES
     int gSize = gretina->Size();
@@ -230,6 +238,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int cryID = hit.GetCrystalId();
       int number = detMap[cryID];
       if (cryID == 77) continue;
+
+      TVector3 local_pos(hit.GetLocalPosition(0));
+      double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+      double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+      double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+      hit.SetPosition(0,smear_x,smear_y,smear_z);
 
       double energy_track_yta_dta;
       double energy_track_yta;
