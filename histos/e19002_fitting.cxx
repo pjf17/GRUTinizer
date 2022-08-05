@@ -339,7 +339,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if (n == 3) multiplicity = Form("g");
           obj.FillHistogram(dirname, Form("gretina_n%s_B&T",multiplicity), 10000,0,10000, energy_track);
           obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y",multiplicity), 10000,0,10000, energy_track_yta);
-          obj.FillHistogram(dirname, Form("gretina_n%s_B&TY&D",multiplicity), 10000,0,10000, energy_track_yta_dta);
+          obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y&D",multiplicity), 10000,0,10000, energy_track_yta_dta);
           if (isNNFEP){
             obj.FillHistogram(dirname, Form("gretina_n%s_B&T_fep",multiplicity), 10000,0,10000, energy_track);
           } else {
@@ -362,21 +362,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //POLARIZATION
             if ( PairHit(nnhit,redPairs) ){
               obj.FillHistogram(dirname,"gretina_pol_red_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-              // if(isN1FEP){
-              //   obj.FillHistogram(dirname,"gamma_n1_red_pair_FEP", 10000,0,10000, gEnergy);
-              // }
+              if(isNNFEP){
+                obj.FillHistogram(dirname,"gretina_pol_red_B&T_fep", 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,"gretina_pol_red_B&T_bg", 10000,0,10000, energy_track);
+              }
             }
             if ( PairHit(nnhit,goldPairs) ){
               obj.FillHistogram(dirname,"gamma_pol_gold_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-              // if(isN1FEP){
-              //   obj.FillHistogram(dirname,"gamma_n1_gold_pair_FEP", 10000,0,10000, gEnergy);
-              // }
+              if(isNNFEP){
+                obj.FillHistogram(dirname,"gamma_pol_gold_B&T_fep", 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,"gamma_pol_gold_B&T_bg", 10000,0,10000, energy_track);
+              }
             }
             if ( PairHit(nnhit,bluePairs) ){
               obj.FillHistogram(dirname,"gamma_pol_blue_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-              // if(isN1FEP){
-              //   obj.FillHistogram(dirname,"gamma_n1_blue_pair_FEP", 10000,0,10000, gEnergy);
-              // }
+              if(isNNFEP){
+                obj.FillHistogram(dirname,"gamma_pol_blue_B&T_fep", 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,"gamma_pol_blue_B&T_bg", 10000,0,10000, energy_track);
+              }
             }
           }
         }
