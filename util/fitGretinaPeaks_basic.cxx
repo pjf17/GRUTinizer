@@ -12,9 +12,9 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-const std::string INPUT_HIST = "inCl45_Ar46_afp_gated/gamma_corrected_singles_prompt";
+const std::string INPUT_HIST = "inCl45_Cl43_gated/gamma_corrected_singles_prompt";
 
-const int REBIN_FACTOR = 8; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 4; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting

@@ -332,9 +332,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             energy_track = energy_track_yta = energy_track_yta_dta = nnhit.GetDoppler(beta);
           }
 
-          //compare energy reported from geant with nn reconstructed hit using beta value
-          //from geant. These two should be very close since all inputs are from geant
-          bool isNNFEP = fabs(gammaEn - nnhit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track)) < 1.5;
+          //compare energy reported from geant with core energy. if FEP they should be the same
+          bool isNNFEP = fabs(simHit.GetEn() - nnhit.GetCoreEnergy()) < 1.5;
 
           char *multiplicity = Form("%d",n);
           if (n == 3) multiplicity = Form("g");
