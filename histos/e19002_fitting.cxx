@@ -191,7 +191,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   bool stopped = false;
 
-  if (!gretina || !gretsim){
+  if (!gretina){
     return;
   }
   if (!s800sim || !s800sim->Size()){
