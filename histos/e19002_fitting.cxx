@@ -208,11 +208,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   //S800 coordinates
   if (!stopped){
-    dirname = "s800sim";
-    obj.FillHistogram(dirname,"ata", 600,-100,100, s800sim->GetS800SimHit(0).GetATA());
-    obj.FillHistogram(dirname,"bta", 600,-100,100, s800sim->GetS800SimHit(0).GetBTA());
-    obj.FillHistogram(dirname,"yta", 1000,-3,3, s800sim->GetS800SimHit(0).GetYTA());
-    obj.FillHistogram(dirname,"dta", 1000,-0.5,0.5, s800sim->GetS800SimHit(0).GetDTA());
+    obj.FillHistogram("s800sim","ata", 600,-100,100, s800sim->GetS800SimHit(0).GetATA());
+    obj.FillHistogram("s800sim","bta", 600,-100,100, s800sim->GetS800SimHit(0).GetBTA());
+    obj.FillHistogram("s800sim","yta", 1000,-3,3, s800sim->GetS800SimHit(0).GetYTA());
+    obj.FillHistogram("s800sim","dta", 1000,-0.5,0.5, s800sim->GetS800SimHit(0).GetDTA());
   }
   
   TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
@@ -272,7 +271,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     }
 
     //efficiency correction
-    if (efficiencyCorrection(rand_gen,hit)){
+    if (true){
       obj.FillHistogram(dirname,"HitTheta_v_HitPhi",360,0,360,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
       obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
 
