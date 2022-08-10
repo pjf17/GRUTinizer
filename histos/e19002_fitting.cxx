@@ -206,18 +206,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
     yta = s800sim->GetS800SimHit(0).GetYTA();
   }
 
+  TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
+  double gammaEn = 1000; //GValue::Value("FEP_EN");
+  double beta = GValue::Value("BETA");
+  bool isFEP = simHit.IsFEP();
+
   //S800 coordinates
   if (!stopped){
     obj.FillHistogram("s800sim","ata", 600,-100,100, s800sim->GetS800SimHit(0).GetATA());
     obj.FillHistogram("s800sim","bta", 600,-100,100, s800sim->GetS800SimHit(0).GetBTA());
     obj.FillHistogram("s800sim","yta", 1000,-3,3, s800sim->GetS800SimHit(0).GetYTA());
     obj.FillHistogram("s800sim","dta", 1000,-0.5,0.5, s800sim->GetS800SimHit(0).GetDTA());
+  } else {
+    obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   }
-  
-  TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
-  double gammaEn = 1000; //GValue::Value("FEP_EN");
-  double beta = 0.343; //GValue::Value("BETA");
-  bool isFEP = simHit.IsFEP();
 
   double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
   if(SIGMA > 3.8) {
@@ -271,7 +273,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     }
 
     //efficiency correction
-    if (true){
+    if (efficiencyCorrection(rand_gen,hit)){
       obj.FillHistogram(dirname,"HitTheta_v_HitPhi",360,0,360,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
       obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
 
@@ -326,6 +328,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
       int ringNum = nnhit.GetRingNumber();
       int cryID = nnhit.GetCrystalId();
+      double core_energy = nnhit.GetCoreEnergy();
       if (cryID == 77) continue;
 
       if (efficiencyCorrection(rand_gen,nnhit,nnhit.GetNNeighborHits())){
@@ -345,6 +348,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
         char *multiplicity = Form("%d",n);
         if (n == 3) multiplicity = Form("g");
+        obj.FillHistogram(dirname, Form("gretina_n%s_CoreEnergy",multiplicity), 10000,0,10000, core_energy);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T",multiplicity), 10000,0,10000, energy_track);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y",multiplicity), 10000,0,10000, energy_track_yta);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y&D",multiplicity), 10000,0,10000, energy_track_yta_dta);
@@ -356,6 +360,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         
         //exclude the ng spectrum (n==3)
         if (n < 3){
+          obj.FillHistogram(dirname, "gretina_ab_CoreEnergy", 10000,0,10000, core_energy);
           obj.FillHistogram(dirname, "gretina_ab_B&T", 10000,0,10000, energy_track);
           obj.FillHistogram(dirname, "gretina_ab_B&T&Y", 10000,0,10000, energy_track_yta);
           obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
