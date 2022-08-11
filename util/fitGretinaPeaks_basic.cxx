@@ -13,8 +13,10 @@
 #include "TMath.h"
 
 const std::string INPUT_HIST = "inCl45_Cl43_gated/gamma_corrected_singles_prompt";
+// const std::string MODE = "addback/gretina_pol_red";
+const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 4; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -231,16 +233,16 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     TFile* f = new TFile(Form("hist%04d.root",energies.at(i)),"read");
     if(!f->IsZombie()) {
       if(peaks[energies.at(i)] && comps[energies.at(i)]) {
-        fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T&Y&D"));
+        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D",MODE.c_str())));
       }
       else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-        fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T_fep"));
+        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T_fep",MODE.c_str())));
       }
       else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-	      fit_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T_bg"));
+	      fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T_bg",MODE.c_str())));
       }
-      fep_hists.push_back((GH1D*)(((TH1*)f->Get("gretsim/gretina_B&T_fep"))->Clone()));
-      com_hists.push_back((GH1D*)(((TH1*)f->Get("gretsim/gretina_B&T_bg"))->Clone()));
+      fep_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T_fep",MODE.c_str())))->Clone()));
+      com_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T_bg",MODE.c_str())))->Clone()));
       
       fit_hists.back()->Sumw2();
 
@@ -255,17 +257,17 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
         TH1* hw_fep;
         TH1* hw_com;
         if(peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get("gretsim/gretina_B&T&Y&D");
+          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D",MODE.c_str()));
         }
         else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get("gretsim/gretina_B&T_fep");
+          hw = (GH1D*)fw->Get(Form("%s_B&T_fep",MODE.c_str()));
         }
         else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get("gretsim/gretina_B&T_bg");
+          hw = (GH1D*)fw->Get(Form("%s_B&T_bg",MODE.c_str()));
         }
 
-        hw_fep = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_fep"))->Clone());
-        hw_com = (GH1D*)(((TH1*)fw->Get("gretsim/gretina_B&T_bg"))->Clone());
+        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_fep",MODE.c_str())))->Clone());
+        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_bg",MODE.c_str())))->Clone());
         hw->Sumw2();
 
         hw->Scale(WIDE_SCALE);
@@ -354,7 +356,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
 
     TFile* f = new TFile(Form("bg_hists/hist%04d.root",bg_energies.at(i)),"read");
     if(!f->IsZombie()) {
-      bg_hists.push_back((GH1D*)f->Get("gretsim/gretina_B&T&Y&D"));
+      bg_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D",MODE.c_str())));
       bg_hists.back()->Sumw2();
       bg_hists.back()->Scale(bg_params[bg_energies.at(i)]);
     }
