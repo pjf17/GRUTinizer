@@ -207,7 +207,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
 
   TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
-  double gammaEn = 1000; //GValue::Value("FEP_EN");
+  double gammaEn = GValue::Value("FEP_EN");
   double beta = GValue::Value("BETA");
   bool isFEP = simHit.IsFEP();
 
