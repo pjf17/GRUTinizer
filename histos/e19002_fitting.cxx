@@ -209,7 +209,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
   double gammaEn = GValue::Value("FEP_EN");
   double beta = GValue::Value("BETA");
+  double simBeta = simHit.GetBeta();
   bool isFEP = simHit.IsFEP();
+  obj.FillHistogram("ucgretina","beta_sim",200,0.2,0.4,simBeta);
 
   //S800 coordinates
   if (!stopped){
@@ -240,6 +242,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int number = detMap[cryID];
     if (cryID == 77) continue;
 
+    TVector3 local_pos(hit.GetLocalPosition(0));
+    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+    double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+    double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+    hit.SetPosition(0,smear_x,smear_y,smear_z);
+
     double energy_track_yta_dta;
     double energy_track_yta;
     double energy_track;
@@ -253,22 +261,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
       energy_track = energy_track_yta = energy_track_yta_dta = hit.GetDoppler(beta);
     }
 
-    TVector3 local_pos(hit.GetLocalPosition(0));
-    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
-    double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-    double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-    hit.SetPosition(0,smear_x,smear_y,smear_z);
+    double energy_track_yta_dta_sim;
+    double energy_track_yta_sim;
+    double energy_track_sim;
 
-    double energy_track_yta_dta_smeared;
-    double energy_track_yta_smeared;
-    double energy_track_smeared;
-    
     if (!stopped){
-      energy_track_yta_dta_smeared = hit.GetDoppler(beta, &track);
-      energy_track_yta_smeared = hit.GetDopplerYta(beta, yta, &track);
-      energy_track_smeared = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
-    } else {
-      energy_track_smeared = energy_track_yta_smeared = energy_track_yta_dta_smeared = hit.GetDoppler(beta);
+      energy_track_sim = hit.GetDoppler(simBeta, &track);
+      energy_track_yta_sim = hit.GetDopplerYta(simBeta, yta, &track);
+      energy_track_yta_dta_sim = hit.GetDopplerYta(s800sim->AdjustedBeta(simBeta), yta, &track);
+    } 
+    else{
+      energy_track_sim = energy_track_yta_sim = energy_track_yta_dta_sim = hit.GetDoppler(simBeta);
     }
 
     //efficiency correction
@@ -284,9 +287,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname,"gretina_B&T&Y",10000,0,10000,energy_track_yta);
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
 
-      obj.FillHistogram(dirname,"gretina_B&T_smeared",10000,0,10000,energy_track_smeared);
-      obj.FillHistogram(dirname,"gretina_B&T&Y_smeared",10000,0,10000,energy_track_yta_smeared);
-      obj.FillHistogram(dirname,"gretina_B&T&Y&D_smeared",10000,0,10000,energy_track_yta_dta_smeared);
+      obj.FillHistogram(dirname,"gretina_B&T_sim",10000,0,10000,energy_track_sim);
+      obj.FillHistogram(dirname,"gretina_B&T&Y_sim",10000,0,10000,energy_track_yta_sim);
+      obj.FillHistogram(dirname,"gretina_B&T&Y&D_sim",10000,0,10000,energy_track_yta_dta_sim);
 
       //organization
       // if(detMap[cryID] < 17) {
