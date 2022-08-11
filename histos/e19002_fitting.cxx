@@ -220,7 +220,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   } else {
     obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   }
-
   double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
   if(SIGMA > 3.8) {
     SIGMA = 3.8;
