@@ -242,17 +242,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int number = detMap[cryID];
     if (cryID == 77) continue;
 
-    TVector3 local_pos(hit.GetLocalPosition(0));
-    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
-    double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-    double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-    hit.SetPosition(0,smear_x,smear_y,smear_z);
+    // TVector3 local_pos(hit.GetLocalPosition(0));
+    // double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+    // double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+    // double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+    // hit.SetPosition(0,smear_x,smear_y,smear_z);
 
     double energy_track_yta_dta;
     double energy_track_yta;
     double energy_track;
+    double energy_beta;
 
     if (!stopped){
+      energy_beta = hit.GetDoppler(beta);
       energy_track = hit.GetDoppler(beta, &track);
       energy_track_yta = hit.GetDopplerYta(beta, yta, &track);
       energy_track_yta_dta = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
@@ -283,6 +285,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname,"gretina_summary_B&T&Y&D",36,1,37,number,8000,0,4000,energy_track_yta_dta);
       
       //fitting hists
+      obj.FillHistogram(dirname,"gretina_B",10000,0,10000,energy_beta);
       obj.FillHistogram(dirname,"gretina_B&T",10000,0,10000,energy_track);
       obj.FillHistogram(dirname,"gretina_B&T&Y",10000,0,10000,energy_track_yta);
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
