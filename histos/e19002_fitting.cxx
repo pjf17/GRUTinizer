@@ -212,7 +212,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double simBeta = simHit.GetBeta();
   bool isFEP = simHit.IsFEP();
   obj.FillHistogram("ucgretina","beta_sim",200,0.2,0.4,simBeta);
-  std::cout<<s800sim->GetS800SimHit(0).GetATA()<<std::endl;
   //S800 coordinates
   if (!stopped){
     obj.FillHistogram("s800sim","ata", 600,-100,100, s800sim->GetS800SimHit(0).GetATA());
