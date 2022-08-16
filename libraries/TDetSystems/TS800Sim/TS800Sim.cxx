@@ -40,8 +40,8 @@ void TS800Sim::Clear(Option_t *opt) {
 
 TVector3 TS800Sim::Track(double sata,double sbta) const {
   //Dividing by 1000 because GRUTinizer uses radians for ATA/BTA
-  double ata = TMath::Sin(GetS800SimHit(0).GetATA()/1000.+sata);
-  double bta = TMath::Sin(GetS800SimHit(0).GetBTA()/1000.+sbta);
+  double ata = TMath::Sin(GetS800SimHit(0).GetATA()+sata);
+  double bta = TMath::Sin(GetS800SimHit(0).GetBTA()+sbta);
   TVector3 track(ata,-bta,sqrt(1-ata*ata-bta*bta));
   return track;//.Unit();
 }
