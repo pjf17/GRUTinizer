@@ -214,7 +214,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   obj.FillHistogram("ucgretina","beta_sim",200,0.2,0.4,simBeta);
   //S800 coordinates
   if (!stopped){
-    obj.FillHistogram("s800sim","ata", 600,-0.1,-0.1, s800sim->GetS800SimHit(0).GetATA());
+    obj.FillHistogram("s800sim","ata", 600,-0.1,0.1, s800sim->GetS800SimHit(0).GetATA());
     obj.FillHistogram("s800sim","bta", 600,-0.1,0.1, s800sim->GetS800SimHit(0).GetBTA());
     obj.FillHistogram("s800sim","yta", 1000,-0.003,0.003, s800sim->GetS800SimHit(0).GetYTA());
     obj.FillHistogram("s800sim","dta", 1000,-0.5,0.5, s800sim->GetS800SimHit(0).GetDTA());
@@ -241,11 +241,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int number = detMap[cryID];
     if (cryID == 77) continue;
 
-    // TVector3 local_pos(hit.GetLocalPosition(0));
-    // double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
-    // double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-    // double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-    // hit.SetPosition(0,smear_x,smear_y,smear_z);
+    TVector3 local_pos(hit.GetLocalPosition(0));
+    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+    double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+    double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+    hit.SetPosition(0,smear_x,smear_y,smear_z);
 
     double energy_track_yta_dta;
     double energy_track_yta;
