@@ -39,7 +39,6 @@ void TS800Sim::Clear(Option_t *opt) {
 }
 
 TVector3 TS800Sim::Track(double sata,double sbta) const {
-  //Dividing by 1000 because GRUTinizer uses radians for ATA/BTA
   double ata = TMath::Sin(GetS800SimHit(0).GetATA()+sata);
   double bta = TMath::Sin(GetS800SimHit(0).GetBTA()+sbta);
   TVector3 track(ata,-bta,sqrt(1-ata*ata-bta*bta));
@@ -47,8 +46,8 @@ TVector3 TS800Sim::Track(double sata,double sbta) const {
 }
 
 float TS800Sim::Azita(float ata, float bta) const{
-  float xsin = TMath::Sin(ata);//ATA and BTA are in mrad for the simulation!!
-  float ysin = TMath::Sin(bta);//ATA and BTA are in mrad for the simulation!!
+  float xsin = TMath::Sin(ata);
+  float ysin = TMath::Sin(bta);
   float azita = 0.0;
   if(xsin>0 && ysin>0){
     azita = TMath::ATan(ysin/xsin);
