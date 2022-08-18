@@ -379,6 +379,12 @@ void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
     fNumberOfInteractions++;
   }
 }
+
+void TGretinaHit::NNSwap(int index){
+  TVector3 pos = GetNeighbor(index).GetPosition();
+  this->SetPosition(0,pos.X(),pos.Y(),pos.Z());
+  return;
+}
 /*
    TGretinaHit& TGretinaHit::operator+=(const TGretinaHit& rhs) {
    AddToSelf(rhs);

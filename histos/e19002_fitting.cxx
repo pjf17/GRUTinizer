@@ -262,19 +262,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
       energy_track = energy_track_yta = energy_track_yta_dta = hit.GetDoppler(beta);
     }
 
-    double energy_track_yta_dta_sim;
-    double energy_track_yta_sim;
-    double energy_track_sim;
-
-    if (!stopped){
-      energy_track_sim = hit.GetDoppler(simBeta, &track);
-      energy_track_yta_sim = hit.GetDopplerYta(simBeta, yta, &track);
-      energy_track_yta_dta_sim = hit.GetDopplerYta(s800sim->AdjustedBeta(simBeta), yta, &track);
-    } 
-    else{
-      energy_track_sim = energy_track_yta_sim = energy_track_yta_dta_sim = hit.GetDoppler(simBeta);
-    }
-
     //efficiency correction
     if (efficiencyCorrection(rand_gen,hit)){
       obj.FillHistogram(dirname,"HitTheta_v_HitPhi",360,0,360,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
@@ -288,10 +275,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname,"gretina_B&T",10000,0,10000,energy_track);
       obj.FillHistogram(dirname,"gretina_B&T&Y",10000,0,10000,energy_track_yta);
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
-
-      obj.FillHistogram(dirname,"gretina_B&T_sim",10000,0,10000,energy_track_sim);
-      obj.FillHistogram(dirname,"gretina_B&T&Y_sim",10000,0,10000,energy_track_yta_sim);
-      obj.FillHistogram(dirname,"gretina_B&T&Y&D_sim",10000,0,10000,energy_track_yta_dta_sim);
 
       //organization
       // if(detMap[cryID] < 17) {
@@ -377,28 +360,38 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
         if (n == 1) {
           //POLARIZATION
-          if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gretina_pol_red_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-            if(isNNFEP){
-              obj.FillHistogram(dirname,"gretina_pol_red_B&T_fep", 10000,0,10000, energy_track);
-            } else {
-              obj.FillHistogram(dirname,"gretina_pol_red_B&T_bg", 10000,0,10000, energy_track);
+          std::string swaptype = "pol";
+          for (int t=0; t < 2; t++){
+            if (t==1) {
+              swaptype = "pol_swapped";
+              nnhit.NNSwap(0);
+              energy_track = nnhit.GetDoppler(beta, &track);
+              energy_track_yta = nnhit.GetDopplerYta(beta, yta, &track);
+              energy_track_yta_dta = nnhit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
             }
-          }
-          if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_pol_gold_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-            if(isNNFEP){
-              obj.FillHistogram(dirname,"gamma_pol_gold_B&T_fep", 10000,0,10000, energy_track);
-            } else {
-              obj.FillHistogram(dirname,"gamma_pol_gold_B&T_bg", 10000,0,10000, energy_track);
+            if ( PairHit(nnhit,redPairs) ){
+              obj.FillHistogram(dirname,Form("gretina_%s_red_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
+              if(isNNFEP){
+                obj.FillHistogram(dirname,Form("gretina_%s_red_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,Form("gretina_%s_red_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
+              }
             }
-          }
-          if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_pol_blue_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-            if(isNNFEP){
-              obj.FillHistogram(dirname,"gamma_pol_blue_B&T_fep", 10000,0,10000, energy_track);
-            } else {
-              obj.FillHistogram(dirname,"gamma_pol_blue_B&T_bg", 10000,0,10000, energy_track);
+            if ( PairHit(nnhit,goldPairs) ){
+              obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
+              if(isNNFEP){
+                obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
+              }
+            }
+            if ( PairHit(nnhit,bluePairs) ){
+              obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
+              if(isNNFEP){
+                obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
+              } else {
+                obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
+              }
             }
           }
         }
