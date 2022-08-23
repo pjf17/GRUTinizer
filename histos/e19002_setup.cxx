@@ -166,31 +166,31 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double raw_e1 = s800->GetRawE1_MESY();
   double raw_xf = s800->GetRawXF_MESY();
   
-  obj.FillHistogram("ungated", "MTOF_OBJE1", 2000, -3000,-1000, raw_obj - raw_e1);
-  obj.FillHistogram("ungated", "MTOF_XFE1", 2000, 1000, 3000, raw_xf - raw_e1);
+  obj.FillHistogram("ungated", "MTOF_OBJE1", 2000, -5000,-3000, raw_obj - raw_e1);
+  obj.FillHistogram("ungated", "MTOF_XFE1", 2000, 1000, 6000, raw_xf - raw_e1);
 
   //MAKE INCOMING PID
   double tof_obje1 = s800->GetMTof().GetCorrelatedObjE1(); 
   double tof_xfpe1 = s800->GetMTof().GetCorrelatedXfpE1();
-  obj.FillHistogram("ungated", "incoming_pid", 1000, -4000, 0, tof_obje1,
-                                               1000, 1000, 3000, tof_xfpe1);                                              
+  obj.FillHistogram("ungated", "incoming_pid", 2000, -5000, -3000, tof_obje1,
+                                               2000, 1000, 6000, tof_xfpe1);                                              
 
   //MAKE OUTGOING PID
   double ic_ave = s800->GetIonChamber().GetAve();
   double tof_obje1_corr = GetGoodMTOFObjE1(s800);
-  obj.FillHistogram("ungated", "outgoing_pid", 1000, -4000, 0, tof_obje1_corr,
+  obj.FillHistogram("ungated", "outgoing_pid", 1000, -5000, -3000, tof_obje1_corr,
                                                1024, 0, 4096, ic_ave);
 
   //CORRELATION PLOTS
   double crdc_1_x = s800->GetCrdc(0).GetDispersiveX();
   double crdc_2_x = s800->GetCrdc(1).GetDispersiveX();
   double afp = GetAfp(crdc_1_x, crdc_2_x);
-  obj.FillHistogram("ungated", "corrobje1_crdc1x", 1000, -4000, 0, tof_obje1_corr,
+  obj.FillHistogram("ungated", "corrobje1_crdc1x", 1000, -5000, -3000, tof_obje1_corr,
                                                600, -300, 300, crdc_1_x);
-  obj.FillHistogram("ungated", "corrobje1_afp", 1000, -4000, 0, tof_obje1_corr,
+  obj.FillHistogram("ungated", "corrobje1_afp", 1000, -5000, -3000, tof_obje1_corr,
                                                1000, -0.1, 0.1, afp);
   double xfp_obj = tof_xfpe1-tof_obje1;
-  obj.FillHistogram("ungated", "corrobje1_tofxfpobj", 1000, -4000, 0, tof_obje1_corr,
+  obj.FillHistogram("ungated", "corrobje1_tofxfpobj", 1000, -5000, -3000, tof_obje1_corr,
                                                2048, 0, 8192, xfp_obj);
   
   
@@ -203,13 +203,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
   
   for (auto ind_out : outgoing_passed){
     dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-    obj.FillHistogram(dirname, "incoming_pid", 1000, -4000, 0, tof_obje1,
+    obj.FillHistogram(dirname, "incoming_pid", 1000, -6000, -2000, tof_obje1,
                                                1000, 0, 4000, tof_xfpe1);
   }
   
   for (auto ind_in : incoming_passed){
     dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
-    obj.FillHistogram(dirname, "outgoing_pid", 1000, -4000, 0, tof_obje1_corr,
+    obj.FillHistogram(dirname, "outgoing_pid", 1000, -6000, -2000, tof_obje1_corr,
                                                1024, 0, 4096, ic_ave);
   }
   
