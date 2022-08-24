@@ -191,8 +191,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
                                                1000, -0.1, 0.1, afp);
   double xfp_obj = tof_xfpe1-tof_obje1;
   obj.FillHistogram("ungated", "corrobje1_tofxfpobj", 1000, -5000, -3000, tof_obje1_corr,
-                                               2048, 0, 8192, xfp_obj);
+                                               2048, -1024, 1024, xfp_obj-GValue::Value("TOFXFP_OBJ_SHIFT"));
   
+  //CRDC Coordinates
+  double crdc_1_y = s800->GetCrdc(0).GetNonDispersiveY();
+  double crdc_2_y = s800->GetCrdc(1).GetNonDispersiveY();
+
+  double ylow = -200;
+  double yhigh = 200;
+  double ybins = 400;
+  
+  double yslope = GValue::Value("CRDC1_Y_SLOPE");
+  if (std::isnan(yslope) || yslope == 0){
+    ylow = 0;
+    yhigh = 1500;
+    ybins = 1500;
+  }
+  obj.FillHistogram("ungated", "crdc1 X_Y", 600, -300, 300, crdc_1_x, ybins, ylow, yhigh, crdc_1_y);  
+  obj.FillHistogram("ungated", "crdc2 X_Y", 600, -300, 300, crdc_2_x, ybins, ylow, yhigh, crdc_2_y);
   
   //---------------------------------------------------------------
   //GATED
@@ -210,7 +226,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   for (auto ind_in : incoming_passed){
     dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
     obj.FillHistogram(dirname, "outgoing_pid", 1000, -6000, -2000, tof_obje1_corr,
-                                               1024, 0, 4096, ic_ave);
+                                               2048, 0, 4096, ic_ave);
   }
   
   if(numobj!=list->GetSize()){
