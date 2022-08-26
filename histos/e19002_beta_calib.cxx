@@ -170,15 +170,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit abhit = gretina->GetAddbackHit(i);
             
             //BETA CALIBRATION
-            double minBeta = 0.43;
-            double maxBeta = 0.44;
+            double minBeta = 0.428;
+            double maxBeta = 0.46;
             double stepSize = 0.001;
             int nbinsBeta = (maxBeta - minBeta)/stepSize;
             double beta = minBeta;
 
             for (int i=0; i < nbinsBeta; i++){
-              // double energyBeta = abhit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(), &track);
-              double energyBeta = abhit.GetDoppler(beta);
+              double energyBeta = abhit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(), &track);
+              // double energyBeta = abhit.GetDoppler(beta);
               obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
               beta+=stepSize;
             }

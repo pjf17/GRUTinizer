@@ -197,9 +197,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double crdc_1_y = s800->GetCrdc(0).GetNonDispersiveY();
   double crdc_2_y = s800->GetCrdc(1).GetNonDispersiveY();
 
-  double ylow = -200;
-  double yhigh = 200;
-  double ybins = 400;
+  double ylow = -500;
+  double yhigh = 500;
+  double ybins = 500;
   
   double yslope = GValue::Value("CRDC1_Y_SLOPE");
   if (std::isnan(yslope) || yslope == 0){

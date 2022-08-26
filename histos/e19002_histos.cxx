@@ -244,8 +244,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
   //MAKE INCOMING PID
   double tof_obje1 = s800->GetMTof().GetCorrelatedObjE1(); 
   double tof_xfpe1 = s800->GetMTof().GetCorrelatedXfpE1();
-  obj.FillHistogram("ungated", "incoming_pid", 2500, -5000, 0, tof_obje1,
-                                               2000, 0, 4000, tof_xfpe1);                                              
+  obj.FillHistogram("ungated", "incoming_pid", 500, -5000, -3000, tof_obje1,
+                                               500, 1000, 6000, tof_xfpe1);                                               
 
   //CRDC PLOTS
   double crdc_1_x = s800->GetCrdc(0).GetDispersiveX();
@@ -254,15 +254,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double crdc_2_y = s800->GetCrdc(1).GetNonDispersiveY();
   double afp = GetAfp(crdc_1_x, crdc_2_x);
   
-  double ylow = -200;
-  double yhigh = 200;
-  double ybins = 400;
+  double ylow = -500;
+  double yhigh = 500;
+  double ybins = 500;
   
   double yslope = GValue::Value("CRDC1_Y_SLOPE");
   if (std::isnan(yslope) || yslope == 0){
     ylow = 0;
-    yhigh = 1200;
-    ybins = 1200;
+    yhigh = 1500;
+    ybins = 1500;
   }
   obj.FillHistogram("ungated", "crdc1 X_Y", 600, -300, 300, crdc_1_x, ybins, ylow, yhigh, crdc_1_y);  
   obj.FillHistogram("ungated", "crdc2 X_Y", 600, -300, 300, crdc_2_x, ybins, ylow, yhigh, crdc_2_y);
@@ -295,8 +295,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   for (auto ind_out : outgoing_passed){
     dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-    obj.FillHistogram(dirname, "incoming_pid", 2500, -5000, 0, tof_obje1,
-                                               2000, 0, 4000, tof_xfpe1);
+    obj.FillHistogram(dirname, "incoming_pid", 2000, -5000, -3000, tof_obje1,
+                                               2000, 1000, 6000, tof_xfpe1); 
   }
 
   //INCOMING
@@ -356,6 +356,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
             double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            double energy_corrected_nodta = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track);
             double energy = hit.GetDoppler(GValue::Value("BETA"));
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
@@ -386,6 +387,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_nodta_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
               obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 8192,0,8192, hit.GetCoreEnergy(), 100, 0, 2.5, theta);
