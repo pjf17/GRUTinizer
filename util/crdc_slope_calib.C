@@ -9,7 +9,7 @@
 TFile *outfile;
 
 //Path to where you want to put your val files
-const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e19002/config/crdcY/"; 
+const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e21007/config/crdcY/"; 
 
 GH1D *GetYHist(std::string filename, int crdc){
   TFile *f = new TFile(filename.c_str(),"READ");
@@ -18,7 +18,7 @@ GH1D *GetYHist(std::string filename, int crdc){
   GH2D *hist2d = (GH2D*) f->Get(inHistName.c_str());
 
   if (!hist2d){
-    std::cout<<"error reading hist"<<std::endl;
+    std::cout<<"error reading hist in "<<filename<<std::endl;
     return NULL;
   }
 
@@ -37,26 +37,26 @@ GH1D *GetYHist(std::string filename, int crdc){
   return hy;
 }
 
-double GetMean(GH1D *hy){
+double GetMean(GH1D *hy, double low, double high){
   if (!hy) {
     return sqrt(-1);
   }
   
-  double low = -600;
-  double high = 600;
-
   std::string fitname(hy->GetName());
   fitname += "_fit";
 
+  double mean = hy->GetMean();
+
   TF1 *fitfunc = new TF1(fitname.c_str(),"gaus",low,high);
-  hy->Fit(fitfunc,"QR0","",low, high);
-
-  const Int_t kNotDraw = 1<<9;
-  hy->GetFunction(fitname.c_str())->ResetBit(kNotDraw);
-
-  hy->Write("",TObject::kOverwrite);
+  if (hy->GetEntries() > 150){
+    hy->Fit(fitfunc,"QR0","",low, high);
+    const Int_t kNotDraw = 1<<9;
+    hy->GetFunction(fitname.c_str())->ResetBit(kNotDraw);
+    hy->Write("",TObject::kOverwrite);
+    mean = fitfunc->GetParameter(1);
+  }
   
-  return fitfunc->GetParameter(1);
+  return mean;
 }
 
 void GetNewSlopes(std::vector<std::string> &allfiles){
@@ -77,8 +77,8 @@ void GetNewSlopes(std::vector<std::string> &allfiles){
   
     for (int i=0; i < 2; i++){
       //get mean and check if its nan
-      //double mean = GetMean(GetYHist(filename,i+1));
-      double mean = GetYHist(filename,i+1)->GetMean();
+      double mean = GetMean(GetYHist(filename,i+1),-500,500);
+      // double mean = GetYHist(filename,i+1)->GetMean();
       if (std::isnan(mean)){
         std::cout<<"Error in crdc "<<i+1<< "mean\n";
         return;
@@ -119,36 +119,31 @@ void GetNewSlopes(std::vector<std::string> &allfiles){
 
 void CheckYDists(std::vector<std::string> allfiles){
     outfile = new TFile("crdc_calib_hists_check.root","RECREATE");
-    ofstream statusOut; 
-    statusOut.open("calib_check.txt");
 
-    double good = 0.01, okay = 0.1, fine = 0.25;
+    TH1D *hmeans = new TH1D("means","means",100,-2.5,2.5);
+    TH2D *hindex = new TH2D("index","index",350,0,350,100,-2.5,2.5);
     for (auto filename : allfiles){
-        statusOut<<filename<<std::endl; 
+        //create run directory for crdcY 1 & 2
+        std::string dirname = "run" + filename.substr(4,4);
+        if (!outfile->GetDirectory(dirname.c_str())){
+          outfile->mkdir(dirname.c_str());
+        }
+
+        int runNum = atoi(filename.substr(4,4).c_str());
+
         for (int i=0; i < 2; i++){
-            statusOut<<"\tcrdc"<<i+1<<": ";
             //get mean and check if its nan
-            double mean = GetYHist(filename,i+1)->GetMean();
-            mean = std::abs(mean);
+            double mean = GetMean(GetYHist(filename,i+1),-60,60);
+            // double mean = GetYHist(filename,i+1)->GetMean();
             if (std::isnan(mean)){
-                statusOut<<"Error";
+                std::cout<<"Error with hist"<<runNum<<std::endl;
                 break;
             }
-
-            //check if mean is close to zero
-            if (mean < good){
-                statusOut<<"good";
-            } else if (mean < okay){
-                statusOut<<"okay";
-            } else if (mean < fine){
-                statusOut<<"fine";
-            } else {
-                statusOut<<"BAD";
-            }
-            statusOut<<std::endl;
+            hmeans->Fill(mean);
+            hindex->Fill(runNum,mean);
         } 
     }
-    statusOut.close();
+    outfile->Write();
     return;
 }
 
