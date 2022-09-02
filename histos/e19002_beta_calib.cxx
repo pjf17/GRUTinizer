@@ -162,25 +162,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       if (gretina){
         if (bank29 && prompt_timing_gate){
-          //ADDBACK STUFF
           TVector3 track = s800->Track();
-          int nABHits = gretina->AddbackSize();
-          
-          for (int i=0; i < nABHits; i++){
-            TGretinaHit abhit = gretina->GetAddbackHit(i);
-            
-            //BETA CALIBRATION
-            double minBeta = 0.428;
-            double maxBeta = 0.46;
-            double stepSize = 0.001;
-            int nbinsBeta = (maxBeta - minBeta)/stepSize;
-            double beta = minBeta;
-
-            for (int i=0; i < nbinsBeta; i++){
-              double energyBeta = abhit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(), &track);
-              // double energyBeta = abhit.GetDoppler(beta);
-              obj.FillHistogram(dirname, "Energy_vs_Beta", nbinsBeta, minBeta, maxBeta, beta, 8192, 0, 8192, energyBeta);
-              beta+=stepSize;
+          double timeBank29 = bank29->Timestamp();
+          int nGretina = gretina->Size();
+          for (int g=0; g < nGretina; g++){
+            TGretinaHit &hit = gretina->GetGretinaHit(g);
+            //loop over beta
+            double betaMin = 0.438;
+            double betaMax = 0.446;
+            double betaStep = 0.001;
+            int nBetaBins = (betaMax - betaMin)/betaStep;
+            double beta = betaMin;
+            for (int i=0; i < nBetaBins; i++){
+              double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track);
+              if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
+                obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
+                obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%5.3f",beta),1500,0,3000,energy,100,0,3,hit.GetTheta());
+              }
+              beta += betaStep;
             }
           }
         }
