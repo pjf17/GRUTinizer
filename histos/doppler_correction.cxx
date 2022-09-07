@@ -162,11 +162,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       if (gretina){
         if (bank29 && prompt_timing_gate){
+          double yta = s800->GetYta();
+          double dta = s800->GetDta();
+          obj.FillHistogram("s800","ata",1000,-1,1,s800->GetAta());
+          obj.FillHistogram("s800","bta",1000,-1,1,s800->GetBta());
+          obj.FillHistogram("s800","yta",1000,-10,10,yta);
+          obj.FillHistogram("s800","dta",1000,-1,1,dta);
+
           TVector3 track = s800->Track();
           double timeBank29 = bank29->Timestamp();
           int nGretina = gretina->Size();
+          double BETA = GValue::Value("BETA");
+
+          //BETA CORRECTION
           for (int g=0; g < nGretina; g++){
             TGretinaHit &hit = gretina->GetGretinaHit(g);
+            int cryID = hit.GetCrystalId();
+            int ringnum = hit.GetRingNumber();
+            
             //loop over beta
             double betaMin = 0.438;
             double betaMax = 0.446;
@@ -174,13 +187,31 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int nBetaBins = (betaMax - betaMin)/betaStep;
             double beta = betaMin;
             for (int i=0; i < nBetaBins; i++){
-              double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track);
+              double energy = hit.GetDoppler(beta);
               if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
                 obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
                 obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%5.3f",beta),1500,0,3000,energy,100,0,3,hit.GetTheta());
               }
               beta += betaStep;
             }
+            double energy_b = hit.GetDoppler(BETA);
+            double energy_bt = hit.GetDoppler(BETA,&track);
+            double energy_bty = hit.GetDopplerYta(BETA,s800->GetYta(),&track); 
+            double energy_btyd = hit.GetDopplerYta(s800->AdjustedBeta(BETA),s800->GetYta(),&track); 
+            
+            //PHI CORRELATION
+            double phi = (2*TMath::Pi() - s800->Azita() - hit.GetPhi())*TMath::RadToDeg();
+
+            obj.FillHistogram(dirname,"Phi_vs_Energy",4000,0,4000,energy_b,180,0,360,phi);
+            obj.FillHistogram(dirname,"Phi_vs_Energy_corrected",4000,0,4000,energy_bt,180,0,360,phi);
+           
+            //YTA CORRELATION
+            obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringnum,cryID),500,500,1500,energy_b,500,-50,50,yta);
+            obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),500,500,1500,energy_bty,500,-50,50,yta);
+
+            //DTA CORRELATION
+            obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringnum,cryID),4000,0,4000,energy_b,100,-0.1,0.1,dta);
+            obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),4000,0,4000,energy_btyd,100,-0.1,0.1,dta);
           }
         }
       }
