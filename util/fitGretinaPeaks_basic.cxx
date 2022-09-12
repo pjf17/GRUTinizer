@@ -12,12 +12,12 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-// const std::string INPUT_HIST = "inCl45_Cl43_gated/gamma_addback_prompt_red_pair";
-const std::string INPUT_HIST = "inCl45_Ar46_gated/gamma_corrected_singles_prompt";
+// const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_addback_prompt_red_pair";
+const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_B&T&Y&D_singles_prompt";
 // const std::string MODE = "addback/gretina_pol_red";
 const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 8; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -103,7 +103,7 @@ TF1 *constructBackground(std::string param_list) {
   }
    
   bg->SetRange(0,10000);
-  bg->SetNpx(10000/REBIN_FACTOR);
+  bg->SetNpx(50000/REBIN_FACTOR);
   
   return bg;
 }
@@ -116,11 +116,11 @@ TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_
   }
 
   fullSum.GetFunc()->SetRange(0,10000);
-  fullSum.GetFunc()->SetNpx(10000/REBIN_FACTOR);
+  fullSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   
   int count = 0;
   while (1) {
-    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"MES","",fit_low_x,fit_high_x));
+    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",fit_low_x,fit_high_x));
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -225,8 +225,8 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   std::vector<GH1D*> fep_hists;
   std::vector<GH1D*> com_hists;
   
-  const double NARROW_SCALE = 0.8;
-  const double WIDE_SCALE = 0.2;
+  const double NARROW_SCALE = 0.7;
+  const double WIDE_SCALE = 0.3;
   //Here we read in the simulated histograms. We use a narrow and a wide component for each histogram to more accurately simulate the GRETINA response.
 
   for(unsigned int i=0;i<energies.size();i++) {
@@ -390,7 +390,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   
   TF1Sum fSum(fitAllPeaks(data_hist,fit_funcs,fit_low_x,fit_high_x));
 
-  fSum.GetFunc()->SetNpx(10000/REBIN_FACTOR);
+  fSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   std::vector<double> fep_counts;
   std::vector<double> fep_counts_unc;
   std::vector<int> ens;
@@ -429,7 +429,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     bg->SetParameter(5,fSum.GetFunc()->GetParameter(energies.size()+offset+5));
   }
   
-  bg->SetNpx(10000/REBIN_FACTOR);
+  bg->SetNpx(50000/REBIN_FACTOR);
   TH1* hbg = bg->GetHistogram();
   hbg->SetName("Exp_Bg");
   hbg->SetTitle("Exp_Bg");
