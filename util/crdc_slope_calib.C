@@ -9,7 +9,7 @@
 TFile *outfile;
 
 //Path to where you want to put your val files
-const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e21007/config/crdcY/"; 
+// const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e21007/config/crdcY/"; 
 
 GH1D *GetYHist(std::string filename, int crdc){
   TFile *f = new TFile(filename.c_str(),"READ");
@@ -48,7 +48,7 @@ double GetMean(GH1D *hy, double low, double high){
   double mean = hy->GetMean();
 
   TF1 *fitfunc = new TF1(fitname.c_str(),"gaus",low,high);
-  if (hy->GetEntries() > 150){
+  if (hy->GetEntries() > 200){
     hy->Fit(fitfunc,"QR0","",low, high);
     const Int_t kNotDraw = 1<<9;
     hy->GetFunction(fitname.c_str())->ResetBit(kNotDraw);
@@ -59,12 +59,12 @@ double GetMean(GH1D *hy, double low, double high){
   return mean;
 }
 
-void GetNewSlopes(std::vector<std::string> &allfiles){
+void GetNewSlopes(std::vector<std::string> &allfiles, std::string val_file_dir){
   outfile = new TFile("crdc_calib_hists.root","RECREATE");
-  int nloops = 0;
-  std::cout<<"Working.";
+  int nloops = 1;
+  int nfiles = (int) allfiles.size();
   for (auto filename : allfiles){
-    
+    std::cout<<"\rProcessing "<<nloops<<"/"<<nfiles<<std::flush;
     //create run directory for crdcY 1 & 2
     std::string dirname = "run" + filename.substr(4,4);
     if (!outfile->GetDirectory(dirname.c_str())){
@@ -72,7 +72,7 @@ void GetNewSlopes(std::vector<std::string> &allfiles){
     }
 
     //create .val file
-    std::string valfile = VAL_FILE_DIR + dirname + ".val";
+    std::string valfile = val_file_dir + "/" + dirname + ".val";
     ofstream out_valfile(valfile.c_str());
   
     for (int i=0; i < 2; i++){
@@ -108,7 +108,6 @@ void GetNewSlopes(std::vector<std::string> &allfiles){
     }
   
     out_valfile.close();
-    if (nloops%5 == 0) std::cout<<"."<<std::flush;
     nloops++;
   }
   std::cout<<std::endl;
@@ -120,9 +119,15 @@ void GetNewSlopes(std::vector<std::string> &allfiles){
 void CheckYDists(std::vector<std::string> allfiles){
     outfile = new TFile("crdc_calib_hists_check.root","RECREATE");
 
-    TH1D *hmeans = new TH1D("means","means",100,-2.5,2.5);
+    TH1D *hmeans = new TH1D("means","means",500,-2.5,2.5);
     TH2D *hindex = new TH2D("index","index",350,0,350,100,-2.5,2.5);
+    int nloops = 1;
+    int nfiles = (int) allfiles.size();
     for (auto filename : allfiles){
+        //output to user
+        std::cout<<"\rProcessing "<<nloops<<"/"<<nfiles<<std::flush;
+        nloops++;
+
         //create run directory for crdcY 1 & 2
         std::string dirname = "run" + filename.substr(4,4);
         if (!outfile->GetDirectory(dirname.c_str())){
@@ -143,6 +148,7 @@ void CheckYDists(std::vector<std::string> allfiles){
             hindex->Fill(runNum,mean);
         } 
     }
+    std::cout<<std::endl;
     outfile->Write();
     return;
 }
@@ -164,12 +170,16 @@ bool ReadFiles(std::string filelist, std::vector<std::string> &allfiles){
   return true;
 }
 
-void crdc_slope_calib(std::string mode, std::string filelist="list_o_hists.txt"){
+void crdc_slope_calib(std::string mode, std::string val_file_dir = "", std::string filelist="list_o_hists.txt"){
   std::vector<std::string> files;
   if (!ReadFiles(filelist, files)) return;
   
   if (mode == "calib"){
-    GetNewSlopes(files);
+    if (val_file_dir == ""){
+      std::cout<<"Must enter .val file output path"<<std::endl;
+    } else {
+      GetNewSlopes(files,val_file_dir);
+    }
   } else if (mode == "check"){
     CheckYDists(files);
   } else {
