@@ -20,6 +20,24 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::map<int,int> detMap = {
+  {24, 0}, {25, 1}, {26, 2}, {27, 3}, {28, 4}, {29, 5}, {30, 6}, {31, 7},
+  {32, 8}, {33, 9}, {34,10}, {35,11}, {36,12}, {37,13}, {38,14}, {39,15},
+  {44,16}, {45,17}, {46,18}, {47,19}, {48,20}, {49,21}, {50,22}, {51,23},
+  {56,24}, {57,25}, {58,26}, {59,27}, {60,28}, {61,29}, {62,30}, {63,31},
+  {64,32}, {65,33}, {66,34}, {67,35}, {68,36}, {69,37}, {70,38}, {71,39},
+  {76,40}, {77,41}, {78,42}, {79,43}, {80,44}, {81,45}, {82,46}, {83,47}
+};
+
+std::map<int,int> detMapRing = {
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
+  {50,24}, {58,25}, {66,26}, {82,27}, {44,28}, {60,29}, {68,30}, {76,31},
+  {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
+  {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
+};
+
 std::vector<GCutG*> incoming_gates = {};
 std::vector<GCutG*> outgoing_gates = {};
 std::vector<GCutG*> isoline_gates = {};
@@ -164,9 +182,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (bank29 && prompt_timing_gate){
           double yta = s800->GetYta();
           double dta = s800->GetDta();
-          obj.FillHistogram("s800","ata",1000,-1,1,s800->GetAta());
-          obj.FillHistogram("s800","bta",1000,-1,1,s800->GetBta());
-          obj.FillHistogram("s800","yta",1000,-10,10,yta);
+          double ata = s800->GetAta();
+          double bta = s800->GetBta();
+          obj.FillHistogram("s800","ata",500,-0.1,0.1,ata);
+          obj.FillHistogram("s800","bta",500,-0.1,0.1,bta);
+          obj.FillHistogram("s800","yta",1000,-20,20,yta);
           obj.FillHistogram("s800","dta",1000,-1,1,dta);
 
           TVector3 track = s800->Track();
@@ -180,38 +200,54 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int cryID = hit.GetCrystalId();
             int ringnum = hit.GetRingNumber();
             
-            //loop over beta
-            double betaMin = 0.438;
-            double betaMax = 0.446;
-            double betaStep = 0.001;
-            int nBetaBins = (betaMax - betaMin)/betaStep;
-            double beta = betaMin;
-            for (int i=0; i < nBetaBins; i++){
-              double energy = hit.GetDoppler(beta);
-              if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
-                obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
-                obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%5.3f",beta),1500,0,3000,energy,100,0,3,hit.GetTheta());
+            if (isnan(BETA)){
+              //loop to find optimal beta
+              double betaMin = GValue::Value("BETA_SCAN_MIN");
+              double betaMax = GValue::Value("BETA_SCAN_MAX");
+              double betaStep = GValue::Value("BETA_SCAN_STEP");
+              int nBetaBins = (betaMax - betaMin)/betaStep;
+              double beta = betaMin;
+              for (int i=0; i < nBetaBins; i++){
+                double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track); 
+                if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
+                  obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
+                  obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),300,900,1200,energy,100,0,3,hit.GetTheta());
+                  obj.FillHistogram(dirname,Form("summary_beta%f",beta),48,0,48,detMapRing[cryID],300,900,1200,energy);
+                }
+                beta += betaStep;
               }
-              beta += betaStep;
+            } else {
+              //finer doppler corrections after finding a good beta
+              double energy_b = hit.GetDoppler(BETA);
+              double energy_bt = hit.GetDoppler(BETA,&track);
+              double energy_bty = hit.GetDopplerYta(BETA,s800->GetYta(),&track); 
+              double energy_btyd = hit.GetDopplerYta(s800->AdjustedBeta(BETA),s800->GetYta(),&track); 
+              if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy_btyd)){
+                //PHI CORRELATION
+                // double phiTa = s800->Azita();//TMath::ATan(TMath::Sin(ata)/(TMath::Sin(bta)*-1.0));
+                // if (phiTa < 0) phiTa += TMath::TwoPi();
+                double phi = (TMath::TwoPi() - s800->Azita() - hit.GetPhi())*TMath::RadToDeg();
+                if (phi < 0) phi += 360;
+
+                obj.FillHistogram(dirname,"Phi_vs_Energy",4000,0,4000,energy_b,360,0,360,phi);
+                obj.FillHistogram(dirname,"Phi_vs_Energy_corrected",4000,0,4000,energy_bt,360,0,360,phi);
+              
+                // //YTA CORRELATION
+                // obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringnum,cryID),700,600,1300,energy_b,200,-20,20,yta);
+                // obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),700,600,1300,energy_bty,200,-20,20,yta);
+
+                // //DTA CORRELATION
+                // obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringnum,cryID),700,600,1300,energy_b,50,-0.06,-0.02,dta);
+                // obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),700,600,1300,energy_btyd,50,-0.06,-0.02,dta);
+
+                //SUMMARY SPECTRUM
+                obj.FillHistogram(dirname,"Doppler_summary",48,0,48,detMap[cryID],2000,0,2000,energy_btyd);
+
+                //Spectrum
+                obj.FillHistogram(dirname,"gamma_singles_corrected",4000,0,4000,energy_btyd);
+                obj.FillHistogram(dirname,Form("gamma_singles_corrected_i%02d",detMap[cryID]),4000,0,4000,energy_btyd);
+              }
             }
-            double energy_b = hit.GetDoppler(BETA);
-            double energy_bt = hit.GetDoppler(BETA,&track);
-            double energy_bty = hit.GetDopplerYta(BETA,s800->GetYta(),&track); 
-            double energy_btyd = hit.GetDopplerYta(s800->AdjustedBeta(BETA),s800->GetYta(),&track); 
-            
-            //PHI CORRELATION
-            double phi = (2*TMath::Pi() - s800->Azita() - hit.GetPhi())*TMath::RadToDeg();
-
-            obj.FillHistogram(dirname,"Phi_vs_Energy",4000,0,4000,energy_b,180,0,360,phi);
-            obj.FillHistogram(dirname,"Phi_vs_Energy_corrected",4000,0,4000,energy_bt,180,0,360,phi);
-           
-            //YTA CORRELATION
-            obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringnum,cryID),500,500,1500,energy_b,500,-50,50,yta);
-            obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),500,500,1500,energy_bty,500,-50,50,yta);
-
-            //DTA CORRELATION
-            obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringnum,cryID),4000,0,4000,energy_b,100,-0.1,0.1,dta);
-            obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),4000,0,4000,energy_btyd,100,-0.1,0.1,dta);
           }
         }
       }
