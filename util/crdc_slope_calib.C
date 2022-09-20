@@ -120,7 +120,7 @@ void CheckYDists(std::vector<std::string> allfiles){
     outfile = new TFile("crdc_calib_hists_check.root","RECREATE");
 
     TH1D *hmeans = new TH1D("means","means",500,-2.5,2.5);
-    TH2D *hindex = new TH2D("index","index",350,0,350,100,-2.5,2.5);
+    TH2D *hindex = new TH2D("run_summary","run_summary",350,0,350,100,-2.5,2.5);
     int nloops = 1;
     int nfiles = (int) allfiles.size();
     for (auto filename : allfiles){
