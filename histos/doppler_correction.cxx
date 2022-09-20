@@ -200,7 +200,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int cryID = hit.GetCrystalId();
             int ringnum = hit.GetRingNumber();
             
-            if (isnan(BETA)){
+            if (!isnan(GValue::Value("BETA_SCAN_STEP"))){
               //loop to find optimal beta
               double betaMin = GValue::Value("BETA_SCAN_MIN");
               double betaMax = GValue::Value("BETA_SCAN_MAX");
@@ -208,7 +208,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               int nBetaBins = (betaMax - betaMin)/betaStep;
               double beta = betaMin;
               for (int i=0; i < nBetaBins; i++){
-                double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track); 
+                double energy = hit.GetDoppler(beta); 
                 if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
                   obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
                   obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),300,900,1200,energy,100,0,3,hit.GetTheta());
@@ -241,11 +241,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),700,600,1300,energy_btyd,50,-0.06,-0.02,dta);
 
                 //SUMMARY SPECTRUM
-                obj.FillHistogram(dirname,"Doppler_summary",48,0,48,detMap[cryID],2000,0,2000,energy_btyd);
+                obj.FillHistogram(dirname,"Doppler_summary",48,0,48,detMapRing[cryID],2000,0,2000,energy_btyd);
 
                 //Spectrum
                 obj.FillHistogram(dirname,"gamma_singles_corrected",4000,0,4000,energy_btyd);
-                obj.FillHistogram(dirname,Form("gamma_singles_corrected_i%02d",detMap[cryID]),4000,0,4000,energy_btyd);
+                obj.FillHistogram(dirname,Form("gamma_singles_corrected_i%02d",detMapRing[cryID]),4000,0,4000,energy_btyd);
               }
             }
           }

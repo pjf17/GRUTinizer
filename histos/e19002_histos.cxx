@@ -20,6 +20,24 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::map<int,int> detMap = {
+  {24, 0}, {25, 1}, {26, 2}, {27, 3}, {28, 4}, {29, 5}, {30, 6}, {31, 7},
+  {32, 8}, {33, 9}, {34,10}, {35,11}, {36,12}, {37,13}, {38,14}, {39,15},
+  {44,16}, {45,17}, {46,18}, {47,19}, {48,20}, {49,21}, {50,22}, {51,23},
+  {56,24}, {57,25}, {58,26}, {59,27}, {60,28}, {61,29}, {62,30}, {63,31},
+  {64,32}, {65,33}, {66,34}, {67,35}, {68,36}, {69,37}, {70,38}, {71,39},
+  {76,40}, {77,41}, {78,42}, {79,43}, {80,44}, {81,45}, {82,46}, {83,47}
+};
+
+std::map<int,int> detMapRing = {
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
+  {50,24}, {58,25}, {66,26}, {82,27}, {44,28}, {60,29}, {68,30}, {76,31},
+  {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
+  {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
+};
+
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -192,6 +210,18 @@ void CheckGates(TS800 *s800, std::vector<unsigned short> &incoming_passed, std::
   }
 }
 
+std::vector<std::pair<double,double>> energy_gates = {
+  std::make_pair(714,731),
+  std::make_pair(732,762),
+  std::make_pair(1000,1037),
+  std::make_pair(1063,1099),
+  std::make_pair(1161,1193)
+};
+
+bool check_energy_gate(double E, std::pair<double,double> E_gate){
+  return E > E_gate.first && E < E_gate.second;
+}
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -355,9 +385,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int gSize = gretina->Size();
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
-            double energy_b = hit.GetDoppler(GValue::Value("BETA"));
-            double energy_bt = hit.GetDoppler(GValue::Value("BETA"), &track);
-            double energy_bty = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track);
             double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             double energy = hit.GetDoppler(GValue::Value("BETA"));
             double core_energy = hit.GetCoreEnergy();
@@ -385,26 +412,26 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
             //prompt
-            bool tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_b) ||
-                         prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_bt) ||
-                         prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_bty) || 
-                         prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
+            bool tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
 
             if (prompt_timing_gate && tgate){
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
-              obj.FillHistogram(dirname, "gamma_B_singles_prompt", 8192,0,8192, energy_b);
-              obj.FillHistogram(dirname, "gamma_B&T_singles_prompt", 8192,0,8192, energy_bt);
-              obj.FillHistogram(dirname, "gamma_B&T&Y_singles_prompt", 8192,0,8192, energy_bty);
-              obj.FillHistogram(dirname, "gamma_B&T&Y&D_singles_prompt", 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_crystalID_prompt", 56, 24, 80, cryID, 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "s800_dta", 500, -0.2, 0.2, s800->GetDta());
               obj.FillHistogram(dirname, "s800_ata", 1000, -1, 1, s800->GetAta());
               obj.FillHistogram(dirname, "s800_bta", 1000, -1, 1, s800->GetBta());
               obj.FillHistogram(dirname, "s800_yta", 1000, -200, 200, s800->GetYta());
+              
+              int nE_gates = energy_gates.size();
+              for (int eg=0; eg < nE_gates; eg++){
+                if (!check_energy_gate(energy_corrected,energy_gates[eg]))
+                  obj.FillHistogram(dirname, "core_energy_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, core_energy);
+              }
             } 
             //off prompt
             // else {
