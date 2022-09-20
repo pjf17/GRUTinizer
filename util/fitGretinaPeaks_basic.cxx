@@ -13,7 +13,7 @@
 #include "TMath.h"
 
 // const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_addback_prompt_red_pair";
-const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_B&T&Y&D_singles_prompt";
+const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
 // const std::string MODE = "addback/gretina_pol_red";
 const std::string MODE = "gretsim/gretina";
 
