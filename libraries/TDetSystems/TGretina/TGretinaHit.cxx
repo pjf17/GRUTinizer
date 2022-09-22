@@ -32,6 +32,17 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fSingles      = fSingles;
 }
 
+Float_t  TGretinaHit::GetCoreEnergy() const {
+  double cal_offst = GValue::Value(Form("GRETINA_%d_ECALIB_a0",fCrystalId));
+  double cal_slope = GValue::Value(Form("GRETINA_%d_ECALIB_a1",fCrystalId));
+  if (std::isnan(cal_offst) || std::isnan(cal_slope)){
+    cal_offst = 0;
+    cal_slope = 1;
+  }
+
+  return fCoreEnergy*cal_slope + cal_offst;
+}
+
 Float_t TGretinaHit::GetCoreEnergy(int i) const {
   float charge = (float)GetCoreCharge(i) + gRandom->Uniform();
   //board_id=; //card  number : 0x0030  information not available here.
@@ -208,10 +219,18 @@ double TGretinaHit::GetDopplerYta(double beta, double yta, double xoffset, doubl
   gret_pos.SetX(gret_pos.X() - xoffset);
   gret_pos.SetY(gret_pos.Y() - (yoffset - yta));
   gret_pos.SetZ(gret_pos.Z() - zoffset);
+
+  double cal_offst = GValue::Value(Form("GRETINA_%d_ECALIB_a0",fCrystalId));
+  double cal_slope = GValue::Value(Form("GRETINA_%d_ECALIB_a1",fCrystalId));
+  if (std::isnan(cal_offst) || std::isnan(cal_slope)){
+    cal_offst = 0;
+    cal_slope = 1;
+  }
+
   if(EngRange>0) 
     tmp = GetCoreEnergy(EngRange)*gamma *(1 - beta*TMath::Cos(gret_pos.Angle(*vec)));
   else
-    tmp = fCoreEnergy*gamma *(1 - beta*TMath::Cos(gret_pos.Angle(*vec)));
+    tmp = (fCoreEnergy*cal_slope + cal_offst)*gamma *(1 - beta*TMath::Cos(gret_pos.Angle(*vec)));
   return tmp;
 }
 /*

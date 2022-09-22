@@ -86,7 +86,7 @@ public:
   Int_t    GetCrystalId()          const { return fCrystalId;      }
   Int_t    GetHoleNumber()         const { return fCrystalId/4-1;  }
   Int_t    GetCrystalNumber()      const { return fCrystalId%4;    }
-  Float_t  GetCoreEnergy()         const { return fCoreEnergy;     }
+  Float_t  GetCoreEnergy()         const; 
   Int_t    GetCoreCharge(int i)    const { return fCoreCharge[i];  }
   Float_t  GetCoreEnergy(int i)    const;
   virtual Int_t Charge()           const { return GetCoreCharge(3); }
