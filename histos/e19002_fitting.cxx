@@ -23,15 +23,6 @@
 #include "GValue.h"
 
 std::map<int,int> detMap = {
-  {24, 0}, {25, 1}, {26, 2}, {27, 3}, {28, 4}, {29, 5}, {30, 6}, {31, 7},
-  {32, 8}, {33, 9}, {34,10}, {35,11}, {36,12}, {37,13}, {38,14}, {39,15},
-  {44,16}, {45,17}, {46,18}, {47,19}, {48,20}, {49,21}, {50,22}, {51,23},
-  {56,24}, {57,25}, {58,26}, {59,27}, {60,28}, {61,29}, {62,30}, {63,31},
-  {64,32}, {65,33}, {66,34}, {67,35}, {68,36}, {69,37}, {70,38}, {71,39},
-  {76,40}, {77,41}, {78,42}, {79,43}, {80,44}, {81,45}, {82,46}, {83,47}
-};
-
-std::map<int,int> detMapRing = {
   {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
   {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
   {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
@@ -188,6 +179,8 @@ double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
 }
 
+int gates_loaded=0;
+GCutG *crystal_xy, *crystal_zy;
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -197,10 +190,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TS800Sim *s800sim = obj.GetDetector<TS800Sim>();
   TGretSim *gretsim = obj.GetDetector<TGretSim>();
   TGretina *gretina = obj.GetDetector<TGretina>();
+  
+  TList *gates = &(obj.GetGates());
+  if (gates_loaded!=gates->GetSize()){
+    TIter iter(gates);
+    while(TObject *obj = iter.Next()) {
+      GCutG *gate = (GCutG*)obj;
+      std::string tag = gate->GetTag();
+      if(!tag.compare("crystal-xy")) {
+        crystal_xy = gate;
+      } 
+      if(!tag.compare("crystal-border-zy")) {
+        crystal_zy = gate;
+      }
+      gates_loaded++;
+    }
+  }
+  
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
 
-  TRandom3 *rand_gen = new TRandom3(59953614);
+  static TRandom3 *rand_gen = new TRandom3(59953614);
 
   bool stopped = false;
 
@@ -256,17 +266,32 @@ void MakeHistograms(TRuntimeObjects& obj) {
     TGretinaHit &hit = gretina->GetGretinaHit(i);
 
     double core_energy = hit.GetCoreEnergy();
-    double theta = hit.GetTheta();
-    double phi = hit.GetPhi();
     int cryID = hit.GetCrystalId();
     int ringNum = hit.GetRingNumber();
     // if (cryID == 77) continue;
 
+    double theta = hit.GetTheta();
+    double phi = hit.GetPhi();
+
     TVector3 local_pos(hit.GetLocalPosition(0));
-    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA);
+    double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
     double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
     double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+
+    bool inXY = crystal_xy->IsInside(smear_x,smear_y);
+    bool inZY = crystal_zy->IsInside(smear_z,smear_y);
+    obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
+    if (inXY && inZY){
+      obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_inside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+      obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_inside"),200,-100,100,smear_z,200,-100,100,smear_y);
+    } else {
+      if (!inXY) obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_outside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+      if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
+    }
     hit.SetPosition(0,smear_x,smear_y,smear_z);
+
+    double theta_smear = hit.GetTheta();
+    double phi_smear = hit.GetPhi();
 
     double energy_track_yta_dta;
     double energy_track_yta;
@@ -286,32 +311,23 @@ void MakeHistograms(TRuntimeObjects& obj) {
     //efficiency correction
     if (efficiencyCorrection(rand_gen,hit)){
       obj.FillHistogram(dirname,"HitPhi_v_HitTheta",180,0,180,180-theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
+      // obj.FillHistogram(dirname,Form("HitPhi_v_HitTheta_Smeared_c%d",detMap[cryID]),180,0,180,180-theta_smear*TMath::RadToDeg(),360,0,360,phi_smear*TMath::RadToDeg());
       obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
 
-      obj.FillHistogram(dirname,"Theta_vs_Energy_b",4000,0,4000,energy_beta,100,0,3,hit.GetTheta());
       obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",4000,0,4000,energy_track_yta_dta,100,0,3,hit.GetTheta());
+
+      // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
       
       //fitting hists
-      obj.FillHistogram(dirname,"gretina_B",10000,0,10000,energy_beta);
-      obj.FillHistogram(dirname,"gretina_B&T",10000,0,10000,energy_track);
-      obj.FillHistogram(dirname,"gretina_B&T&Y",10000,0,10000,energy_track_yta);
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
+      if (inXY && inZY) obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
+      else obj.FillHistogram(dirname,"gretina_B&T&Y&D_outside",10000,0,10000,energy_track_yta_dta);
 
       //SUMMARY SPECTRUM
-      obj.FillHistogram(dirname,"Doppler_summary_ring",48,0,48,detMapRing[cryID],2000,0,2000,energy_track_yta_dta);
-      obj.FillHistogram(dirname,"Doppler_summary",48,0,48,detMap[cryID],2000,0,2000,energy_track_yta_dta);
-      obj.FillHistogram(dirname,Form("gamma_singles_corrected_i%02d",detMap[cryID]),4000,0,4000,energy_track_yta_dta);
-
-      // //YTA CORRELATION
-      // obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringNum,cryID),700,600,1300,energy_beta,200,-20,20,s800sim->GetS800SimHit(0).GetYTA()*1000);
-      // obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringNum,cryID),700,600,1300,energy_track_yta,200,-20,20,s800sim->GetS800SimHit(0).GetYTA()*1000);
-
-      // //DTA CORRELATION
-      // obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringNum,cryID),700,600,1300,energy_beta,50,-0.06,-0.02,s800sim->GetS800SimHit(0).GetDTA());
-      // obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringNum,cryID),700,600,1300,energy_track_yta_dta,50,-0.06,-0.02,s800sim->GetS800SimHit(0).GetDTA());
+      obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,energy_track_yta_dta);
 
       //organization
-      // if(detMap[cryID] < 17) {
+      // if(detMap[cryID] < 16) {
       //   obj.FillHistogram(dirname,"gretina_B&T_Fwd",10000,0,10000,energy_track);
       // } else {
       //   obj.FillHistogram(dirname,"gretina_B&T_90Deg",10000,0,10000,energy_track);
