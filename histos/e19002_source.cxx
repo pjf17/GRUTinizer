@@ -20,6 +20,15 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::map<int,int> detMap = {
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
+  {50,24}, {58,25}, {66,26}, {82,27}, {44,28}, {60,29}, {68,30}, {76,31},
+  {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
+  {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
+};
+
 std::vector<std::pair<int,int>> redPairs = {
   //1qAB
   std::make_pair(48,49),
@@ -238,8 +247,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int cryID = hit.GetCrystalId();
 
       obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
+      obj.FillHistogram(dirname, Form("core_energy_%02d",detMap[cryID]), 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
-      obj.FillHistogram(dirname, "core_energy_vs_crystalID", 56, 24, 80, cryID, 8192,0,8192, core_energy);
+      obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
     }
 
@@ -274,19 +284,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //totals
           int id1 = nnhit.GetCrystalId();
           int id2 = nnhit.GetNeighbor().GetCrystalId();
-          if (id1 > 43 && id2 > 43){ //only use 90 degree quads
-            if (id1%2 == 1 && id2%2 == 1){
-              obj.FillHistogram(dirname,Form("gamma_n1_A-A"),1600,0,1600, core_energy);
-            }
-            else if (id1%2 == 0 && id2%2 == 0){
-              obj.FillHistogram(dirname,Form("gamma_n1_B-B"),1600,0,1600, core_energy);
-            }
-            else{
-              obj.FillHistogram(dirname,Form("gamma_n1_A-B"),1600,0,1600, core_energy);
-            }
-            int scatterlabel = id1*100 + id2;
-            obj.FillHistogram(dirname,Form("gamma_n1_90deg_quads_pair%02d",SCATTERPAIRS[scatterlabel]),1600,0,1600, core_energy);
-          }
 
           if ( PairHit(nnhit,TwoQuadPairs) ){
             obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
@@ -332,14 +329,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
         char *multiplicity = Form("%d",n);
         if (n == 3) multiplicity = Form("g");
         obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, core_energy);
-        if (n == 0){
-          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_vs_cryID",multiplicity),56, 24, 80, cryID, 8192,0,8192, core_energy);
-          if (cryID%2==1)
-            obj.FillHistogram(dirname, Form("gamma_corrected_n%s_typeA",multiplicity),8192,0,8192, core_energy);
-          else 
-          obj.FillHistogram(dirname, Form("gamma_corrected_n%s_typeB",multiplicity),8192,0,8192, core_energy);
-          // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_cr%d",multiplicity,cryID), 8192,0,8192, core_energy);
-        }
       }
     }
   }
