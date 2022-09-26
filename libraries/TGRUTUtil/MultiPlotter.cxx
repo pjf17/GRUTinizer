@@ -17,34 +17,6 @@
 
 #include "MultiPlotter.h"
 
-class ExclusionFit {
-    public:
-        ExclusionFit(double pXlo,double pXhi) {mXlo = pXlo; mXhi = pXhi;}
-        void SetExclusion(double pXlo,double pXhi) {mXlo = pXlo; mXhi = pXhi;}
-        double operator() (double *x, double *par){
-            if (x[0] > mXlo && x[0] < mXhi){
-                TF1::RejectPoint();
-            }
-            return par[0] + par[1]*x[0];
-        }
-        void Fit(TH1D *h, double xlo, double xhi){
-            TF1 *f = new TF1("fit",this,xlo,xhi,2);
-    
-            TFitResultPtr fitres = h->Fit(f,"SMLRQ");
-           
-            double bkg = f->Integral(mXlo,mXhi) / h->GetBinWidth(1);
-            double dBkg = f->IntegralError(xlo,xhi,fitres->GetParams(),fitres->GetCovarianceMatrix().GetMatrixArray()) / h->GetBinWidth(1);
-            double sigbkg = h->Integral(h->GetBin(mXlo),h->GetBin(mXhi));
-            double dSigbkg = TMath::Sqrt(sigbkg);
-            double sig = sigbkg-bkg;
-            double dSig = TMath::Sqrt(dBkg*dBkg + dSigbkg*dSigbkg);
-            // printf("%f\t%f\t%f\t%f\t%f\t%f\n",sigbkg,dSigbkg,bkg,dBkg,sig,dSig);
-            printf("%f\t%f\n",sig,dSig);
-        }
-    private:
-        double mXlo, mXhi;
-};
-
 //PUBLIC FUNCTIONS
 
 void MultiPlotter::Add(TH1* pHist){
@@ -264,17 +236,6 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     while (it != end){
         GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
         printf("%s\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetAreaErr());
-        it++;
-    }
-}
-
-void MultiPlotter::FitExclusion(double exlo, double exhi, double rlo, double rhi){
-    std::map<std::string, TH1*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1*>::iterator end = mHistos.end();
-    printf("Total\tdTotal\tBkg\tdBkg\tSig\tdSig\n");
-    while (it != end){
-        ExclusionFit ex(exlo,exhi);
-        ex.Fit((TH1D*)it->second,rlo,rhi);
         it++;
     }
 }
