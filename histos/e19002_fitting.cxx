@@ -277,35 +277,29 @@ void MakeHistograms(TRuntimeObjects& obj) {
     double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
     double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
     double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-
-    bool inXY = crystal_xy->IsInside(smear_x,smear_y);
-    bool inZY = crystal_zy->IsInside(smear_z,smear_y);
-    obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
-    if (inXY && inZY){
-      obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_inside"),200,-100,100,smear_x,200,-100,100,smear_y); 
-      obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_inside"),200,-100,100,smear_z,200,-100,100,smear_y);
-    } else {
-      if (!inXY) obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_outside"),200,-100,100,smear_x,200,-100,100,smear_y); 
-      if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
+    if (gates){
+      bool inXY = crystal_xy->IsInside(smear_x,smear_y);
+      bool inZY = crystal_zy->IsInside(smear_z,smear_y);
+      obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
+      if (inXY && inZY){
+        obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_inside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+        obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_inside"),200,-100,100,smear_z,200,-100,100,smear_y);
+      } else {
+        if (!inXY) obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_outside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+        if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
+      }
     }
     hit.SetPosition(0,smear_x,smear_y,smear_z);
 
-    double theta_smear = hit.GetTheta();
-    double phi_smear = hit.GetPhi();
-
     double energy_track_yta_dta;
-    double energy_track_yta;
     double energy_track;
-    double energy_beta;
 
     if (!stopped){
-      energy_beta = hit.GetDoppler(beta);
       energy_track = hit.GetDoppler(beta, &track);
-      energy_track_yta = hit.GetDopplerYta(beta, yta, &track);
       energy_track_yta_dta = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
     } 
     else{
-      energy_track = energy_track_yta = energy_track_yta_dta = hit.GetDoppler(beta);
+      energy_track = energy_track_yta_dta = hit.GetDoppler(beta);
     }
 
     //efficiency correction
@@ -320,7 +314,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       //fitting hists
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
-      if (inXY && inZY) obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
+      if (gates && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
+        obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
       else obj.FillHistogram(dirname,"gretina_B&T&Y&D_outside",10000,0,10000,energy_track_yta_dta);
 
       //SUMMARY SPECTRUM
