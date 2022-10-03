@@ -455,12 +455,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
               int cryID = nnhit.GetCrystalId();
               // int ringNum = nnhit.GetRingNumber();
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              double nnCore_energy = nnhit.GetCoreEnergy();
               
               //make sure hits are prompt
               if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
                 //exclude the ng spectrum (n==3)
                 if (n < 3){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+                  obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
                 }
 
                 if (n == 1) {
@@ -510,6 +512,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 char *multiplicity = Form("%d",n);
                 if (n == 3) multiplicity = Form("g");
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, Form("core_energy_n%s_prompt",multiplicity), 8192,0,8192, nnCore_energy);
                 // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_ring%02d_prompt",multiplicity,ringNum),8192,0,8192, nnEnergy_corrected);
               }
             }
