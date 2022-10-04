@@ -251,11 +251,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double timestamp = hit.GetTime();
       if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
       obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
-      obj.FillHistogram(dirname, Form("core_energy_%02d",detMap[cryID]), 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
       obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
-      obj.FillHistogram(dirname, Form("gretina_timestamps_t0_%f",timeZero),5000,0,1,(timestamp-timeZero)/timeZero);
+      obj.FillHistogram(dirname, Form("gretina_timestamps_t0_%f",timeZero),30000,0,300000,(timestamp-timeZero)/timeZero/1000);
     }
 
     //NNADDBACK
