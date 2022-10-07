@@ -439,6 +439,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
               }
             }
+            //quadtype
+            if (t==0){
+              if (PairHit(nnhit,OneQuadPlus) && isNNFEP){
+                obj.FillHistogram(dirname,"1qd+_FEP",10000,0,10000, energy_track_yta_dta);
+              }
+              if (PairHit(nnhit,OneQuadDefault) && isNNFEP){
+                obj.FillHistogram(dirname,"1qd_FEP",10000,0,10000, energy_track_yta_dta);
+              }
+              if (PairHit(nnhit,TwoQuadPairs) && isNNFEP){
+                obj.FillHistogram(dirname,"2qd_FEP",10000,0,10000, energy_track_yta_dta);
+              }
+            }
           }
         }
       }
