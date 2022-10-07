@@ -254,7 +254,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
       obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
       obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
-      obj.FillHistogram(dirname, Form("gretina_timestamps_t0_%f",timeZero),10000,0,100,log((timestamp-timeZero)/timeZero));
+      obj.FillHistogram(dirname, "gretina_timestamps_t0",500000,0,5000,(timestamp-timeZero)/1000000000);
     }
 
     //NNADDBACK
