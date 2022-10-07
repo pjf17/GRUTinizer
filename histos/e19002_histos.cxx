@@ -92,6 +92,60 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(69,70)
 };
 
+std::vector<std::pair<int,int>> OneQuadPlus = {
+  std::make_pair(44,47),
+  std::make_pair(45,46),
+  std::make_pair(60,63),
+  std::make_pair(61,62),
+  std::make_pair(68,71),
+  std::make_pair(76,79),
+  std::make_pair(69,70),
+  std::make_pair(49,50),
+  std::make_pair(56,59),
+  std::make_pair(57,58),
+  std::make_pair(64,67),
+  std::make_pair(65,66)
+};
+
+std::vector<std::pair<int,int>> OneQuadDefault = {
+  std::make_pair(44,45),
+  std::make_pair(46,47),
+  std::make_pair(44,46),
+  std::make_pair(48,51),
+  std::make_pair(48,49),
+  std::make_pair(50,51),
+  std::make_pair(48,50),
+  std::make_pair(56,57),
+  std::make_pair(58,59),
+  std::make_pair(56,58),
+  std::make_pair(60,61),
+  std::make_pair(62,63),
+  std::make_pair(60,62),
+  std::make_pair(64,65),
+  std::make_pair(66,67),
+  std::make_pair(64,66),
+  std::make_pair(68,69),
+  std::make_pair(70,71),
+  std::make_pair(68,70),
+  std::make_pair(76,78),
+  std::make_pair(78,79)
+};
+
+std::vector<std::pair<int,int>> TwoQuadPairs = {
+  std::make_pair(46,48),
+  std::make_pair(46,51),
+  std::make_pair(47,51),
+  std::make_pair(61,57),
+  std::make_pair(58,60),
+  std::make_pair(57,60),
+  std::make_pair(62,64),
+  std::make_pair(63,67),
+  std::make_pair(62,67),
+  std::make_pair(65,69),
+  std::make_pair(66,68),
+  std::make_pair(65,68)
+};
+
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
   int cryId1 = abhit.GetCrystalId();
   int cryId2 = abhit.GetNeighbor().GetCrystalId();
@@ -483,19 +537,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
 
                   //POLARIZATION
-                  if ( PairHit(nnhit,redPairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_red_pair", 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_red_pair", 8192,0,8192, swappedEnergy);
-                  }
+                  std::string polColor = "blank";
+                  if (PairHit(nnhit,redPairs)) polColor = "red";
+                  else if (PairHit(nnhit,goldPairs)) polColor = "gold";
+                  else if (PairHit(nnhit,bluePairs)) polColor = "blue";
 
-                  if ( PairHit(nnhit,goldPairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_gold_pair", 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_gold_pair", 8192,0,8192, swappedEnergy);
-                  }
+                  std::string quadType = "blank";
+                  if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
+                  else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
+                  else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
 
-                  if ( PairHit(nnhit,bluePairs) ){
-                    obj.FillHistogram(dirname,"gamma_corrected_addback_prompt_blue_pair", 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,"gamma_corrected_swapped_addback_prompt_blue_pair", 8192,0,8192, swappedEnergy);
+                  if ( polColor.compare("blank") != 0 ){
+                    obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor,quadType), 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor,quadType), 8192,0,8192, swappedEnergy);
                   }
 
                   // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
