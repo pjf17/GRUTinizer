@@ -6,12 +6,12 @@
 
 int nconfigs = 2;
 
-void polarization(TFile *f, std::string folder, int bw){
+void polarization(TFile *f, int bw){
     std::vector< std::vector<TH1D*>> hists;
     for (int i=0; i < nconfigs; i++){
-        std::string hpath = folder;
-        if (i == 1) hpath += "/gamma_corrected_swapped_addback_prompt";
-        else hpath += "/gamma_corrected_addback_prompt";
+        std::string hpath = "";
+        if (i == 1) hpath += "ab_swapped_prompt";
+        else hpath += "ab_prompt";
         std::vector<TH1D*> temp_hists;
         temp_hists.push_back( (TH1D*) f->Get(Form("%s_%s",hpath.c_str(),"red_pair")));
         temp_hists.back()->SetNameTitle("red","red");
@@ -50,12 +50,8 @@ void polarization(TFile *f, std::string folder, int bw){
                 TH1D *hSum = (TH1D*) hists[i][j]->Clone(Form("%s+%s_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
                 TH1D *hDif = (TH1D*) hists[i][j]->Clone(Form("%s-%s_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
                 TH1D *hStat = (TH1D*) hists[i][j]->Clone(Form("%s-%s/(sigma)_%s",hists[i][j]->GetName(),hists[i][k]->GetName(),flag.c_str()));
-                if (j!=0){
-                    hSum->Scale(norm[0]);
-                    hDif->Scale(norm[0]);
-                }
-                hSum->Add(hists[i][k],norm[k-1]);
-                hDif->Add(hists[i][k],-1.0*norm[k-1]);
+                hSum->Add(hists[i][k]);
+                hDif->Add(hists[i][k],-1.0);
 
                 //calc what the expected statistical fluctuation of subtracting the
                 //hist would be if it was all random
