@@ -548,8 +548,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
 
                   if ( polColor.compare("blank") != 0 ){
-                    obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor,quadType), 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor,quadType), 8192,0,8192, swappedEnergy);
+                    obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
                   }
 
                   // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
