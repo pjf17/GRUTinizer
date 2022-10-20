@@ -180,7 +180,7 @@ double GetAfp(double crdc_1_x,double  crdc_2_x){
 }
 
 int gates_loaded=0;
-GCutG *crystal_xy, *crystal_zy;
+GCutG *crystal_xy, *crystal_zy = nullptr;
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -239,6 +239,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   // obj.FillHistogram("simcheck","energy",2000,0,2000,simHit.GetEn());
 
   double gammaEn = GValue::Value("FEP_EN");
+  if (std::isnan(gammaEn)) gammaEn = simHit.GetEn();
   double beta = GValue::Value("BETA");
   double simBeta = simHit.GetBeta();
   bool isFEP = simHit.IsFEP();
@@ -277,7 +278,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
     double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
     double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-    if (gates){
+    if (gates && crystal_xy && crystal_zy){
       bool inXY = crystal_xy->IsInside(smear_x,smear_y);
       bool inZY = crystal_zy->IsInside(smear_z,smear_y);
       obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
@@ -299,7 +300,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       energy_track_yta_dta = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
     } 
     else{
-      energy_track = energy_track_yta_dta = hit.GetDoppler(beta);
+      energy_track = energy_track_yta_dta = hit.GetCoreEnergy();
     }
 
     //efficiency correction
@@ -314,7 +315,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       //fitting hists
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
-      if (gates && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
+      if (gates && crystal_xy && crystal_zy && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
         obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
       else obj.FillHistogram(dirname,"gretina_B&T&Y&D_outside",10000,0,10000,energy_track_yta_dta);
 
@@ -372,7 +373,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           energy_track_yta = nnhit.GetDopplerYta(beta, yta, &track);
           energy_track_yta_dta = nnhit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
         } else {
-          energy_track = energy_track_yta = energy_track_yta_dta = nnhit.GetDoppler(beta);
+          energy_track = energy_track_yta = energy_track_yta_dta = nnhit.GetCoreEnergy();
         }
 
         //compare uncorrected energy reported from geant with core energy. if FEP they should be the same
@@ -406,7 +407,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (n == 1) {
           //POLARIZATION
           std::string swaptype = "pol";
-          for (int t=0; t < 2; t++){
+          for (int t=0; t < 1; t++){
             if (t==1) {
               swaptype = "pol_swapped";
               TGretinaHit swap = nnhit.GetNeighbor();

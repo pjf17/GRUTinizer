@@ -12,12 +12,12 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-const std::string INPUT_HIST = "ab_prompt_red_pair";
-// const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
-const std::string MODE = "addback/gretina_pol_red";
-// const std::string MODE = "gretsim/gretina";
+// const std::string INPUT_HIST = "ab_prompt_red_pair";
+const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
+// const std::string MODE = "addback/gretina_pol_red";
+const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 4; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -65,7 +65,7 @@ TF1 *constructBackground(std::string param_list) {
     bg->FixParameter(3,t->GetV1()[3]);
 
     if(t->GetV1()[4]) {
-      bg->SetParameter(0,t->GetV1()[0]);
+      bg->FixParameter(0,t->GetV1()[0]);
       bg->FixParameter(1,t->GetV1()[1]);
       bg->FixParameter(2,t->GetV1()[2]);
       bg->FixParameter(3,t->GetV1()[3]);
@@ -111,13 +111,13 @@ TF1 *constructBackground(std::string param_list) {
 
 TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x) {
   TF1Sum fullSum;
+  fullSum.SetExcludeRange(290,310);
   for (unsigned int i=0;i<fit_funcs.size();i++){
     fullSum.AddTF1(fit_funcs.at(i)); 
   }
 
   fullSum.GetFunc()->SetRange(0,10000);
   fullSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
-  
   int count = 0;
   while (1) {
     TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",fit_low_x,fit_high_x));

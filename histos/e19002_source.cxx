@@ -222,6 +222,43 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
+std::vector<GCutG*> incoming_gates = {};
+std::vector<GCutG*> outgoing_gates = {};
+std::vector<GCutG*> isoline_gates = {};
+GCutG *prompt_timing_gate=0;
+GCutG *afp_gate=0;
+int gates_loaded=0;
+
+void LoadGates(TRuntimeObjects &obj){
+  TList *gates = &(obj.GetGates());
+  TIter iter(gates);
+  std::cout << "loading gates:" <<std::endl;
+  while(TObject *obj = iter.Next()) {
+    GCutG *gate = (GCutG*)obj;
+    std::string tag = gate->GetTag();
+    if(!tag.compare("incoming")) {
+      incoming_gates.push_back(gate);
+      std::cout << "\t incoming: << " << gate->GetName() << std::endl;
+    } else if(!tag.compare("outgoing")) {
+      outgoing_gates.push_back(gate);
+      std::cout << "\t outgoing: << " << gate->GetName() << std::endl;
+    } else if(!tag.compare("isoline")){
+      isoline_gates.push_back(gate);
+      std::cout << "\t isoline: << " << gate->GetName() << std::endl;
+    } else if(!tag.compare("prompt")){
+      prompt_timing_gate = new GCutG(*gate);
+      std::cout << "\t prompt_timing_gate: << " << gate->GetName() << std::endl;
+    } else if(!tag.compare("afp")){
+      afp_gate = new GCutG(*gate);
+      std::cout << "\t afp_gate: << " << gate->GetName() << std::endl;
+    } else {
+      std::cout << "\t unknown: << " << gate->GetName() << std::endl;
+    }
+    gates_loaded++;
+  }
+  std::cout << "outgoing size: " << outgoing_gates.size() << std::endl;
+}
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -231,14 +268,32 @@ extern "C"
 void MakeHistograms(TRuntimeObjects& obj) {
 //  InitMap();
   TGretina *gretina = obj.GetDetector<TGretina>();
-  // TBank29  *bank29  = obj.GetDetector<TBank29>();
+  TBank29  *bank29  = obj.GetDetector<TBank29>();
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
+
+  TList *gates = &(obj.GetGates());
+
+  if(gates_loaded!=gates->GetSize()) {
+    LoadGates(obj);
+  }
+
+  //Use this spectrum for the time-energy cut for GRETINA
+  if(bank29 && gretina) {
+    for(unsigned int i=0;i<gretina->Size();i++) {
+      //Time-energy cut
+      TGretinaHit &hit = gretina->GetGretinaHit(i);
+      obj.FillHistogram("Bank29","Gretina_dop_t0_Bank29_time",
+          600,-600,600,bank29->Timestamp()-hit.GetTime(),
+          2500,0,10000, hit.GetCoreEnergy());
+    }//loop over gretina hits
+  }//bank29 and gretina exist
 
   std::string dirname  = "gretina";
   makemap();
 
-  if (gretina){
+  if (gretina && bank29){
+    double timeBank29 = bank29->Timestamp();;
     //SINGLES
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
@@ -247,14 +302,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double theta = hit.GetTheta();
       double phi = hit.GetPhiDeg();
       int cryID = hit.GetCrystalId();
-
       double timestamp = hit.GetTime();
-      if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
-      obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
-      obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
-      obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
-      obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
-      obj.FillHistogram(dirname, "gretina_timestamps_t0",500000,0,5000,(timestamp-timeZero)/1000000000);
+
+      bool prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy); 
+
+      if (prompt){
+        if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
+        obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
+        obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
+        obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
+        obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
+        obj.FillHistogram(dirname, "gretina_timestamps_t0",500000,0,5000,(timestamp-timeZero)/1000000000);
+      }
     }
 
     //NNADDBACK
@@ -269,70 +328,73 @@ void MakeHistograms(TRuntimeObjects& obj) {
         int cryID = nnhit.GetCrystalId();
         int ringNum = nnhit.GetRingNumber();
         double core_energy = nnhit.GetCoreEnergy();
-        
-        //make sure hits are prompt
-        //exclude the ng spectrum (n==3)
-        if (n < 3){
-          obj.FillHistogram(dirname, "core_energy_addback", 8192,0,8192, core_energy);
-        }
 
-        if (n == 1) {
-          //GAMMA GAMMA CORRELATION
-          // for (int j=0; j < nnSize; j++){
-          //   if (i==j) continue;
-          //   TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-          //   double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-          //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
-          // }
-
-          //totals
-          int id1 = nnhit.GetCrystalId();
-          int id2 = nnhit.GetNeighbor().GetCrystalId();
-
-          if ( PairHit(nnhit,TwoQuadPairs) ){
-            obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
-          }
-          if ( PairHit(nnhit,OneQuadPlus) ){
-            obj.FillHistogram(dirname,"gamma_n1_qd1_preferred_pair", 8192,0,8192, core_energy);
-          }
-          if ( PairHit(nnhit,OneQuadDefault) ){
-            obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
+        bool prompt = prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), core_energy);
+        if (prompt){
+          //make sure hits are prompt
+          //exclude the ng spectrum (n==3)
+          if (n < 3){
+            obj.FillHistogram(dirname, "core_energy_addback", 8192,0,8192, core_energy);
           }
 
-          //POLARIZATION
-          if ( PairHit(nnhit,redPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
-          }
+          if (n == 1) {
+            //GAMMA GAMMA CORRELATION
+            // for (int j=0; j < nnSize; j++){
+            //   if (i==j) continue;
+            //   TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+            //   double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+            //   obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
+            // }
 
-          if ( PairHit(nnhit,goldPairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
-          }
+            //totals
+            int id1 = nnhit.GetCrystalId();
+            int id2 = nnhit.GetNeighbor().GetCrystalId();
 
-          if ( PairHit(nnhit,bluePairs) ){
-            obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
-          }
+            if ( PairHit(nnhit,TwoQuadPairs) ){
+              obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
+            }
+            if ( PairHit(nnhit,OneQuadPlus) ){
+              obj.FillHistogram(dirname,"gamma_n1_qd1_preferred_pair", 8192,0,8192, core_energy);
+            }
+            if ( PairHit(nnhit,OneQuadDefault) ){
+              obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
+            }
 
-          // int id1 = nnhit.GetCrystalId();
-          // int id2 = nnhit.GetNeighbor().GetCrystalId();
-          // if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
-          //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
-          // if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
-          //   obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
-          // if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
-          //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
-        
-          // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
-          // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
-          // //   singleCrystalEnergy = nnhit1.GetCoreEnergy();
-          // // }
-          // obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
+            //POLARIZATION
+            if ( PairHit(nnhit,redPairs) ){
+              obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
+            }
+
+            if ( PairHit(nnhit,goldPairs) ){
+              obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
+            }
+
+            if ( PairHit(nnhit,bluePairs) ){
+              obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
+            }
+
+            // int id1 = nnhit.GetCrystalId();
+            // int id2 = nnhit.GetNeighbor().GetCrystalId();
+            // if ((id1 == 65 && id2 == 69) || (id2 == 65 && id1 == 69)) 
+            //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-A_scatter",8192,0,8192, core_energy); //both are type A
+            // if ((id1 == 66 && id2 == 68) || (id2 == 66 && id1 == 68)) 
+            //   obj.FillHistogram(dirname,"gamma_corrected_n1_B-B_scatter",8192,0,8192, core_energy); //both are type B
+            // if ((id1 == 65 && id2 == 68) || (id1 == 65 && id2 == 68))
+            //   obj.FillHistogram(dirname,"gamma_corrected_n1_A-B_scatter",8192,0,8192, core_energy); //type A and B
           
-          // obj.FillHistogram(dirname, Form("total_energy_swapped_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,nnhit1.GetCoreEnergy(),4096,0,8192,swappedEnergy);                  
-        }
+            // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
+            // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
+            // //   singleCrystalEnergy = nnhit1.GetCoreEnergy();
+            // // }
+            // obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
+            
+            // obj.FillHistogram(dirname, Form("total_energy_swapped_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,nnhit1.GetCoreEnergy(),4096,0,8192,swappedEnergy);                  
+          }
 
-        char *multiplicity = Form("%d",n);
-        if (n == 3) multiplicity = Form("g");
-        obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, core_energy);
+          char *multiplicity = Form("%d",n);
+          if (n == 3) multiplicity = Form("g");
+          obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, core_energy);
+        }
       }
     }
   }
