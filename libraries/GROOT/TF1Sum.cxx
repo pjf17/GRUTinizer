@@ -46,28 +46,28 @@ void TF1Sum::Print(Option_t *opt) const {
   if(fFit) fFit->Print(opt);
 }
 
-Double_t TF1Sum::EvalPar(const Double_t *x,const Double_t *params) {
-  int parnum = 0;
-  double sum = 0.0;
+// Double_t TF1Sum::EvalPar(const Double_t *x,const Double_t *params) {
+//   int parnum = 0;
+//   double sum = 0.0;
 
-  if (exclude_low != 0 || exclude_high != 0){
-    if (x[0] > exclude_low && x[0] < exclude_high){
-      TF1::RejectPoint();
-      return 0;
-    }
-  }
-  for(auto fit : fTF1s) {
-    //printf("fit->GetNpar() = %i\n",fit->GetNpar()); fflush(stdout);
-    if(params==0)
-      sum += fit->EvalPar(x,params);
-    else
-      sum += fit->EvalPar(x, params+parnum);
+//   if (exclude_low != 0 || exclude_high != 0){
+//     if (x[0] > exclude_low && x[0] < exclude_high){
+//       TF1::RejectPoint();
+//       return 0;
+//     }
+//   }
+//   for(auto fit : fTF1s) {
+//     //printf("fit->GetNpar() = %i\n",fit->GetNpar()); fflush(stdout);
+//     if(params==0)
+//       sum += fit->EvalPar(x,params);
+//     else
+//       sum += fit->EvalPar(x, params+parnum);
 
 
-    parnum += fit->GetNpar();
-  }
-  return sum;
-}
+//     parnum += fit->GetNpar();
+//   }
+//   return sum;
+// }
 
 
 void TF1Sum::Draw(Option_t *opt) {
