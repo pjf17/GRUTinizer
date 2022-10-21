@@ -32,9 +32,7 @@ void TF1Sum::AddTF1(TF1 *f) {
     if(fFit) {
       delete fFit;
     }
-    fFit = new TF1(Form("%s_obj",GetName()), 
-		   new TF1Sum(*this),
-		   xlow, xhigh, npars);
+    fFit = new TF1(Form("%s_obj",GetName()),this,xlow, xhigh, npars);
     for(int i=0;i<npars;i++) {
       fFit->SetParameter(i,fParam.at(i));
       fFit->SetParError(i,fParErr.at(i));

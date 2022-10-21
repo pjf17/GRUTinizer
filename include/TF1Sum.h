@@ -20,7 +20,24 @@ class TF1Sum : public TNamed {
 
     Double_t EvalPar(const Double_t *x,const Double_t *params=0);
 
-    double operator()(double *x,double *p) { return EvalPar(x,p); }
+    double operator()(double *x,double *params) { 
+      int parnum = 0;
+      double sum = 0.0;
+
+      if (exclude_low != 0 || exclude_high != 0){
+        if (x[0] > exclude_low && x[0] < exclude_high){
+          TF1::RejectPoint();
+        }
+      }
+      for(auto fit : fTF1s) {
+        //printf("fit->GetNpar() = %i\n",fit->GetNpar()); fflush(stdout);
+        if(params==0) sum += fit->EvalPar(x,params);
+        else sum += fit->EvalPar(x, params+parnum);
+
+        parnum += fit->GetNpar();
+      }
+      return sum;
+    }
 
     void SetRange(double l,double h) { xlow =l; xhigh=h; }
     void SetExcludeRange(double l, double h){exclude_low = l; exclude_high = h;}
