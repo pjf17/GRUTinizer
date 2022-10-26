@@ -12,10 +12,10 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-// const std::string INPUT_HIST = "ab_prompt_red_pair";
-const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
-// const std::string MODE = "addback/gretina_pol_red";
-const std::string MODE = "gretsim/gretina";
+const std::string INPUT_HIST = "ab_prompt_gold_pair";
+// const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
+const std::string MODE = "addback/gretina_pol_gold";
+// const std::string MODE = "gretsim/gretina";
 
 const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
@@ -111,7 +111,11 @@ TF1 *constructBackground(std::string param_list) {
 
 TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x) {
   TF1Sum fullSum;
-  fullSum.SetExcludeRange(290,310);
+  // fullSum.AddRegion(1520,1575);
+  // fullSum.AddRegion(2265,2287);
+  // fullSum.AddRegion(2920,2950);
+  fullSum.AddRegion(fit_low_x,fit_high_x);
+  fullSum.FitInRegions();
   for (unsigned int i=0;i<fit_funcs.size();i++){
     fullSum.AddTF1(fit_funcs.at(i)); 
   }
@@ -120,7 +124,7 @@ TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_
   fullSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   int count = 0;
   while (1) {
-    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",fit_low_x,fit_high_x));
+    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",570,fit_high_x));
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
