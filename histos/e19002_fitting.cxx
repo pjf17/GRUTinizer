@@ -290,7 +290,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
       }
     }
-    hit.SetPosition(0,smear_x,smear_y,smear_z);
+    hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
 
     double energy_track_yta_dta;
     double energy_track;
@@ -363,6 +363,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int cryID = nnhit.GetCrystalId();
       double core_energy = nnhit.GetCoreEnergy();
       if (cryID == 77) continue;
+
+      TVector3 local_pos(nnhit.GetLocalPosition(0));
+      // double reduce = 0.7;
+      // if (gammaEn < 900) reduce = 1.0;
+      double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
+      double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+      double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+      nnhit.SetPosition(0,smear_x,smear_y,smear_z);
 
       if (efficiencyCorrection(rand_gen,nnhit,nnhit.GetNNeighborHits())){
         double energy_track_yta_dta;
