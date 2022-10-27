@@ -38,6 +38,7 @@ std::map<int,int> detMapRing = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
+//24
 std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(46,44),
   std::make_pair(46,48),
@@ -56,9 +57,16 @@ std::vector<std::pair<int,int>> redPairs = {
   std::make_pair(66,67),
   std::make_pair(66,68),
   std::make_pair(70,68),
-  std::make_pair(78,76)
+  std::make_pair(78,76),
+  std::make_pair(78,80),
+  std::make_pair(80,81),
+  std::make_pair(45,81),
+  std::make_pair(79,83),
+  std::make_pair(82,83),
+  std::make_pair(44,82)
 };
 
+//16
 std::vector<std::pair<int,int>> goldPairs = {
   std::make_pair(44,45),
   std::make_pair(46,47),
@@ -73,8 +81,12 @@ std::vector<std::pair<int,int>> goldPairs = {
   std::make_pair(69,68),
   std::make_pair(70,71),
   std::make_pair(78,79),
+  std::make_pair(76,77),
+  std::make_pair(80,83),
+  std::make_pair(81,82)
 };
 
+//18
 std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(44,47),
   std::make_pair(45,46),
@@ -89,9 +101,14 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(65,68),
   std::make_pair(68,71),
   std::make_pair(76,79),
-  std::make_pair(69,70)
+  std::make_pair(69,70),
+  std::make_pair(77,78),
+  std::make_pair(78,83),
+  std::make_pair(80,82),
+  std::make_pair(44,81)
 };
 
+//16
 std::vector<std::pair<int,int>> OneQuadPlus = {
   std::make_pair(44,47),
   std::make_pair(45,46),
@@ -104,14 +121,18 @@ std::vector<std::pair<int,int>> OneQuadPlus = {
   std::make_pair(56,59),
   std::make_pair(57,58),
   std::make_pair(64,67),
-  std::make_pair(65,66)
+  std::make_pair(65,66),
+  std::make_pair(48,51),
+  std::make_pair(77,78),
+  std::make_pair(80,83),
+  std::make_pair(81,82),
 };
 
+//24
 std::vector<std::pair<int,int>> OneQuadDefault = {
   std::make_pair(44,45),
   std::make_pair(46,47),
   std::make_pair(44,46),
-  std::make_pair(48,51),
   std::make_pair(48,49),
   std::make_pair(50,51),
   std::make_pair(48,50),
@@ -128,9 +149,15 @@ std::vector<std::pair<int,int>> OneQuadDefault = {
   std::make_pair(70,71),
   std::make_pair(68,70),
   std::make_pair(76,78),
-  std::make_pair(78,79)
+  std::make_pair(78,79),
+  std::make_pair(77,76),
+  std::make_pair(80,82),
+  std::make_pair(81,80),
+  std::make_pair(82,83),
 };
 
+
+//18
 std::vector<std::pair<int,int>> TwoQuadPairs = {
   std::make_pair(46,48),
   std::make_pair(46,51),
@@ -143,7 +170,13 @@ std::vector<std::pair<int,int>> TwoQuadPairs = {
   std::make_pair(62,67),
   std::make_pair(65,69),
   std::make_pair(66,68),
-  std::make_pair(65,68)
+  std::make_pair(65,68),
+  std::make_pair(78,80),
+  std::make_pair(78,83),
+  std::make_pair(79,83),
+  std::make_pair(45,81),
+  std::make_pair(44,81),
+  std::make_pair(44,82),
 };
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
@@ -510,10 +543,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
               // int ringNum = nnhit.GetRingNumber();
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
               double nnCore_energy = nnhit.GetCoreEnergy();
+              double theta = 180 - nnhit.GetThetaDeg();
+              double phi = nnhit.GetPhiDeg();
               
               //make sure hits are prompt
               if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
                 //exclude the ng spectrum (n==3)
+                // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
                 if (n < 3){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
                   obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
@@ -549,6 +585,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
                   if ( polColor.compare("blank") != 0 ){
                     obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, nnEnergy_corrected);
+                    obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
                     obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
                   }
 
