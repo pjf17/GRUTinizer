@@ -281,9 +281,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   std::string dirname  = "gretina";
   makemap();
+  double timeBank29 = 0;
 
-  if (gretina && bank29){
-    double timeBank29 = bank29->Timestamp();
+  if (gretina){
+    if (bank29) timeBank29 = bank29->Timestamp();
     //SINGLES
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
@@ -294,7 +295,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int cryID = hit.GetCrystalId();
       double timestamp = hit.GetTime();
 
-      // bool prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy); 
+      //bool prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy); 
 
       if ((timestamp-timeZero)/1000000000 < 90){
         if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
@@ -319,8 +320,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
         int ringNum = nnhit.GetRingNumber();
         double core_energy = nnhit.GetCoreEnergy();
 
-        bool prompt = prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), core_energy);
-        if (prompt){
+        //bool prompt = prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), core_energy);
+        if ((nnhit.GetTime()-timeZero)/1000000000 < 90){
           //make sure hits are prompt
           //exclude the ng spectrum (n==3)
           if (n < 3){

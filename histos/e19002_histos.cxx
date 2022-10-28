@@ -355,14 +355,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double raw_e1 = s800->GetRawE1_MESY();
   double raw_xf = s800->GetRawXF_MESY();
   
-  obj.FillHistogram("ungated", "MTOF_OBJE1", 3000, -6000, 0, raw_obj - raw_e1);
-  obj.FillHistogram("ungated", "MTOF_XFE1", 3000, -2000, 4000, raw_xf - raw_e1);
+  obj.FillHistogram("ungated", "MTOF_OBJE1", 5000, -10000, 0, raw_obj - raw_e1);
+  obj.FillHistogram("ungated", "MTOF_XFE1", 4000, -4000, 6000, raw_xf - raw_e1);
 
   //MAKE INCOMING PID
   double tof_obje1 = s800->GetMTof().GetCorrelatedObjE1(); 
   double tof_xfpe1 = s800->GetMTof().GetCorrelatedXfpE1();
   obj.FillHistogram("ungated", "incoming_pid", 500, -5000, -3000, tof_obje1,
-                                               500, 1000, 6000, tof_xfpe1);                                               
+                                               500,  2000,  5000, tof_xfpe1);                                               
 
   //CRDC PLOTS
   double crdc_1_x = s800->GetCrdc(0).GetDispersiveX();
@@ -412,17 +412,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   for (auto ind_out : outgoing_passed){
     dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-    obj.FillHistogram(dirname, "incoming_pid", 2000, -5000, -3000, tof_obje1,
-                                               2000, 1000, 6000, tof_xfpe1); 
+    obj.FillHistogram(dirname, "incoming_pid", 1000, -10000, -1000, tof_obje1,
+                                               1000, 1000, 10000, tof_xfpe1); 
   }
 
   //INCOMING
   for (auto ind_in : incoming_passed){
     dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
     double ic_ave = s800->GetIonChamber().GetAve();
-    obj.FillHistogram(dirname, "outgoing_pid_uncorrected", 4000, -4000, 0, tof_obje1, 2048, 0, 4096, ic_energy);
+    obj.FillHistogram(dirname, "outgoing_pid_uncorrected", 2000, -5000, -3000, tof_obje1, 2048, 0, 4096, ic_energy);
     if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
-      obj.FillHistogram(dirname, "outgoing_pid", 4000, -4000, 0, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
+      obj.FillHistogram(dirname, "outgoing_pid", 2000, -5000, -3000, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
     }
 
     //CRDC DE CORRECTION
