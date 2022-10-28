@@ -109,8 +109,7 @@ TF1 *constructBackground(std::string param_list) {
 }
 
 
-TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x) {
-  TF1Sum fullSum;
+TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x) {
   // fullSum.AddRegion(1520,1575);
   // fullSum.AddRegion(2265,2287);
   // fullSum.AddRegion(2920,2950);
@@ -123,8 +122,9 @@ TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_
   fullSum.GetFunc()->SetRange(0,10000);
   fullSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   int count = 0;
+  TFitResultPtr r;
   while (1) {
-    TFitResultPtr r(data_hist->Fit(fullSum.GetFunc(),"LMES","",570,fit_high_x));
+    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",570,fit_high_x);
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -137,7 +137,7 @@ TF1Sum fitAllPeaks(GH1D* data_hist, const std::vector<TF1*> &fit_funcs, int fit_
     std::cout << fullSum.GetFunc()->GetParName(i) << "\t" << fullSum.GetFunc()->GetParameter(i) << "\t" << "+/-" << "\t"
 	      << fullSum.GetFunc()->GetParError(i) << "\n";
   }
-  return fullSum;
+  return r;
 }
 
 void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::string peak_input, std::string bg_line_input, 
@@ -392,11 +392,20 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   fit_funcs.push_back(constructBackground(exp_bg_params));
   int npars = fit_funcs.back()->GetNpar();
   
-  TF1Sum fSum(fitAllPeaks(data_hist,fit_funcs,fit_low_x,fit_high_x));
+  TF1Sum fSum, fBg;
+  TFitResultPtr res = fitAllPeaks(data_hist,fSum,fit_funcs,fit_low_x,fit_high_x);
+
+  for(unsigned int i=0;i<com_hists.size();i++) {
+    fBg.AddTF1(com_hists.at(i)->ConstructTF1());
+  }
+  fBg.AddTF1(constructBackground(exp_bg_params));
+  fBg.GetFunc()->SetParameters(fSum.GetFunc()->GetParameters());
 
   fSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   std::vector<double> fep_counts;
   std::vector<double> fep_counts_unc;
+  std::vector<double> fep_subt_counts;
+  std::vector<double> fep_subt_counts_unc;
   std::vector<int> ens;
   for (unsigned int i=0;i<fep_hists.size();i++){
     fep_counts.push_back(fep_hists.at(i)->Integral()*fSum.GetFunc()->GetParameter(i));
