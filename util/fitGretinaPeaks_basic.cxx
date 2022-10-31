@@ -12,12 +12,12 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-const std::string INPUT_HIST = "ab_prompt_gold_pair";
+const std::string INPUT_HIST = "ab_prompt_red_pair";
 // const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
-const std::string MODE = "addback/gretina_pol_gold";
+const std::string MODE = "addback/gretina_pol_red";
 // const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 8; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -25,6 +25,37 @@ double getEff(double energy) {
 
 int getEnergy(const std::string &name) {
   return std::stoi(name.substr(4,4));
+}
+
+void bkgSubtractedCounts(double energy, GH1D *fep, GH1D *data, TF1 *f, TFitResultPtr r, double &counts, double &counts_err){
+  //get the integration limits by using the FEP histogram
+  int peakBin = fep->FindBin(energy);
+  double tot = fep->Integral();
+  double integ = 0;
+  int width = 0;
+  while (integ/tot < 0.93){
+      width++;
+      integ = fep->Integral(peakBin-width,peakBin+width);
+  }
+  width--;
+  double binLo = peakBin - width;
+  double binHi = peakBin + width;
+  double integLo = data->GetBinLowEdge(binLo);
+  double integHi = data->GetBinLowEdge(binHi+1);
+  
+  //integrate the background function and get its error 
+  double bkgC = f->Integral(integLo,integHi,1.e-7) / data->GetBinWidth(1);
+  double dBkgC = f->IntegralError(integLo,integHi,r->GetParams(),r->GetCovarianceMatrix().GetMatrixArray(),0.5);
+
+  //integrate the data hist over same region and get error
+  double dDataC = 0;
+  double dataC = data->IntegralAndError(binLo,binHi,dDataC);
+
+  //get the fep counts
+  counts = dataC - bkgC;
+  counts_err = TMath::Sqrt(dDataC*dDataC + dBkgC*dBkgC);
+  
+  return;
 }
 
 void printResults(std::vector<double> fep_counts, std::vector<double> fep_counts_unc, std::vector<int> energies){
@@ -411,6 +442,11 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     fep_counts.push_back(fep_hists.at(i)->Integral()*fSum.GetFunc()->GetParameter(i));
     fep_counts_unc.push_back(fep_counts.at(i)*(fSum.GetFunc()->GetParError(i)/fSum.GetFunc()->GetParameter(i)));
     ens.push_back(getEnergy(fit_hists.at(i)->GetName()));
+
+    double subtCounts, subtCountsUnc;
+    bkgSubtractedCounts(ens.back(),fep_hists.at(i),data_hist,fBg.GetFunc(),res,subtCounts,subtCountsUnc);
+    fep_subt_counts.push_back(subtCounts);
+    fep_subt_counts_unc.push_back(subtCountsUnc);
   }
   printResults(fep_counts,fep_counts_unc,ens);
 
@@ -537,7 +573,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     com_hists.at(i)->Write();
     
   }
-  
+
   outfile->Close();
   return;
 }

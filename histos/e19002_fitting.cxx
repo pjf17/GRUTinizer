@@ -31,65 +31,74 @@ std::map<int,int> detMap = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
+//24
 std::vector<std::pair<int,int>> redPairs = {
-  //1qAB
+  std::make_pair(46,44),
+  std::make_pair(46,48),
   std::make_pair(48,49),
   std::make_pair(50,51),
+  std::make_pair(51,47),
   std::make_pair(56,57),
+  std::make_pair(57,61),
   std::make_pair(59,58),
-  std::make_pair(64,65),
-  std::make_pair(66,67),
-  //1qBB
-  std::make_pair(46,44),
+  std::make_pair(60,58),
   std::make_pair(60,62),
+  std::make_pair(64,62),
+  std::make_pair(64,65),
+  std::make_pair(69,65),
+  std::make_pair(63,67),
+  std::make_pair(66,67),
+  std::make_pair(66,68),
   std::make_pair(70,68),
   std::make_pair(78,76),
-  //2qAA
-  std::make_pair(51,47),
-  std::make_pair(63,67),
-  std::make_pair(57,61),
-  std::make_pair(69,65),
-  //2qBB
-  std::make_pair(60,58),
-  std::make_pair(66,68),
-  std::make_pair(64,62),
-  std::make_pair(46,48)
+  std::make_pair(78,80),
+  std::make_pair(80,81),
+  std::make_pair(45,81),
+  std::make_pair(79,83),
+  std::make_pair(82,83),
+  std::make_pair(44,82)
 };
 
+//16
 std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
   std::make_pair(44,45),
   std::make_pair(46,47),
   std::make_pair(48,51),
+  std::make_pair(49,50),
+  std::make_pair(56,59),
+  std::make_pair(57,58),
   std::make_pair(61,60),
   std::make_pair(62,63),
+  std::make_pair(64,67),
+  std::make_pair(65,66),
   std::make_pair(69,68),
   std::make_pair(70,71),
-  std::make_pair(78,79)
+  std::make_pair(78,79),
+  std::make_pair(76,77),
+  std::make_pair(80,83),
+  std::make_pair(81,82)
 };
 
+//18
 std::vector<std::pair<int,int>> bluePairs = {
-  //1qAB
   std::make_pair(44,47),
   std::make_pair(45,46),
+  std::make_pair(46,51),
+  std::make_pair(48,50),
+  std::make_pair(56,58),
+  std::make_pair(57,60),
   std::make_pair(60,63),
   std::make_pair(61,62),
+  std::make_pair(62,67),
+  std::make_pair(64,66),
+  std::make_pair(65,68),
   std::make_pair(68,71),
   std::make_pair(76,79),
   std::make_pair(69,70),
-  //1qBB
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(64,66),
-  //2qAB
-  std::make_pair(57,60),
-  std::make_pair(62,67),
-  std::make_pair(65,68),
-  std::make_pair(46,51)
+  std::make_pair(77,78),
+  std::make_pair(78,83),
+  std::make_pair(80,82),
+  std::make_pair(44,81)
 };
 
 std::vector<std::pair<int,int>> TwoQuadPairs = {
@@ -330,7 +339,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       // }
 
       if (isFEP){ //full energy peak event
-        obj.FillHistogram(dirname,"gretina_B&T_fep",10000,0,10000,energy_track);
+        obj.FillHistogram(dirname,"gretina_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);
             
       //   if(detMap[cryID] < 17) {
       //     obj.FillHistogram(dirname,"gretina_B&T_fep_Fwd",10000,0,10000,energy_track);
@@ -338,7 +347,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       //     obj.FillHistogram(dirname,"gretina_B&T_fep_90Deg",10000,0,10000,energy_track);
       //   }
       } else {
-        obj.FillHistogram(dirname,"gretina_B&T_bg",10000,0,10000,energy_track);
+        obj.FillHistogram(dirname,"gretina_B&T&Y&D_bg",10000,0,10000,energy_track_yta_dta);
 
       //   if(detMap[cryID] < 17) {
       //     obj.FillHistogram(dirname,"gretina_B&T_bg_Fwd",10000,0,10000,energy_track);
@@ -394,9 +403,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y",multiplicity), 10000,0,10000, energy_track_yta);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y&D",multiplicity), 10000,0,10000, energy_track_yta_dta);
         if (isNNFEP){
-          obj.FillHistogram(dirname, Form("gretina_n%s_B&T_fep",multiplicity), 10000,0,10000, energy_track);
+          obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y&D_fep",multiplicity), 10000,0,10000, energy_track_yta_dta);
         } else {
-          obj.FillHistogram(dirname, Form("gretina_n%s_B&T_bg",multiplicity), 10000,0,10000, energy_track);
+          obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y&D_bg",multiplicity), 10000,0,10000, energy_track_yta_dta);
         }
         
         //exclude the ng spectrum (n==3)
@@ -406,9 +415,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           obj.FillHistogram(dirname, "gretina_ab_B&T&Y", 10000,0,10000, energy_track_yta);
           obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
           if (isNNFEP){
-            obj.FillHistogram(dirname, "gretina_ab_B&T_fep", 10000,0,10000, energy_track);
+            obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_fep", 10000,0,10000, energy_track_yta_dta);
           } else {
-            obj.FillHistogram(dirname, "gretina_ab_B&T_bg", 10000,0,10000, energy_track);
+            obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_bg", 10000,0,10000, energy_track_yta_dta);
           }
         }
 
