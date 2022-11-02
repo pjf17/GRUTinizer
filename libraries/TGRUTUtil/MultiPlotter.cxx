@@ -232,10 +232,10 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     std::map<std::string, TH1*>::iterator end = mHistos.end();
     std::string sOpt = opt;
     sOpt.append("no-print");
-    std::cout<<"name\tcentroid\tarea\tareaerr\n";
+    std::cout<<"name\tcentroid\tfwhm\tfwhmerr\tarea\tareaerr\n";
     while (it != end){
         GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
-        printf("%s\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetArea(),fitR->GetAreaErr());
+        printf("%s\t%f\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetFWHM(),fitR->GetFWHMErr(),fitR->GetArea(),fitR->GetAreaErr());
         it++;
     }
 }
