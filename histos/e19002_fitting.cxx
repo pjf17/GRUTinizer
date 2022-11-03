@@ -316,7 +316,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
       }
     }
-    hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
+    // hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
 
     double energy_track_yta_dta;
     double energy_track;
@@ -395,11 +395,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double energy_track_yta;
         double energy_track;
         
-        // TVector3 local_pos(nnhit.GetLocalPosition(0));
-        // double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA*0.9); 
-        // double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA*0.9);
-        // double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA*0.9);
-        // nnhit.SetPosition(0,smear_x,smear_y,smear_z);
+        TVector3 local_pos(nnhit.GetLocalPosition(0));
+        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
+        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+        nnhit.SetPosition(0,smear_x,smear_y,smear_z);
 
         if (!stopped){
           energy_track = nnhit.GetDoppler(beta, &track);
@@ -461,7 +461,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             if ( polColor.compare("blank") != 0 ){
               obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
-              if (isNNFEP) obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+              if (isNNFEP) {
+                obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+                obj.FillHistogram(dirname,Form("gretina_pol_%s_%s_B&T&Y&D_fep",polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+              }
               else obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
               obj.FillHistogram(dirname,Form("gretina_%s_%s",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
             }

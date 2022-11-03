@@ -265,14 +265,14 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
           hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D",MODE.c_str()));
         }
         else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_B&T_fep",MODE.c_str()));
         }
         else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_B&T_bg",MODE.c_str()));
         }
 
-        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())))->Clone());
-        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())))->Clone());
+        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_fep",MODE.c_str())))->Clone());
+        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_bg",MODE.c_str())))->Clone());
         hw->Sumw2();
 
         hw->Scale(WIDE_SCALE);
