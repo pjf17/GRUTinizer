@@ -177,6 +177,24 @@ void MultiPlotter::Norm(std::string mode){
     mMaxKey = "";
 }
 
+void MultiPlotter::Norm(double lo, double hi){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    int binLo = it->second->FindBin(lo);
+    int binHi = it->second->FindBin(hi);
+
+    double norm = it->second->Integral(binLo, binHi);
+    it++;
+    while (it != end){ 
+        it->second->Scale(norm/it->second->Integral(binLo, binHi));
+        it++;
+    }
+
+    //reset the max hist parameter
+    mYMax = 0.0;
+    mMaxKey = "";
+}
+
 void MultiPlotter::Fit(std::string key, TF1 *f, double xlo, double xhi){
     f->SetRange(xlo,xhi);
     if (Exists(key)) mHistos[key]->Fit(f,"R");
@@ -232,10 +250,10 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     std::map<std::string, TH1*>::iterator end = mHistos.end();
     std::string sOpt = opt;
     sOpt.append("no-print");
-    std::cout<<"name\tcentroid\tfwhm\tfwhmerr\tarea\tareaerr\n";
+    printf("%-30s %6s %4s %3s %7s %5s\n","name","cntrd","fwhm","err","area","err");
     while (it != end){
         GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
-        printf("%s\t%f\t%f\t%f\t%f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetFWHM(),fitR->GetFWHMErr(),fitR->GetArea(),fitR->GetAreaErr());
+        printf("%-30s %6.2f %4.2f %3.2f %7.1f %5.1f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetFWHM(),fitR->GetFWHMErr(),fitR->GetArea(),fitR->GetAreaErr());
         it++;
     }
 }
