@@ -316,7 +316,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
       }
     }
-    // hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
+    hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
 
     double energy_track_yta_dta;
     double energy_track;
@@ -396,9 +396,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double energy_track;
         
         TVector3 local_pos(nnhit.GetLocalPosition(0));
-        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
-        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA*1.3); 
+        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA*1.3);
+        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA*1.3);
         nnhit.SetPosition(0,smear_x,smear_y,smear_z);
 
         if (!stopped){
