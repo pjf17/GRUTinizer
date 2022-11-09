@@ -412,8 +412,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   for (auto ind_out : outgoing_passed){
     dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
-    obj.FillHistogram(dirname, "incoming_pid", 1000, -10000, -1000, tof_obje1,
-                                               1000, 1000, 10000, tof_xfpe1); 
+    obj.FillHistogram(dirname, "incoming_pid", 500, -5000, -3000, tof_obje1,
+                                               500,  2000,  5000, tof_xfpe1);   
   }
 
   //INCOMING
@@ -444,25 +444,25 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       //CORRELATION PLOTS
       if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
-        obj.FillHistogram(dirname, "corrobje1_crdc1x", 3000, -3000, 0, tof_obje1_corr,
+        obj.FillHistogram(dirname, "corrobje1_crdc1x", 3000, -6000, 0, tof_obje1_corr,
                                               600, -300, 300, crdc_1_x);
 
-        obj.FillHistogram(dirname, "obje1_crdc1x", 3000, -3000, 0, tof_obje1,
+        obj.FillHistogram(dirname, "obje1_crdc1x", 3000, -6000, 0, tof_obje1,
                                               600, -300, 300, crdc_1_x);                                     
 
-        obj.FillHistogram(dirname, "corrobje1_afp", 3000, -3000, 0, tof_obje1_corr,
+        obj.FillHistogram(dirname, "corrobje1_afp", 3000, -6000, 0, tof_obje1_corr,
                                                     1000, -0.1, 0.1, afp);
 
-        obj.FillHistogram(dirname, "obje1_afp", 3000, -3000, 0, tof_obje1,
+        obj.FillHistogram(dirname, "obje1_afp", 3000, -6000, 0, tof_obje1,
                                                     1000, -0.1, 0.1, afp);
 
-        obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 3000, -3000, 0, tof_obje1_corr,
+        obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 3000, -6000, 0, tof_obje1_corr,
                                         xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
         
-        obj.FillHistogram(dirname, "obje1_tofxfpobj", 3000, -3000, 0, tof_obje1,
+        obj.FillHistogram(dirname, "obje1_tofxfpobj", 3000, -6000, 0, tof_obje1,
                                         xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
       }
-      
+
       if (gretina){
         TVector3 track = s800->Track();
         if (bank29){
@@ -499,20 +499,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
             //prompt
-            bool tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
+            // std::cout<<"AAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"<<std::endl;
+            bool tgate = false;
+            if (prompt_timing_gate) tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
 
             if (prompt_timing_gate && tgate){
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
-              obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
+              // obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
               obj.FillHistogram(dirname, "gamma_corrected_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "s800_dta", 500, -0.2, 0.2, s800->GetDta());
-              obj.FillHistogram(dirname, "s800_ata", 1000, -1, 1, s800->GetAta());
-              obj.FillHistogram(dirname, "s800_bta", 1000, -1, 1, s800->GetBta());
-              obj.FillHistogram(dirname, "s800_yta", 1000, -200, 200, s800->GetYta());
+
+              if (cryID > 40) 
+                obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
+              else 
+                obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_fwdqds", 8192,0,8192, energy_corrected);
+              // obj.FillHistogram(dirname, "s800_dta", 500, -0.2, 0.2, s800->GetDta());
+              // obj.FillHistogram(dirname, "s800_ata", 1000, -1, 1, s800->GetAta());
+              // obj.FillHistogram(dirname, "s800_bta", 1000, -1, 1, s800->GetBta());
+              // obj.FillHistogram(dirname, "s800_yta", 1000, -200, 200, s800->GetYta());
               
               int nE_gates = energy_gates.size();
               for (int eg=0; eg < nE_gates; eg++){
