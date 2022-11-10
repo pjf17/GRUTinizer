@@ -201,18 +201,25 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int ringnum = hit.GetRingNumber();
             
             if (!isnan(GValue::Value("BETA_SCAN_STEP"))){
-              //loop to find optimal beta
+              // beta scan parameters
               double betaMin = GValue::Value("BETA_SCAN_MIN");
               double betaMax = GValue::Value("BETA_SCAN_MAX");
               double betaStep = GValue::Value("BETA_SCAN_STEP");
               int nBetaBins = (betaMax - betaMin)/betaStep;
               double beta = betaMin;
+
+              //histogram parameters
+              double scanElo = GValue::Value("BETA_SCAN_ELO");
+              double scanEhi = GValue::Value("BETA_SCAN_EHI");
+              int nEbins = int (scanEhi - scanElo); 
+
+              //loop to find optimal beta
               for (int i=0; i < nBetaBins; i++){
-                double energy = hit.GetDoppler(beta); 
+                double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track); 
                 if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
                   obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
-                  obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),300,900,1200,energy,100,0,3,hit.GetTheta());
-                  obj.FillHistogram(dirname,Form("summary_beta%f",beta),48,0,48,detMapRing[cryID],300,900,1200,energy);
+                  obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),nEbins,scanElo,scanEhi,energy,100,0,3,hit.GetTheta());
+                  obj.FillHistogram(dirname,Form("summary_beta%f",beta),48,0,48,detMapRing[cryID],nEbins,scanElo,scanEhi,energy);
                 }
                 beta += betaStep;
               }

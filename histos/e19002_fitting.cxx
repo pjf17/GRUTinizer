@@ -101,21 +101,7 @@ std::vector<std::pair<int,int>> bluePairs = {
   std::make_pair(44,81)
 };
 
-std::vector<std::pair<int,int>> TwoQuadPairs = {
-  std::make_pair(46,48),
-  std::make_pair(46,51),
-  std::make_pair(47,51),
-  std::make_pair(61,57),
-  std::make_pair(58,60),
-  std::make_pair(57,60),
-  std::make_pair(62,64),
-  std::make_pair(63,67),
-  std::make_pair(62,67),
-  std::make_pair(65,69),
-  std::make_pair(66,68),
-  std::make_pair(65,68)
-};
-
+//16
 std::vector<std::pair<int,int>> OneQuadPlus = {
   std::make_pair(44,47),
   std::make_pair(45,46),
@@ -128,14 +114,18 @@ std::vector<std::pair<int,int>> OneQuadPlus = {
   std::make_pair(56,59),
   std::make_pair(57,58),
   std::make_pair(64,67),
-  std::make_pair(65,66)
+  std::make_pair(65,66),
+  std::make_pair(48,51),
+  std::make_pair(77,78),
+  std::make_pair(80,83),
+  std::make_pair(81,82),
 };
 
+//24
 std::vector<std::pair<int,int>> OneQuadDefault = {
   std::make_pair(44,45),
   std::make_pair(46,47),
   std::make_pair(44,46),
-  std::make_pair(48,51),
   std::make_pair(48,49),
   std::make_pair(50,51),
   std::make_pair(48,50),
@@ -152,7 +142,34 @@ std::vector<std::pair<int,int>> OneQuadDefault = {
   std::make_pair(70,71),
   std::make_pair(68,70),
   std::make_pair(76,78),
-  std::make_pair(78,79)
+  std::make_pair(78,79),
+  std::make_pair(77,76),
+  std::make_pair(80,82),
+  std::make_pair(81,80),
+  std::make_pair(82,83),
+};
+
+
+//18
+std::vector<std::pair<int,int>> TwoQuadPairs = {
+  std::make_pair(46,48),
+  std::make_pair(46,51),
+  std::make_pair(47,51),
+  std::make_pair(61,57),
+  std::make_pair(58,60),
+  std::make_pair(57,60),
+  std::make_pair(62,64),
+  std::make_pair(63,67),
+  std::make_pair(62,67),
+  std::make_pair(65,69),
+  std::make_pair(66,68),
+  std::make_pair(65,68),
+  std::make_pair(78,80),
+  std::make_pair(78,83),
+  std::make_pair(79,83),
+  std::make_pair(45,81),
+  std::make_pair(44,81),
+  std::make_pair(44,82),
 };
 
 bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
@@ -373,18 +390,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double core_energy = nnhit.GetCoreEnergy();
       if (cryID == 77) continue;
 
-      TVector3 local_pos(nnhit.GetLocalPosition(0));
-      // double reduce = 0.7;
-      // if (gammaEn < 900) reduce = 1.0;
-      double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
-      double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-      double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-      nnhit.SetPosition(0,smear_x,smear_y,smear_z);
-
       if (efficiencyCorrection(rand_gen,nnhit,nnhit.GetNNeighborHits())){
         double energy_track_yta_dta;
         double energy_track_yta;
         double energy_track;
+        
+        TVector3 local_pos(nnhit.GetLocalPosition(0));
+        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA*1.3); 
+        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA*1.3);
+        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA*1.3);
+        nnhit.SetPosition(0,smear_x,smear_y,smear_z);
+
         if (!stopped){
           energy_track = nnhit.GetDoppler(beta, &track);
           energy_track_yta = nnhit.GetDopplerYta(beta, yta, &track);
@@ -433,42 +449,25 @@ void MakeHistograms(TRuntimeObjects& obj) {
               energy_track_yta = swap.GetDopplerYta(beta, yta, &track);
               energy_track_yta_dta = swap.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
             }
-            if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,Form("gretina_%s_red_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
-              if(isNNFEP){
-                obj.FillHistogram(dirname,Form("gretina_%s_red_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
-              } else {
-                obj.FillHistogram(dirname,Form("gretina_%s_red_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
+            std::string polColor = "blank";
+            if (PairHit(nnhit,redPairs)) polColor = "red";
+            else if (PairHit(nnhit,goldPairs)) polColor = "gold";
+            else if (PairHit(nnhit,bluePairs)) polColor = "blue";
+
+            std::string quadType = "blank";
+            if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
+            else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
+            else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
+
+            if ( polColor.compare("blank") != 0 ){
+              obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+              if (isNNFEP) {
+                obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+                obj.FillHistogram(dirname,Form("gretina_pol_%s_%s_B&T&Y&D_fep",polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
               }
+              else obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+              obj.FillHistogram(dirname,Form("gretina_%s_%s",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
             }
-            if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
-              if(isNNFEP){
-                obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
-              } else {
-                obj.FillHistogram(dirname,Form("gretina_%s_gold_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
-              }
-            }
-            if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T&Y&D",swaptype.c_str()), 10000,0,10000, energy_track_yta_dta);
-              if(isNNFEP){
-                obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T_fep",swaptype.c_str()), 10000,0,10000, energy_track);
-              } else {
-                obj.FillHistogram(dirname,Form("gretina_%s_blue_B&T_bg",swaptype.c_str()), 10000,0,10000, energy_track);
-              }
-            }
-            // //quadtype
-            // if (t==0){
-            //   if (PairHit(nnhit,OneQuadPlus) && isNNFEP){
-            //     obj.FillHistogram(dirname,"1qd+_FEP",10000,0,10000, energy_track_yta_dta);
-            //   }
-            //   if (PairHit(nnhit,OneQuadDefault) && isNNFEP){
-            //     obj.FillHistogram(dirname,"1qd_FEP",10000,0,10000, energy_track_yta_dta);
-            //   }
-            //   if (PairHit(nnhit,TwoQuadPairs) && isNNFEP){
-            //     obj.FillHistogram(dirname,"2qd_FEP",10000,0,10000, energy_track_yta_dta);
-            //   }
-            // }
           }
         }
       }

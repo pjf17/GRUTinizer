@@ -52,6 +52,7 @@ class MultiPlotter{
         void IterateLineStyle();
 
         void Norm(std::string mode="area");
+        void Norm(double lo, double hi);
 
         void Fit(std::string key, TF1 *f, double xlo, double xhi);
         void Fit(TF1 *f, double xlo, double xhi);

@@ -272,13 +272,13 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
         fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D",MODE.c_str())));
       }
       else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T_fep",MODE.c_str())));
+        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())));
       }
       else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-	      fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T_bg",MODE.c_str())));
+	      fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())));
       }
-      fep_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T_fep",MODE.c_str())))->Clone()));
-      com_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T_bg",MODE.c_str())))->Clone()));
+      fep_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())))->Clone()));
+      com_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())))->Clone()));
       
       fit_hists.back()->Sumw2();
 
