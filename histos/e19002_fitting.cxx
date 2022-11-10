@@ -426,15 +426,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
         
         //exclude the ng spectrum (n==3)
         if (n < 3){
-          obj.FillHistogram(dirname, "gretina_ab_CoreEnergy", 10000,0,10000, core_energy);
-          obj.FillHistogram(dirname, "gretina_ab_B&T", 10000,0,10000, energy_track);
-          obj.FillHistogram(dirname, "gretina_ab_B&T&Y", 10000,0,10000, energy_track_yta);
-          obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
-          if (isNNFEP){
-            obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_fep", 10000,0,10000, energy_track_yta_dta);
-          } else {
-            obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_bg", 10000,0,10000, energy_track_yta_dta);
-          }
+          // obj.FillHistogram(dirname, "gretina_ab_CoreEnergy", 10000,0,10000, core_energy);
+          // obj.FillHistogram(dirname, "gretina_ab_B&T", 10000,0,10000, energy_track);
+          // obj.FillHistogram(dirname, "gretina_ab_B&T&Y", 10000,0,10000, energy_track_yta);
+          // obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D", 10000,0,10000, energy_track_yta_dta);
+          // if (isNNFEP){
+          //   obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_fep", 10000,0,10000, energy_track_yta_dta);
+          // } else {
+          //   obj.FillHistogram(dirname, "gretina_ab_B&T&Y&D_bg", 10000,0,10000, energy_track_yta_dta);
+          // }
         }
 
         if (n == 1) {
@@ -463,7 +463,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
               if (isNNFEP) {
                 obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
-                obj.FillHistogram(dirname,Form("gretina_pol_%s_%s_B&T&Y&D_fep",polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+                obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+                obj.FillHistogram(dirname,Form("gretina_%s_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
               }
               else obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
               obj.FillHistogram(dirname,Form("gretina_%s_%s",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
