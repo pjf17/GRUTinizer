@@ -424,6 +424,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   int npars = fit_funcs.back()->GetNpar();
   
   TF1Sum fSum, fBg;
+  GH1D *hResids = (GH1D*) data_hist->Clone("Bkg Subtracted");
   TFitResultPtr res = fitAllPeaks(data_hist,fSum,fit_funcs,fit_low_x,fit_high_x);
 
   for(unsigned int i=0;i<com_hists.size();i++) {
@@ -431,6 +432,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   }
   fBg.AddTF1(constructBackground(exp_bg_params));
   fBg.GetFunc()->SetParameters(fSum.GetFunc()->GetParameters());
+  hResids->Add(fBg.GetFunc(),-1);
 
   fSum.GetFunc()->SetNpx(50000/REBIN_FACTOR);
   std::vector<double> fep_counts;
@@ -547,6 +549,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   }
   
   hbg->Write();
+  hResids->Write();
   
   hr->Write();
   he->Write();
