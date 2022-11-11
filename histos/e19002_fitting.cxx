@@ -388,7 +388,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       int ringNum = nnhit.GetRingNumber();
       int cryID = nnhit.GetCrystalId();
       double core_energy = nnhit.GetCoreEnergy();
-      if (cryID == 77) continue;
+      // if (cryID == 77) continue;
 
       if (efficiencyCorrection(rand_gen,nnhit,nnhit.GetNNeighborHits())){
         double energy_track_yta_dta;
@@ -396,9 +396,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double energy_track;
         
         TVector3 local_pos(nnhit.GetLocalPosition(0));
-        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA*1.3); 
-        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA*1.3);
-        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA*1.3);
+        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
+        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
         nnhit.SetPosition(0,smear_x,smear_y,smear_z);
 
         if (!stopped){
@@ -414,6 +414,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
         char *multiplicity = Form("%d",n);
         if (n == 3) multiplicity = Form("g");
+        // obj.FillHistogram(dirname, Form("gretina_n%s_summary",multiplicity),48,0,48,detMap[cryID],4000,0,4000,energy_track_yta_dta);
         obj.FillHistogram(dirname, Form("gretina_n%s_CoreEnergy",multiplicity), 10000,0,10000, core_energy);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T",multiplicity), 10000,0,10000, energy_track);
         obj.FillHistogram(dirname, Form("gretina_n%s_B&T&Y",multiplicity), 10000,0,10000, energy_track_yta);
@@ -438,6 +439,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
         }
 
         if (n == 1) {
+          if (cryID > 40)
+            obj.FillHistogram(dirname,"gretina_pol_B&T&Y&D", 8192,0,8192, energy_track_yta_dta);
           //POLARIZATION
           std::string swaptype = "pol";
           for (int t=0; t < 1; t++){
@@ -461,13 +464,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             if ( polColor.compare("blank") != 0 ){
               obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+              // obj.FillHistogram(dirname,Form("gretina_%s_%s",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+              // obj.FillHistogram(dirname,Form("gretina_%s_%s_%s_B&T&Y&D",swaptype.c_str(),polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
               if (isNNFEP) {
                 obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
-                obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
-                obj.FillHistogram(dirname,Form("gretina_%s_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+                // obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_fep",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+                // obj.FillHistogram(dirname,Form("gretina_%s_%s_%s_B&T&Y&D_fep",swaptype.c_str(),polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
               }
-              else obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
-              obj.FillHistogram(dirname,Form("gretina_%s_%s",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+              else {
+                obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str()), 8192,0,8192, energy_track_yta_dta);
+                // obj.FillHistogram(dirname,Form("gretina_%s_%s_B&T&Y&D_bg",swaptype.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+                // obj.FillHistogram(dirname,Form("gretina_%s_%s_%s_B&T&Y&D_bg",swaptype.c_str(),polColor.c_str(),quadType.c_str()), 8192,0,8192, energy_track_yta_dta);
+              }
             }
           }
         }
