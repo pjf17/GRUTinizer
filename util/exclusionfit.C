@@ -3,6 +3,7 @@
 #include "TMath.h"
 #include "TH1D.h"
 #include "TCanvas.h"
+// #include "GH1D.h"
 
 #include <vector>
 #include <iostream>
@@ -163,25 +164,21 @@ class ExclusionFit {
         bool rejectSwitch = true;
 
         double getFWHM(TH1D *h, double lo, double hi){
-            double ogMin = h->GetXaxis()->GetXmin();
-            double ogMax = h->GetXaxis()->GetXmax();
-            int minbin = h->FindBin(lo);
-            int maxbin = h->FindBin(hi);
-            h->GetXaxis()->SetRange(minbin,maxbin);
-            double halfmax = h->GetMaximum()/2;
-            int hiEnd = h->GetMaximumBin();
-            int loEnd = hiEnd; 
-            while(h->GetBinContent(loEnd) > halfmax && loEnd != minbin){
-                loEnd--;
+            TF1 *fhist = ((GH1D*) h)->ConstructTF1();
+
+            int lobin = h->FindBin(lo);
+            int hibin = h->FindBin(hi);
+            h->GetXaxis()->SetRange(lobin,hibin);
+            double xmax = h->GetBinCenter(h->GetMaximumBin());
+            double halfmax = h->GetMaximum()/2.0;
+            double xlo = xmax;
+            double xhi = xmax;
+            while (fhist->Eval(xlo) > halfmax){
+                xlo -= 0.001;
             }
-            while(h->GetBinContent(hiEnd) > halfmax && hiEnd != maxbin){
-                hiEnd++;
+            while (fhist->Eval(xhi) > halfmax){
+                xhi += 0.001;
             }
-            
-            if ( abs(halfmax - h->GetBinContent(loEnd)) > abs(halfmax - h->GetBinContent(loEnd+1)) ) loEnd = loEnd+1;
-            if ( abs(halfmax - h->GetBinContent(hiEnd)) > abs(halfmax - h->GetBinContent(hiEnd-1)) ) hiEnd = hiEnd-1;
-            
-            h->GetXaxis()->SetRange(h->FindBin(ogMin),h->FindBin(ogMax));
-            return h->GetBinLowEdge(hiEnd+1) - h->GetBinLowEdge(loEnd);
+            return xhi-xlo;
         }
 };
