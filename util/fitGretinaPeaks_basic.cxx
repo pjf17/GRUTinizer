@@ -17,7 +17,7 @@ const std::string INPUT_HIST = "ab_prompt_red_pair";
 const std::string MODE = "addback/gretina_pol_red";
 // const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 8; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -141,9 +141,10 @@ TF1 *constructBackground(std::string param_list) {
 
 
 TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF1*> &fit_funcs, int fit_low_x, int fit_high_x) {
-  // fullSum.AddRegion(1520,1575);
-  // fullSum.AddRegion(2265,2287);
-  // fullSum.AddRegion(2920,2950);
+  // fullSum.AddRegion(2244,2400); //red
+  // fullSum.AddRegion(2200,2240); //blue
+  // fullSum.AddRegion(2280,2300); //blue
+  // fullSum.AddRegion(1505,1525); //blue
   fullSum.AddRegion(fit_low_x,fit_high_x);
   fullSum.FitInRegions();
   for (unsigned int i=0;i<fit_funcs.size();i++){
@@ -431,6 +432,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     fBg.AddTF1(com_hists.at(i)->ConstructTF1());
   }
   fBg.AddTF1(constructBackground(exp_bg_params));
+  fBg.GetFunc()->SetLineColor(kBlue);
   fBg.GetFunc()->SetParameters(fSum.GetFunc()->GetParameters());
   hResids->Add(fBg.GetFunc(),-1);
 
@@ -445,10 +447,10 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     fep_counts_unc.push_back(fep_counts.at(i)*(fSum.GetFunc()->GetParError(i)/fSum.GetFunc()->GetParameter(i)));
     ens.push_back(getEnergy(fit_hists.at(i)->GetName()));
 
-    double subtCounts, subtCountsUnc;
-    bkgSubtractedCounts(ens.back(),fep_hists.at(i),data_hist,fBg.GetFunc(),res,subtCounts,subtCountsUnc);
-    fep_subt_counts.push_back(subtCounts);
-    fep_subt_counts_unc.push_back(subtCountsUnc);
+    // double subtCounts, subtCountsUnc;
+    // bkgSubtractedCounts(ens.back(),fep_hists.at(i),data_hist,fBg.GetFunc(),res,subtCounts,subtCountsUnc);
+    // fep_subt_counts.push_back(subtCounts);
+    // fep_subt_counts_unc.push_back(subtCountsUnc);
   }
   printResults(fep_counts,fep_counts_unc,ens);
 
@@ -463,14 +465,14 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   }
 
   TF1* bg;
-  if(npars == 2) {
+  if(npars == 4) {
     bg = new TF1("exp_bg","([0]*TMath::Exp([1]*x))*(1+TMath::TanH((x-[2])/[3]))/2",0,10000);
     bg->SetParameter(0,fSum.GetFunc()->GetParameter(energies.size()+offset));
     bg->SetParameter(1,fSum.GetFunc()->GetParameter(energies.size()+offset+1));
     bg->SetParameter(2,fSum.GetFunc()->GetParameter(energies.size()+offset+2));
     bg->SetParameter(3,fSum.GetFunc()->GetParameter(energies.size()+offset+3));
   }
-  else {
+  else if (npars == 6){
     bg = new TF1("exp_bg","([0]*TMath::Exp([1]*x)+[2]*TMath::Exp([3]*x))*(1+TMath::TanH((x-[4])/[5]))/2",0,10000);
     bg->SetParameter(0,fSum.GetFunc()->GetParameter(energies.size()+offset));
     bg->SetParameter(1,fSum.GetFunc()->GetParameter(energies.size()+offset+1));
@@ -482,8 +484,8 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   
   bg->SetNpx(50000/REBIN_FACTOR);
   TH1* hbg = bg->GetHistogram();
-  hbg->SetName("Exp_Bg");
-  hbg->SetTitle("Exp_Bg");
+  hbg->SetName("Exp_Bkg");
+  hbg->SetTitle("Exp_Bkg");
   
   //TH1* hr = (TH1*)data_hist.Clone();
   //hr->Sumw2();
@@ -541,6 +543,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   
   TFile *outfile = new TFile(output_fn.c_str(), "recreate");
   
+  data_hist->GetListOfFunctions()->Add(fBg.GetFunc());
   data_hist->Write();
   hf->Write();
   
