@@ -14,6 +14,7 @@
 #include "GRootCommands.h"
 #include "TMath.h"
 #include "TFitResult.h"
+#include "THStack.h"
 
 #include "MultiPlotter.h"
 
@@ -276,7 +277,7 @@ void MultiPlotter::Draw(int ndraw, int noffset){
     }
     TLegend *leg = new TLegend(xlo,ylo,0.99,0.99);
     gStyle->SetOptStat(0);
-    
+
     //draw all histos
     std::map<std::string, TH1*>::iterator it = max;
     std::map<std::string, TH1*>::iterator end = mHistos.end();
