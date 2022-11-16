@@ -395,11 +395,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double energy_track_yta;
         double energy_track;
         
-        TVector3 local_pos(nnhit.GetLocalPosition(0));
-        double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
-        double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
-        double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-        nnhit.SetPosition(0,smear_x,smear_y,smear_z);
+        // TVector3 local_pos(nnhit.GetLocalPosition(0));
+        // double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
+        // double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
+        // double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
+        // nnhit.SetPosition(0,smear_x,smear_y,smear_z);
 
         if (!stopped){
           energy_track = nnhit.GetDoppler(beta, &track);
