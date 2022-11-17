@@ -341,36 +341,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
       
       //fitting hists
       obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
+      if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
       if (gates && crystal_xy && crystal_zy && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
         obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
       else obj.FillHistogram(dirname,"gretina_B&T&Y&D_outside",10000,0,10000,energy_track_yta_dta);
 
       //SUMMARY SPECTRUM
-      obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,energy_track_yta_dta);
-
-      //organization
-      // if(detMap[cryID] < 16) {
-      //   obj.FillHistogram(dirname,"gretina_B&T_Fwd",10000,0,10000,energy_track);
-      // } else {
-      //   obj.FillHistogram(dirname,"gretina_B&T_90Deg",10000,0,10000,energy_track);
-      // }
-
+      obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,energy_track_yta_dta);    
+      
       if (isFEP){ //full energy peak event
-        obj.FillHistogram(dirname,"gretina_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);
-            
-      //   if(detMap[cryID] < 17) {
-      //     obj.FillHistogram(dirname,"gretina_B&T_fep_Fwd",10000,0,10000,energy_track);
-      //   } else {
-      //     obj.FillHistogram(dirname,"gretina_B&T_fep_90Deg",10000,0,10000,energy_track);
-      //   }
+        obj.FillHistogram(dirname,"gretina_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);     
+        if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);     
       } else {
         obj.FillHistogram(dirname,"gretina_B&T&Y&D_bg",10000,0,10000,energy_track_yta_dta);
-
-      //   if(detMap[cryID] < 17) {
-      //     obj.FillHistogram(dirname,"gretina_B&T_bg_Fwd",10000,0,10000,energy_track);
-      //   } else {
-      //     obj.FillHistogram(dirname,"gretina_B&T_bg_90Deg",10000,0,10000,energy_track);
-      //   }
+        if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D_bg",10000,0,10000,energy_track_yta_dta);
       }
     }
   }
