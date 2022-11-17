@@ -12,12 +12,13 @@
 #include "TNtuple.h"
 #include "TMath.h"
 
-const std::string INPUT_HIST = "ab_prompt_red_pair";
-// const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt";
-const std::string MODE = "addback/gretina_pol_red";
-// const std::string MODE = "gretsim/gretina";
+// const std::string INPUT_HIST = "ab_prompt_red_pair";
+const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt_90qds";
+// const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_n1_prompt";
+// const std::string MODE = "addback/gretina_n1";
+const std::string MODE = "gretsim/gretina";
 
-const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 4; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -145,6 +146,10 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   // fullSum.AddRegion(2200,2240); //blue
   // fullSum.AddRegion(2280,2300); //blue
   // fullSum.AddRegion(1505,1525); //blue
+  // fullSum.AddRegion(2512,2538); //n1
+  fullSum.AddRegion(255,270); //singles
+  fullSum.AddRegion(2008,2019); //singles
+  fullSum.AddRegion(2724,2731); //singles
   fullSum.AddRegion(fit_low_x,fit_high_x);
   fullSum.FitInRegions();
   for (unsigned int i=0;i<fit_funcs.size();i++){
@@ -156,7 +161,7 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   int count = 0;
   TFitResultPtr r;
   while (1) {
-    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",570,fit_high_x);
+    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",250,fit_high_x);
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -254,7 +259,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
       }
     }
   }
-  
+
   std::cout << "\n";
   
   std::vector<GH1D*> fit_hists;
@@ -543,7 +548,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   
   TFile *outfile = new TFile(output_fn.c_str(), "recreate");
   
-  data_hist->GetListOfFunctions()->Add(fBg.GetFunc());
+  // data_hist->GetListOfFunctions()->Add(fBg.GetFunc());
   data_hist->Write();
   hf->Write();
   
@@ -566,16 +571,19 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     fit_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     fit_hists.at(i)->SetName(Form("Peak%02i",i));
     fit_hists.at(i)->SetTitle(Form("hist%04i",energies.at(i)));
+    fit_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     fit_hists.at(i)->Write();
 
     fep_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     fep_hists.at(i)->SetName(Form("FEP%02i",i));
     fep_hists.at(i)->SetTitle(Form("FEP_hist%04i",energies.at(i)));
+    fep_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     fep_hists.at(i)->Write();
 
     com_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     com_hists.at(i)->SetName(Form("COM%02i",i));
     com_hists.at(i)->SetTitle(Form("COM_hist%04i",energies.at(i)));
+    com_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     com_hists.at(i)->Write();
     
   }
