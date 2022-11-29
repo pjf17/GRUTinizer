@@ -330,6 +330,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
           }
 
           if (n == 1) {
+            if (core_energy > 1108 && core_energy < 1117){
+              obj.FillHistogram(dirname, "addback_n1_1112_hit1", 8192,0,8192, nnhit.GetInitialHit().GetCoreEnergy());
+              obj.FillHistogram(dirname, "addback_n1_1112_hit2", 8192,0,8192, nnhit.GetNeighbor().GetCoreEnergy());
+            }
             //GAMMA GAMMA CORRELATION
             // for (int j=0; j < nnSize; j++){
             //   if (i==j) continue;
@@ -379,7 +383,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           char *multiplicity = Form("%d",n);
           if (n == 3) multiplicity = Form("g");
-          obj.FillHistogram(dirname, Form("gamma_corrected_n%s",multiplicity), 8192,0,8192, core_energy);
+          obj.FillHistogram(dirname, Form("addback_n%s",multiplicity), 8192,0,8192, core_energy);
+          obj.FillHistogram(dirname, Form("addback_n%s_vs_crystalID",multiplicity), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
         }
       }
     }
