@@ -84,7 +84,7 @@ void TGretina::BuildAddback(int EngRange) const {
 }
 
 void TGretina::BuildNNAddback(bool SortByEng, int EngRange) const {
-  //Algorithm taken from Dirk Weisshaar in https://doi.org/10.1016/j.nima.2016.12.001
+  //Algorithm adapted from Dirk Weisshaar in https://doi.org/10.1016/j.nima.2016.12.001
   
   if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
     return;

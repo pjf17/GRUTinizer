@@ -386,7 +386,10 @@ void TGretinaHit::NNAdd(const TGretinaHit& rhs) {
     fSetFirstSingles = true;
   }
 
-  fCoreEnergy += rhs.fCoreEnergy;
+  double cal_slope = GValue::Value(Form("GRETINA_%d_ECALIB_a1",fCrystalId));
+  if (std::isnan(cal_slope)) fCoreEnergy += rhs.GetCoreEnergy();
+  else fCoreEnergy += rhs.GetCoreEnergy()/cal_slope; 
+  
   fSingles.push_back(rhs);
 
   // Fill all interaction points
