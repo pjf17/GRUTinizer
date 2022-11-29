@@ -297,11 +297,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
       //bool prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy); 
 
-      if ((timestamp-timeZero)/1000000000 < 90){
+      if ((timestamp-timeZero)/1000000000 < 90 || true){
         if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
         obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, "core_energy_vs_theta", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
         obj.FillHistogram(dirname, "core_energy_vs_crystalID", 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
+        obj.FillHistogram(dirname, Form("core_energy_crystal%02d",detMap[cryID]), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, "gretina_theta_vs_phi",720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
         obj.FillHistogram(dirname, "gretina_timestamps_t0",500000,0,5000,(timestamp-timeZero)/1000000000);
       }
@@ -321,7 +322,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double core_energy = nnhit.GetCoreEnergy();
 
         //bool prompt = prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), core_energy);
-        if ((nnhit.GetTime()-timeZero)/1000000000 < 90){
+        if ((nnhit.GetTime()-timeZero)/1000000000 < 90 || true){
           //make sure hits are prompt
           //exclude the ng spectrum (n==3)
           if (n < 3){
@@ -341,27 +342,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int id1 = nnhit.GetCrystalId();
             int id2 = nnhit.GetNeighbor().GetCrystalId();
 
-            if ( PairHit(nnhit,TwoQuadPairs) ){
-              obj.FillHistogram(dirname,"gamma_n1_qd2_pair", 8192,0,8192, core_energy);
-            }
-            if ( PairHit(nnhit,OneQuadPlus) ){
-              obj.FillHistogram(dirname,"gamma_n1_qd1_preferred_pair", 8192,0,8192, core_energy);
-            }
-            if ( PairHit(nnhit,OneQuadDefault) ){
-              obj.FillHistogram(dirname,"gamma_n1_qd1_pair", 8192,0,8192, core_energy);
-            }
-
             //POLARIZATION
-            if ( PairHit(nnhit,redPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_red_pair", 8192,0,8192, core_energy);
-            }
+            std::string polColor = "blank";
+            if (PairHit(nnhit,redPairs)) polColor = "red";
+            else if (PairHit(nnhit,goldPairs)) polColor = "gold";
+            else if (PairHit(nnhit,bluePairs)) polColor = "blue";
 
-            if ( PairHit(nnhit,goldPairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_gold_pair", 8192,0,8192, core_energy);
-            }
+            std::string quadType = "blank";
+            if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
+            else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
+            else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
 
-            if ( PairHit(nnhit,bluePairs) ){
-              obj.FillHistogram(dirname,"gamma_corrected_addback_blue_pair", 8192,0,8192, core_energy);
+            if ( polColor.compare("blank") != 0 ){
+              obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, core_energy);
+              obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, core_energy);
             }
 
             // int id1 = nnhit.GetCrystalId();
