@@ -16,9 +16,9 @@
 const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt_90qds";
 // const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_n1_prompt";
 // const std::string MODE = "addback/gretina_n1";
-const std::string MODE = "gretsim/gretina";
+const std::string MODE = "gretsim/gretina_90qds";
 
-const int REBIN_FACTOR = 4; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 1; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
@@ -111,7 +111,7 @@ TF1 *constructBackground(std::string param_list) {
     bg->SetParameter(0,t->GetV1()[0]);
     bg->SetParameter(1,t->GetV1()[1]);
     bg->SetParameter(2,t->GetV1()[2]);
-    bg->SetParameter(3,t->GetV1()[3]);
+    bg->FixParameter(3,t->GetV1()[3]);
     bg->FixParameter(4,t->GetV1()[4]);
     bg->FixParameter(5,t->GetV1()[5]);
 
@@ -147,9 +147,11 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   // fullSum.AddRegion(2280,2300); //blue
   // fullSum.AddRegion(1505,1525); //blue
   // fullSum.AddRegion(2512,2538); //n1
-  fullSum.AddRegion(255,270); //singles
-  fullSum.AddRegion(2008,2019); //singles
-  fullSum.AddRegion(2724,2731); //singles
+  // fullSum.AddRegion(250,300); 
+  // fullSum.AddRegion(2009,2019); 
+  // fullSum.AddRegion(2300,2325); 
+  // fullSum.AddRegion(2490,2540); 
+  // fullSum.AddRegion(2724,2731); 
   fullSum.AddRegion(fit_low_x,fit_high_x);
   fullSum.FitInRegions();
   for (unsigned int i=0;i<fit_funcs.size();i++){
@@ -161,7 +163,7 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   int count = 0;
   TFitResultPtr r;
   while (1) {
-    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",250,fit_high_x);
+    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",600,fit_high_x);
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -266,8 +268,8 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   std::vector<GH1D*> fep_hists;
   std::vector<GH1D*> com_hists;
   
-  const double NARROW_SCALE = 0.7;
-  const double WIDE_SCALE = 0.3;
+  double NARROW_SCALE = 0.7;
+  double WIDE_SCALE = 0.3;
   //Here we read in the simulated histograms. We use a narrow and a wide component for each histogram to more accurately simulate the GRETINA response.
 
   for(unsigned int i=0;i<energies.size();i++) {
@@ -290,7 +292,10 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
 
       TFile* fw = new TFile(Form("wider/hist%04d.root",energies.at(i)),"read");
       if(!fw->IsZombie()) {
-
+        // if (energies.at(i) < 900) {
+        //   NARROW_SCALE = 0.7;
+        //   WIDE_SCALE = 0.3;
+        // }
         fit_hists.back()->Scale(NARROW_SCALE);
         fep_hists.back()->Scale(NARROW_SCALE);
         com_hists.back()->Scale(NARROW_SCALE);
@@ -302,14 +307,14 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
           hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D",MODE.c_str()));
         }
         else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T_fep",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str()));
         }
         else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T_bg",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str()));
         }
 
-        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_fep",MODE.c_str())))->Clone());
-        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T_bg",MODE.c_str())))->Clone());
+        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())))->Clone());
+        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())))->Clone());
         hw->Sumw2();
 
         hw->Scale(WIDE_SCALE);
