@@ -165,6 +165,8 @@ class ExclusionFit {
 
         double getFWHM(TH1D *h, double lo, double hi){
             TF1 *fhist = ((GH1D*) h)->ConstructTF1();
+            double hLo = h->GetXaxis()->GetXmin();
+            double hHi = h->GetXaxis()->GetXmax();
 
             int lobin = h->FindBin(lo);
             int hibin = h->FindBin(hi);
@@ -179,6 +181,7 @@ class ExclusionFit {
             while (fhist->Eval(xhi) > halfmax){
                 xhi += 0.001;
             }
+            h->GetXaxis()->SetRange(hLo,hHi);
             return xhi-xlo;
         }
 };
