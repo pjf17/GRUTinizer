@@ -477,17 +477,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
             int cryID = hit.GetCrystalId();
-            //deal with the crystal ID gaps
-            // if (cryID >= 40 && cryID < 52 ){
-            //   cryID -= 4;
-            // } else if (cryID >= 52 && cryID < 72 ) {
-            //   cryID -=8;
-            // } else if (cryID == 76) {
-            //   cryID -=12;
-            // } else if (cryID > 77){
-            //   cryID -=13;
-            // }
-            // cryID -= 24;
 
             //time energy spectrum
             if (bank29){
@@ -499,7 +488,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
             //prompt
-            // std::cout<<"AAAAAAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHH"<<std::endl;
             bool tgate = false;
             if (prompt_timing_gate) tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
 
@@ -516,10 +504,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
               else 
                 obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_fwdqds", 8192,0,8192, energy_corrected);
-              // obj.FillHistogram(dirname, "s800_dta", 500, -0.2, 0.2, s800->GetDta());
-              // obj.FillHistogram(dirname, "s800_ata", 1000, -1, 1, s800->GetAta());
-              // obj.FillHistogram(dirname, "s800_bta", 1000, -1, 1, s800->GetBta());
-              // obj.FillHistogram(dirname, "s800_yta", 1000, -200, 200, s800->GetYta());
               
               int nE_gates = energy_gates.size();
               for (int eg=0; eg < nE_gates; eg++){
@@ -527,14 +511,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   obj.FillHistogram(dirname, "core_energy_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, core_energy);
               }
             } 
-            //off prompt
-            // else {
-            //   obj.FillHistogram(dirname, "gamma_singles_off-prompt", 8192,0,8192, energy);
-            //   obj.FillHistogram(dirname, "core_energy_off-prompt", 8192,0,8192, core_energy);
-            //   obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
-            //   obj.FillHistogram(dirname, "core_energy_vs_crystalID_off-prompt", 56, 24, 80, cryID, 8192,0,8192, core_energy);
-            //   obj.FillHistogram(dirname, "core_energy_vs_theta_off-prompt", 8192,0,8192, core_energy, 100, 0, 2.5, theta);
-            // }
           }
 
           //NNADDBACK
@@ -574,45 +550,35 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   }
 
                   //make swapped spectra
-                  TGretinaHit nnhit1 = nnhit.GetInitialHit();
-                  TGretinaHit nnhit2 = nnhit.GetNeighbor();
-                  nnhit2.NNAdd(nnhit1);
-                  double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  // TGretinaHit nnhit1 = nnhit.GetInitialHit();
+                  // TGretinaHit nnhit2 = nnhit.GetNeighbor();
+                  // nnhit2.NNAdd(nnhit1);
+                  // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
 
-                  //POLARIZATION
-                  std::string polColor = "blank";
-                  if (PairHit(nnhit,redPairs)) polColor = "red";
-                  else if (PairHit(nnhit,goldPairs)) polColor = "gold";
-                  else if (PairHit(nnhit,bluePairs)) polColor = "blue";
+                  // //POLARIZATION
+                  // std::string polColor = "blank";
+                  // if (PairHit(nnhit,redPairs)) polColor = "red";
+                  // else if (PairHit(nnhit,goldPairs)) polColor = "gold";
+                  // else if (PairHit(nnhit,bluePairs)) polColor = "blue";
 
-                  std::string quadType = "blank";
-                  if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
-                  else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
-                  else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
+                  // std::string quadType = "blank";
+                  // if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
+                  // else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
+                  // else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
 
-                  if ( polColor.compare("blank") != 0 ){
-                    obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
-                    obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
-                  }
+                  // if ( polColor.compare("blank") != 0 ){
+                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, nnEnergy_corrected);
+                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+                  //   obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
+                  // }
 
-                  // double singleCrystalEnergy = nnhit2.GetCoreEnergy();
-                  // // if ( nnhit1.GetCrystalPosition().Theta() > nnhit2.GetCrystalPosition().Theta() ){
-                  // //   singleCrystalEnergy = nnhit1.GetCoreEnergy();
-                  // // }
-                  // obj.FillHistogram(dirname, Form("total_energy_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,singleCrystalEnergy,4096,0,8192,nnEnergy_corrected);
-                  
-                  obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_prompt",n), 8192,0,8192, swappedEnergy);
-                  // obj.FillHistogram(dirname, Form("gamma_corrected_n%d_swapped_ring%02d_prompt",n,ringNum),8192,0,8192,swappedEnergy);
-                  // obj.FillHistogram(dirname, Form("total_energy_swapped_vs_single_hit_ring%02d_cryID%d",ringNum,cryID),4096,0,8192,nnhit1.GetCoreEnergy(),4096,0,8192,swappedEnergy);                  
                 }
 
                 char *multiplicity = Form("%d",n);
                 if (n == 3) multiplicity = Form("g");
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
                 obj.FillHistogram(dirname, Form("core_energy_n%s_prompt",multiplicity), 8192,0,8192, nnCore_energy);
-                // obj.FillHistogram(dirname, Form("gamma_corrected_n%s_ring%02d_prompt",multiplicity,ringNum),8192,0,8192, nnEnergy_corrected);
               }
             }
           }
