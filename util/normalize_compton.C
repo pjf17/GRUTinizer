@@ -51,11 +51,11 @@ class AziNorm {
         void ClearPeaks(){data_peaks.clear();}
 
         void GetRatioHists(){
-            TFile *fout = new TFile("azimithal_compton_ratios.root","RECREATE");
+            TFile *fout = new TFile("azimuthal_compton_ratios.root","RECREATE");
 
             int binLo = source->GetYaxis()->FindBin(source_peak.first);
             int binHi = source->GetYaxis()->FindBin(source_peak.second);
-            GH1D *s = data->ProjectionX(Form("source_peak_%5.1f-%5.1f",source_peak.first,source_peak.second),binLo,binHi);
+            GH1D *s = source->ProjectionX(Form("source_peak_%5.1f-%5.1f",source_peak.first,source_peak.second),binLo,binHi);
             s->Sumw2();
 
             for (auto dp : data_peaks){
