@@ -309,6 +309,17 @@ bool check_energy_gate(double E, std::pair<double,double> E_gate){
   return E > E_gate.first && E < E_gate.second;
 }
 
+double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
+  TVector3 interaction1 = hit.GetIntPosition(0);
+  TVector3 interaction2 = hit.GetIntPosition(1);
+  TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
+  TVector3 reactionPlaneNorm = beam->Cross(interaction1);
+  TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
+  double angle = reactionPlaneNorm.Angle(comptonPlaneNorm);
+  if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) angle = TMath::TwoPi() - angle;
+  return angle;
+}
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -496,7 +507,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
               // obj.FillHistogram(dirname, "gamma_singles_prompt", 8192,0,8192, energy);
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 8192,0,8192, energy_corrected, 100, 0, 2.5, theta);
-              obj.FillHistogram(dirname, "gamma_corrected_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_summary", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
+              // obj.FillHistogram(dirname, Form("gamma_corrected_crystal%02d",detMapRing[cryID]),2048,0,2048, energy_corrected);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, energy_corrected);
 
@@ -526,8 +538,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
               // int ringNum = nnhit.GetRingNumber();
               double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
               double nnCore_energy = nnhit.GetCoreEnergy();
-              double theta = 180 - nnhit.GetThetaDeg();
+              double theta = nnhit.GetThetaDeg();
               double phi = nnhit.GetPhiDeg();
+              int nInteractions = nnhit.NumberOfInteractions();
               
               //make sure hits are prompt
               if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
@@ -535,7 +548,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
                 if (n < 3){
                   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+                  obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_nInteractions",20,0,20,nInteractions,1024,0,2048,nnEnergy_corrected);
                   obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
+                  if (nInteractions > 1){
+                    TVector3 pos1 = nnhit.GetIntPosition(0);
+                    TVector3 pos2 = nnhit.GetIntPosition(1);
+                    double angleSpread = pos1.Angle(pos2)*TMath::RadToDeg();
+                    double aziCompt = azimuthalCompton(nnhit,&track);
+                    obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_angleSpread",150,0,30,angleSpread,1024,0,2048,nnEnergy_corrected);
+                    if (50 < theta && theta < 75)
+                      obj.FillHistogram(dirname, "azmthl_compton_theta_cut",360,0,TMath::TwoPi(),aziCompt,1024,0,2048,nnEnergy_corrected);
+                    else 
+                      obj.FillHistogram(dirname, "azmthl_compton_anti_theta",360,0,TMath::TwoPi(),aziCompt,1024,0,2048,nnEnergy_corrected);
+                    //everything
+                    obj.FillHistogram(dirname, "azmthl_compton",360,0,TMath::TwoPi(),aziCompt,1024,0,2048,nnEnergy_corrected);
+                  }
                 }
 
                 if (n == 1) {
@@ -579,6 +606,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 if (n == 3) multiplicity = Form("g");
                 obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
                 obj.FillHistogram(dirname, Form("core_energy_n%s_prompt",multiplicity), 8192,0,8192, nnCore_energy);
+                obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt_vs_nInteractions",multiplicity),20,0,20,nInteractions,1024,0,2048, nnEnergy_corrected);
               }
             }
           }
