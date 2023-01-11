@@ -357,14 +357,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname, Form("%s_core_energy_addback",timeflag.c_str()), 8192,0,8192, core_energy);
             if (nInteractions > 1){
               TVector3 *track = new TVector3(0,0,1);
-              double aziCompt = azimuthalCompton(nnhit,track);
-              if (50 < theta && theta < 75)
-                obj.FillHistogram(dirname, Form("%s_azmthl_compton_theta_cut",timeflag.c_str()),360,0,TMath::TwoPi(),aziCompt,1024,0,2048,core_energy);
-              else 
-                obj.FillHistogram(dirname, Form("%s_azmthl_compton_anti_theta",timeflag.c_str()),360,0,TMath::TwoPi(),aziCompt,1024,0,2048,core_energy);
+              double aziCompt = azimuthalCompton(nnhit,track)*TMath::RadToDeg();
+              if (core_energy > 1330 && core_energy < 1336){
+                obj.FillHistogram(dirname, "azmthl_compton_theta_cut",360,0,TMath::TwoPi(),aziCompt,21,36,120,theta);
+              }
+              // if (50 < theta && theta < 75)
+              //   obj.FillHistogram(dirname, Form("%s_azmthl_compton_theta_cut",timeflag.c_str()),360,0,TMath::TwoPi(),aziCompt,1024,0,2048,core_energy);
+              // else 
+              //   obj.FillHistogram(dirname, Form("%s_azmthl_compton_anti_theta",timeflag.c_str()),360,0,TMath::TwoPi(),aziCompt,1024,0,2048,core_energy);
               
               //everything
-              obj.FillHistogram(dirname, Form("%s_azmthl_compton",timeflag.c_str()),360,0,TMath::TwoPi(),aziCompt,1024,0,2048,core_energy);
+              obj.FillHistogram(dirname, Form("%s_azmthl_compton",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
             }
           }
 
