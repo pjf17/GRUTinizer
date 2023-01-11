@@ -4,6 +4,8 @@
 #include <string>
 
 #include "TFile.h"
+// #include "GH2D.h"
+// #include "GH1D.h"
 
 class AziNorm {
     public:
@@ -73,5 +75,21 @@ class AziNorm {
         GH2D *source;
         GH2D *data;
         std::pair<double, double> source_peak;
-        vector<std::pair<double,double>> data_peaks;
+        std::vector<std::pair<double,double>> data_peaks;
 };
+
+void divide2D(GH2D *numer, GH2D *denom){
+    int nbinsX = numer->GetNbinsX();
+    int nbinsY = numer->GetNbinsY();
+    for (int ix = 1; ix <= nbinsX; ix++){
+        for (int iy = 1; iy <= nbinsY; iy++){
+            int bin = numer->GetBin(ix,iy);
+            double val = 0;
+            if (denom->GetBinContent(bin) != 0){
+                val = numer->GetBinContent(bin)/denom->GetBinContent(bin);
+            }
+            numer->SetBinContent(bin,val);
+        }
+    }
+    return;
+}
