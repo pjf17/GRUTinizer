@@ -107,6 +107,8 @@ void TGretina::BuildNNAddback(bool SortByEng, int EngRange) const {
         [](const TGretinaHit& a, const TGretinaHit& b) {
           return a.GetCoreEnergy() > b.GetCoreEnergy();
         });
+  } else {
+    std::reverse(temp_hits.begin(),temp_hits.end());
   }
   
   //loop through every hit
