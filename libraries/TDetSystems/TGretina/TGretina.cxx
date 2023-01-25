@@ -16,6 +16,7 @@
 //#include "GCanvas.h"
 
 #include "TGEBEvent.h"
+#include "GValue.h"
 
 TGretina::TGretina(){
   //gretina_hits = new TClonesArray("TGretinaHit");
@@ -83,7 +84,7 @@ void TGretina::BuildAddback(int EngRange) const {
   }
 }
 
-void TGretina::BuildNNAddback(bool SortByEng, int EngRange) const {
+void TGretina::BuildNNAddback(int EngRange) const {
   //Algorithm adapted from Dirk Weisshaar in https://doi.org/10.1016/j.nima.2016.12.001
   
   if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
@@ -102,12 +103,15 @@ void TGretina::BuildNNAddback(bool SortByEng, int EngRange) const {
   //sort so that the first hit has the greatest energy
   //this way we can loop through i,j with i < j and know that 
   //any hit with higher energy cannot be an addback to one with lower energy
+  bool SortByEng = true;
+  if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
   if (SortByEng){
     std::sort(temp_hits.begin(), temp_hits.end(),
         [](const TGretinaHit& a, const TGretinaHit& b) {
           return a.GetCoreEnergy() > b.GetCoreEnergy();
         });
-  } else {
+  } 
+  else {
     std::reverse(temp_hits.begin(),temp_hits.end());
   }
   

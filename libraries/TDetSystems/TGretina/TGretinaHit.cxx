@@ -1,6 +1,7 @@
 #include "TGretinaHit.h"
 
 #include <algorithm>
+#include <ctime>
 #include <cmath>
 #include <set>
 
@@ -143,10 +144,17 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   //std::cout << "[14].z :  " << raw.intpts[14].z << std::endl;
   //std::cout << "[15].z :  " << raw.intpts[15].z << std::endl;
   //std::cout << "fTOffset :  " << fTOffset             << std::endl;
-
-  std::sort(fSegments.begin(),fSegments.end());
+  // bool SortByEng = true;
+  // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
+  // std::sort(fSegments.begin(),fSegments.end());
+  // std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
+  std::random_shuffle(fSegments.begin(),fSegments.end());
+  // TRandom *rand_gen = new TRandom();
+  // rand_gen->SetSeed(std::time(NULL));
+  // for (int ix=0; ix < fNumberOfInteractions; ix++){
 
+  // }
 }
 
 TVector3 TGretinaHit::GetIntPosition(unsigned int i) const {
@@ -490,7 +498,7 @@ void TGretinaHit::TrimSegments(int type) {
     for(auto x=pset.begin();x!=pset.end();x++) {
       fSegments.push_back(*x);
     }
-    std::sort(fSegments.begin(),fSegments.end());
+    // std::sort(fSegments.begin(),fSegments.end());
     fNumberOfInteractions = fSegments.size();
   } else if (type==1) {
     std::set<interaction_point,intpnt_compare_wedge> pset;
@@ -502,7 +510,7 @@ void TGretinaHit::TrimSegments(int type) {
       fSegments.push_back(*x);
       fSegments.back().fSeg = (fSegments.back().fSeg%6);
     }
-    std::sort(fSegments.begin(),fSegments.end());
+    // std::sort(fSegments.begin(),fSegments.end());
     fNumberOfInteractions = fSegments.size();
   }
 }
