@@ -176,6 +176,9 @@ public:
   void TrimSegments(int type); // 0: drop multiple ident int pnts.  1: make into wedge "data"
   bool IsClean() const { return !fPad; }
 
+  void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
+  void SimTracking(const double realTheta);
+
 private:
   void SortHits();
 /* All possible decomp information and
