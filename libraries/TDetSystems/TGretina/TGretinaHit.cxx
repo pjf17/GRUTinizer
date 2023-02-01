@@ -144,16 +144,11 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   //std::cout << "[14].z :  " << raw.intpts[14].z << std::endl;
   //std::cout << "[15].z :  " << raw.intpts[15].z << std::endl;
   //std::cout << "fTOffset :  " << fTOffset             << std::endl;
-  // bool SortByEng = true;
-  // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
-  // std::sort(fSegments.begin(),fSegments.end());
-  // std::reverse(fSegments.begin(),fSegments.end());
+  bool SortByEng = true;
+  if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
+  if (SortByEng) std::sort(fSegments.begin(),fSegments.end());
+  else std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
-  std::random_shuffle(fSegments.begin(),fSegments.end());
-  // TRandom *rand_gen = new TRandom();
-  // rand_gen->SetSeed(std::time(NULL));
-  // for (int ix=0; ix < fNumberOfInteractions; ix++){
-
   // }
 }
 
@@ -515,3 +510,16 @@ void TGretinaHit::TrimSegments(int type) {
   }
 }
 
+void TGretinaHit::SimTracking(const double realTheta){
+  double mindiff = std::abs(GetIntPosition(0).Theta() - realTheta);
+  int minIndex = 0;
+  for (int i=1; i < fNumberOfInteractions; i++){
+    double diff = std::abs(GetIntPosition(i).Theta()  - realTheta);
+    if (diff < mindiff){
+      mindiff = diff;
+      minIndex = 1;
+    }
+  }
+  if (minIndex != 0) std::swap(fSegments[0],fSegments[minIndex]);
+  return;
+}
