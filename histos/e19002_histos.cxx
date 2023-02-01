@@ -20,15 +20,6 @@
 #include "TChannel.h"
 #include "GValue.h"
 
-std::map<int,int> detMap = {
-  {24, 0}, {25, 1}, {26, 2}, {27, 3}, {28, 4}, {29, 5}, {30, 6}, {31, 7},
-  {32, 8}, {33, 9}, {34,10}, {35,11}, {36,12}, {37,13}, {38,14}, {39,15},
-  {44,16}, {45,17}, {46,18}, {47,19}, {48,20}, {49,21}, {50,22}, {51,23},
-  {56,24}, {57,25}, {58,26}, {59,27}, {60,28}, {61,29}, {62,30}, {63,31},
-  {64,32}, {65,33}, {66,34}, {67,35}, {68,36}, {69,37}, {70,38}, {71,39},
-  {76,40}, {77,41}, {78,42}, {79,43}, {80,44}, {81,45}, {82,46}, {83,47}
-};
-
 std::map<int,int> detMapRing = {
   {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
   {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
@@ -37,162 +28,6 @@ std::map<int,int> detMapRing = {
   {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
-
-//24
-std::vector<std::pair<int,int>> redPairs = {
-  std::make_pair(46,44),
-  std::make_pair(46,48),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(51,47),
-  std::make_pair(56,57),
-  std::make_pair(57,61),
-  std::make_pair(59,58),
-  std::make_pair(60,58),
-  std::make_pair(60,62),
-  std::make_pair(64,62),
-  std::make_pair(64,65),
-  std::make_pair(69,65),
-  std::make_pair(63,67),
-  std::make_pair(66,67),
-  std::make_pair(66,68),
-  std::make_pair(70,68),
-  std::make_pair(78,76),
-  std::make_pair(78,80),
-  std::make_pair(80,81),
-  std::make_pair(45,81),
-  std::make_pair(79,83),
-  std::make_pair(82,83),
-  std::make_pair(44,82)
-};
-
-//16
-std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(48,51),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(61,60),
-  std::make_pair(62,63),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(69,68),
-  std::make_pair(70,71),
-  std::make_pair(78,79),
-  std::make_pair(76,77),
-  std::make_pair(80,83),
-  std::make_pair(81,82)
-};
-
-//18
-std::vector<std::pair<int,int>> bluePairs = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(46,51),
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(57,60),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(62,67),
-  std::make_pair(64,66),
-  std::make_pair(65,68),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(77,78),
-  std::make_pair(78,83),
-  std::make_pair(80,82),
-  std::make_pair(44,81)
-};
-
-//16
-std::vector<std::pair<int,int>> OneQuadPlus = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(48,51),
-  std::make_pair(77,78),
-  std::make_pair(80,83),
-  std::make_pair(81,82),
-};
-
-//24
-std::vector<std::pair<int,int>> OneQuadDefault = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(44,46),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(48,50),
-  std::make_pair(56,57),
-  std::make_pair(58,59),
-  std::make_pair(56,58),
-  std::make_pair(60,61),
-  std::make_pair(62,63),
-  std::make_pair(60,62),
-  std::make_pair(64,65),
-  std::make_pair(66,67),
-  std::make_pair(64,66),
-  std::make_pair(68,69),
-  std::make_pair(70,71),
-  std::make_pair(68,70),
-  std::make_pair(76,78),
-  std::make_pair(78,79),
-  std::make_pair(77,76),
-  std::make_pair(80,82),
-  std::make_pair(81,80),
-  std::make_pair(82,83),
-};
-
-
-//18
-std::vector<std::pair<int,int>> TwoQuadPairs = {
-  std::make_pair(46,48),
-  std::make_pair(46,51),
-  std::make_pair(47,51),
-  std::make_pair(61,57),
-  std::make_pair(58,60),
-  std::make_pair(57,60),
-  std::make_pair(62,64),
-  std::make_pair(63,67),
-  std::make_pair(62,67),
-  std::make_pair(65,69),
-  std::make_pair(66,68),
-  std::make_pair(65,68),
-  std::make_pair(78,80),
-  std::make_pair(78,83),
-  std::make_pair(79,83),
-  std::make_pair(45,81),
-  std::make_pair(44,81),
-  std::make_pair(44,82),
-};
-
-bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  bool hit = false;
-  
-  for (auto &p : pairs){
-    if ( (cryId1 == p.first && cryId2 == p.second) 
-        || (cryId2 == p.first && cryId1 == p.second) ) {
-        hit = true;
-        break;
-    }
-  }
-  return hit;
-}
 
 std::vector<GCutG*> incoming_gates = {};
 std::vector<GCutG*> outgoing_gates = {};
@@ -314,6 +149,7 @@ double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
   TVector3 interaction2 = hit.GetIntPosition(1);
   TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
   TVector3 reactionPlaneNorm = beam->Cross(interaction1);
+  // TVector3 reactionPlaneNorm = interaction1.Cross(*beam);
   TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
   double angle = reactionPlaneNorm.Angle(comptonPlaneNorm);
   if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) angle = TMath::TwoPi() - angle;
@@ -325,7 +161,9 @@ double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
 //   or else bad things will happen.
 extern "C"
 void MakeHistograms(TRuntimeObjects& obj) {
-//  InitMap();
+  FILE *tout;
+  tout = fopen("rundata.txt","a");
+
   TGretina *gretina = obj.GetDetector<TGretina>();
   TBank29  *bank29  = obj.GetDetector<TBank29>();
   TS800    *s800    = obj.GetDetector<TS800>();
@@ -503,6 +341,40 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (prompt_timing_gate) tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
 
             if (prompt_timing_gate && tgate){
+              // fprintf(tout,"id: %d en: %f ts: 0x%x\n",cryID,core_energy,hit.Timestamp());
+              // fprintf(tout,"Number of interactions %d\n",hit.NumberOfInteractions());
+              // fprintf(tout,"CRYSTAL COORDS\n");
+              // fprintf(tout,"0: %f %f %f\n",hit.GetLocalPosition(0).X(),hit.GetLocalPosition(0).Y(),hit.GetLocalPosition(0).Z());
+              // fprintf(tout,"1: %f %f %f\n",hit.GetLocalPosition(1).X(),hit.GetLocalPosition(1).Y(),hit.GetLocalPosition(1).Z());
+              // fprintf(tout,"LAB COORDS\n");
+              
+              // TVector3 pos0 = hit.GetIntPosition(0);
+              // TVector3 pos1 = hit.GetIntPosition(1);
+              
+              // TVector3 compt = pos0.Cross(pos1);
+              // fprintf(tout,"COMPTON PLANE\n");
+              // fprintf(tout,"(int0): %.4f %.4f %.4f\n",pos0.X(),pos0.Y(),pos0.Z());
+              // fprintf(tout,"(int1): %.4f %.4f %.4f\n",pos1.X(),pos1.Y(),pos1.Z());
+              // fprintf(tout,"norm: %.4f %.4f %.4f\n",compt.X(),compt.Y(),compt.Z());
+              // fprintf(tout,"len: %.4f\n",compt.Mag());
+
+              // // TVector3 react = track.Cross(pos0);
+              // TVector3 react = pos0.Cross(track);
+              // fprintf(tout,"REACTION PLANE\n");
+              // fprintf(tout,"(int0): %.4f %.4f %.4f\n",pos0.X(),pos0.Y(),pos0.Z());
+              // fprintf(tout,"(beam): %.4f %.4f %.4f\n",track.X(),track.Y(),track.Z());
+              // fprintf(tout,"norm: %.4f %.4f %.4f\n",react.X(),react.Y(),react.Z());
+              // fprintf(tout,"len: %.4f\n",react.Mag());
+
+              // TVector3 basisnorm = react.Cross(pos0);
+              // double xi = react.Angle(compt);
+              // fprintf(tout,"xi: %f\n\n",TMath::Cos(xi));
+              
+              if (hit.NumberOfInteractions() > 1){
+                double xi = azimuthalCompton(hit,&track);
+                obj.FillHistogram(dirname, "gamma_corrected_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+              }
+              
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
@@ -553,7 +425,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                     // double angleSpread = pos1.Angle(pos2)*TMath::RadToDeg();
                     // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_angleSpread",150,0,30,angleSpread,1024,0,2048,nnEnergy_corrected);
                     double aziCompt = azimuthalCompton(nnhit,&track)*TMath::RadToDeg();
-                    obj.FillHistogram(dirname, "azmthl_compton",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
+                    obj.FillHistogram(dirname, "energy_corrected_vs_xi",360,0,360,aziCompt,2048,0,2048,nnEnergy_corrected);
                     if (aziCompt > 90 && aziCompt < 270){
                       obj.FillHistogram(dirname,"Xi_center_gamma_vs_theta",180,0,180,theta,8192,0,8192,nnEnergy_corrected);
                       obj.FillHistogram(dirname,"Xi_center_gamma_vs_phi",360,0,360,phi,8192,0,8192,nnEnergy_corrected);
@@ -619,7 +491,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
     }
   }
-  
+  fclose(tout);
   if(numobj!=list->GetSize()){
     list->Sort();
   }
