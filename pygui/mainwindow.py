@@ -104,7 +104,7 @@ class MainWindow(object):
     def _load_default_style(self):
         style = ROOT.TStyle("GRUTStyle","")
         style.SetOptStat(1001111)
-        style.SetPalette(1)
+        style.SetPalette(ROOT.kBird)
         style.SetTitleColor(ROOT.kBlue)
         style.SetStatTextColor(ROOT.kBlue)
         style.SetFuncColor(ROOT.kRed)
