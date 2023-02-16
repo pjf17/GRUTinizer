@@ -144,10 +144,10 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   //std::cout << "[14].z :  " << raw.intpts[14].z << std::endl;
   //std::cout << "[15].z :  " << raw.intpts[15].z << std::endl;
   //std::cout << "fTOffset :  " << fTOffset             << std::endl;
-  bool SortByEng = true;
-  if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
-  if (SortByEng) std::sort(fSegments.begin(),fSegments.end());
-  else std::reverse(fSegments.begin(),fSegments.end());
+  // bool SortByEng = true;
+  // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
+  // if (SortByEng) std::sort(fSegments.begin(),fSegments.end());
+  std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
   // }
 }
