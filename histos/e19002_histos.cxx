@@ -32,6 +32,7 @@ std::map<int,int> detMapRing = {
 std::vector<GCutG*> incoming_gates = {};
 std::vector<GCutG*> outgoing_gates = {};
 std::vector<GCutG*> isoline_gates = {};
+std::vector<GCutG*> polarization_gates = {};
 GCutG *prompt_timing_gate=0;
 GCutG *afp_gate=0;
 int gates_loaded=0;
@@ -91,6 +92,9 @@ void LoadGates(TRuntimeObjects &obj){
     } else if(!tag.compare("outgoing")) {
       outgoing_gates.push_back(gate);
       std::cout << "\t outgoing: << " << gate->GetName() << std::endl;
+    } else if(!tag.compare("pol")){
+      polarization_gates.push_back(gate);
+      std::cout << "\t polarization: << " << gate->GetName() << std::endl;
     } else if(!tag.compare("isoline")){
       isoline_gates.push_back(gate);
       std::cout << "\t isoline: << " << gate->GetName() << std::endl;
@@ -341,45 +345,30 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (prompt_timing_gate) tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
 
             if (prompt_timing_gate && tgate){
-              // fprintf(tout,"id: %d en: %f ts: 0x%x\n",cryID,core_energy,hit.Timestamp());
-              // fprintf(tout,"Number of interactions %d\n",hit.NumberOfInteractions());
-              // fprintf(tout,"CRYSTAL COORDS\n");
-              // fprintf(tout,"0: %f %f %f\n",hit.GetLocalPosition(0).X(),hit.GetLocalPosition(0).Y(),hit.GetLocalPosition(0).Z());
-              // fprintf(tout,"1: %f %f %f\n",hit.GetLocalPosition(1).X(),hit.GetLocalPosition(1).Y(),hit.GetLocalPosition(1).Z());
-              // fprintf(tout,"LAB COORDS\n");
-              
-              // TVector3 pos0 = hit.GetIntPosition(0);
-              // TVector3 pos1 = hit.GetIntPosition(1);
-              
-              // TVector3 compt = pos0.Cross(pos1);
-              // fprintf(tout,"COMPTON PLANE\n");
-              // fprintf(tout,"(int0): %.4f %.4f %.4f\n",pos0.X(),pos0.Y(),pos0.Z());
-              // fprintf(tout,"(int1): %.4f %.4f %.4f\n",pos1.X(),pos1.Y(),pos1.Z());
-              // fprintf(tout,"norm: %.4f %.4f %.4f\n",compt.X(),compt.Y(),compt.Z());
-              // fprintf(tout,"len: %.4f\n",compt.Mag());
-
-              // // TVector3 react = track.Cross(pos0);
-              // TVector3 react = pos0.Cross(track);
-              // fprintf(tout,"REACTION PLANE\n");
-              // fprintf(tout,"(int0): %.4f %.4f %.4f\n",pos0.X(),pos0.Y(),pos0.Z());
-              // fprintf(tout,"(beam): %.4f %.4f %.4f\n",track.X(),track.Y(),track.Z());
-              // fprintf(tout,"norm: %.4f %.4f %.4f\n",react.X(),react.Y(),react.Z());
-              // fprintf(tout,"len: %.4f\n",react.Mag());
-
-              // TVector3 basisnorm = react.Cross(pos0);
-              // double xi = react.Angle(compt);
-              // fprintf(tout,"xi: %f\n\n",TMath::Cos(xi));
-              
               if (hit.NumberOfInteractions() > 1){
                 double xi = azimuthalCompton(hit,&track);
                 obj.FillHistogram(dirname, "gamma_corrected_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
+                for (auto gate : polarization_gates){
+                  if (gate->IsInside(xi,energy_corrected)){
+                    obj.FillHistogram(dirname, Form("xi_%s_gated",gate->GetName()),360,0,TMath::TwoPi(),xi);
+                  }
+                }
+                if (alpha*TMath::RadToDeg() < 2){
+                  obj.FillHistogram(dirname, "gamma_corrected_vs_xi_alpha<2deg",360,0,TMath::TwoPi(),xi);
+                  for (auto gate : polarization_gates){
+                    if (gate->IsInside(xi,energy_corrected)){
+                      obj.FillHistogram(dirname, Form("xi_%s_gated_alpha<2deg",gate->GetName()),360,0,TMath::TwoPi(),xi);
+                    }
+                  }
+                }
               }
               
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
-              obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, hit.GetCoreEnergy());
+              obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 360, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gamma_corrected_summary_prompt", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 100, 0, 2.5, theta, 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 360, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
 
               if (cryID > 40) 
                 obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
