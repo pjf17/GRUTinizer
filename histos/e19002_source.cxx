@@ -324,6 +324,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 8192,0,8192, core_energy, 100, 0, 2.5, theta);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
+        if (hit.NumberOfInteractions() > 1){
+          TVector3 *track = new TVector3(0,0,1);
+          double xi = azimuthalCompton(hit,track);
+          double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
+          
+          obj.FillHistogram(dirname, Form("%s_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          if (alpha*TMath::RadToDeg() < 2)
+            obj.FillHistogram(dirname, Form("%s_xi_alpha<2deg",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+        }
       }
     }
 
@@ -355,24 +364,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //exclude the ng spectrum (n==3)
           if (n < 3){
             obj.FillHistogram(dirname, Form("%s_core_energy_addback",timeflag.c_str()), 8192,0,8192, core_energy);
-            if (nInteractions > 1){
-              TVector3 *track = new TVector3(0,0,1);
-              double aziCompt = azimuthalCompton(nnhit,track)*TMath::RadToDeg();
-              if (core_energy > 1330 && core_energy < 1336){
-                obj.FillHistogram(dirname, "azmthl_compton_theta_cut",360,0,TMath::TwoPi(),aziCompt,21,36,120,theta);
-              }
-              
-              //everything
-              obj.FillHistogram(dirname, Form("%s_azmthl_compton",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
-              if (theta > 100) 
-                obj.FillHistogram(dirname, Form("azmthl_compton_theta>100",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
-              else if (theta < 50) 
-                obj.FillHistogram(dirname, Form("azmthl_compton_theta<50",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
-              else if (theta > 75 && theta < 95) 
-                obj.FillHistogram(dirname, Form("azmthl_compton_theta_flat",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
-              else 
-                obj.FillHistogram(dirname, Form("azmthl_compton_theta_varied",timeflag.c_str()),360,0,360,aziCompt,1024,0,2048,core_energy);
-            }
           }
 
           char *multiplicity = Form("%d",n);
