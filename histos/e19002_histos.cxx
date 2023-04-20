@@ -160,6 +160,11 @@ double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
   return angle;
 }
 
+double thetaCM(double theta,double beta){
+  double cosT = TMath::Cos(theta);
+  return TMath::ACos((cosT - beta)/(1 - beta*cosT));
+}
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -347,28 +352,22 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (prompt_timing_gate && tgate){
               if (hit.NumberOfInteractions() > 1){
                 double xi = azimuthalCompton(hit,&track);
-                obj.FillHistogram(dirname, "gamma_corrected_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
                 double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
+                obj.FillHistogram(dirname, "gamma_corrected_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                obj.FillHistogram(dirname, "gamma_corrected_vs_alpha",40,0,40,alpha*TMath::RadToDeg(), 1024,0,2048, energy_corrected);
                 for (auto gate : polarization_gates){
                   if (gate->IsInside(xi,energy_corrected)){
                     obj.FillHistogram(dirname, Form("xi_%s_gated",gate->GetName()),360,0,TMath::TwoPi(),xi);
-                  }
-                }
-                if (alpha*TMath::RadToDeg() < 2){
-                  obj.FillHistogram(dirname, "gamma_corrected_vs_xi_alpha<2deg",360,0,TMath::TwoPi(),xi);
-                  for (auto gate : polarization_gates){
-                    if (gate->IsInside(xi,energy_corrected)){
-                      obj.FillHistogram(dirname, Form("xi_%s_gated_alpha<2deg",gate->GetName()),360,0,TMath::TwoPi(),xi);
-                    }
                   }
                 }
               }
               
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 360, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, hit.GetCoreEnergy());
-              obj.FillHistogram(dirname, "gamma_corrected_singles_prompt", 8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "gamma_corrected_summary_prompt", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
-              obj.FillHistogram(dirname, "gamma_corrected_vs_theta_prompt", 360, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt", 8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_summary", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta", 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta_cm", 180, 0, 180, thetaCM(theta,GValue::Value("BETA"))*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
 
               if (cryID > 40) 
                 obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
@@ -383,99 +382,99 @@ void MakeHistograms(TRuntimeObjects& obj) {
             } 
           }
 
-          //NNADDBACK
-          //loop over multiplicity
-          for (int n=0; n<4; n++){
-            //loop over hits for each multiplicity spectrum
-            int nnSize = gretina->NNAddbackSize(n);
-            for (int i=0; i < nnSize; i++){
+          // //NNADDBACK
+          // //loop over multiplicity
+          // for (int n=0; n<4; n++){
+          //   //loop over hits for each multiplicity spectrum
+          //   int nnSize = gretina->NNAddbackSize(n);
+          //   for (int i=0; i < nnSize; i++){
 
-              //get hit and hit data 
-              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-              int cryID = nnhit.GetCrystalId();
-              // int ringNum = nnhit.GetRingNumber();
-              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-              double nnCore_energy = nnhit.GetCoreEnergy();
-              double theta = nnhit.GetThetaDeg();
-              double phi = nnhit.GetPhiDeg();
-              int nInteractions = nnhit.NumberOfInteractions();
+          //     //get hit and hit data 
+          //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+          //     int cryID = nnhit.GetCrystalId();
+          //     // int ringNum = nnhit.GetRingNumber();
+          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     double nnCore_energy = nnhit.GetCoreEnergy();
+          //     double theta = nnhit.GetThetaDeg();
+          //     double phi = nnhit.GetPhiDeg();
+          //     int nInteractions = nnhit.NumberOfInteractions();
               
-              //make sure hits are prompt
-              if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
-                //exclude the ng spectrum (n==3)
-                // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
-                if (n < 3){
-                  obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
-                  // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_nInteractions",20,0,20,nInteractions,1024,0,2048,nnEnergy_corrected);
-                  // obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
-                  if (nInteractions > 1){
-                    // TVector3 pos1 = nnhit.GetIntPosition(0);
-                    // TVector3 pos2 = nnhit.GetIntPosition(1);
-                    // double angleSpread = pos1.Angle(pos2)*TMath::RadToDeg();
-                    // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_angleSpread",150,0,30,angleSpread,1024,0,2048,nnEnergy_corrected);
-                    double aziCompt = azimuthalCompton(nnhit,&track)*TMath::RadToDeg();
-                    obj.FillHistogram(dirname, "energy_corrected_vs_xi",360,0,360,aziCompt,2048,0,2048,nnEnergy_corrected);
-                    if (aziCompt > 90 && aziCompt < 270){
-                      obj.FillHistogram(dirname,"Xi_center_gamma_vs_theta",180,0,180,theta,8192,0,8192,nnEnergy_corrected);
-                      obj.FillHistogram(dirname,"Xi_center_gamma_vs_phi",360,0,360,phi,8192,0,8192,nnEnergy_corrected);
-                    } else {
-                      obj.FillHistogram(dirname,"Xi_extreme_gamma_vs_theta",180,0,180,theta,8192,0,8192,nnEnergy_corrected);
-                      obj.FillHistogram(dirname,"Xi_extreme_gamma_vs_phi",360,0,360,phi,8192,0,8192,nnEnergy_corrected);
-                    }
-                    if (theta > 100) 
-                      obj.FillHistogram(dirname, "azmthl_compton_theta>100",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
-                    else if (theta < 50) 
-                      obj.FillHistogram(dirname, "azmthl_compton_theta<50",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
-                    else if (theta > 75 && theta < 95) 
-                      obj.FillHistogram(dirname, "azmthl_compton_theta_flat",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
-                    else 
-                      obj.FillHistogram(dirname, "azmthl_compton_theta_varied",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
-                  }
-                }
+          //     //make sure hits are prompt
+          //     if (prompt_timing_gate && prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+          //       //exclude the ng spectrum (n==3)
+          //       // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
+          //       if (n < 3){
+          //         obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+          //         // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_nInteractions",20,0,20,nInteractions,1024,0,2048,nnEnergy_corrected);
+          //         // obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
+          //         if (nInteractions > 1){
+          //           // TVector3 pos1 = nnhit.GetIntPosition(0);
+          //           // TVector3 pos2 = nnhit.GetIntPosition(1);
+          //           // double angleSpread = pos1.Angle(pos2)*TMath::RadToDeg();
+          //           // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_angleSpread",150,0,30,angleSpread,1024,0,2048,nnEnergy_corrected);
+          //           double aziCompt = azimuthalCompton(nnhit,&track)*TMath::RadToDeg();
+          //           obj.FillHistogram(dirname, "energy_corrected_vs_xi",360,0,360,aziCompt,2048,0,2048,nnEnergy_corrected);
+          //           if (aziCompt > 90 && aziCompt < 270){
+          //             obj.FillHistogram(dirname,"Xi_center_gamma_vs_theta",180,0,180,theta,8192,0,8192,nnEnergy_corrected);
+          //             obj.FillHistogram(dirname,"Xi_center_gamma_vs_phi",360,0,360,phi,8192,0,8192,nnEnergy_corrected);
+          //           } else {
+          //             obj.FillHistogram(dirname,"Xi_extreme_gamma_vs_theta",180,0,180,theta,8192,0,8192,nnEnergy_corrected);
+          //             obj.FillHistogram(dirname,"Xi_extreme_gamma_vs_phi",360,0,360,phi,8192,0,8192,nnEnergy_corrected);
+          //           }
+          //           if (theta > 100) 
+          //             obj.FillHistogram(dirname, "azmthl_compton_theta>100",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
+          //           else if (theta < 50) 
+          //             obj.FillHistogram(dirname, "azmthl_compton_theta<50",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
+          //           else if (theta > 75 && theta < 95) 
+          //             obj.FillHistogram(dirname, "azmthl_compton_theta_flat",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
+          //           else 
+          //             obj.FillHistogram(dirname, "azmthl_compton_theta_varied",360,0,360,aziCompt,1024,0,2048,nnEnergy_corrected);
+          //         }
+          //       }
 
-                //if (n == 1) {
-                  //GAMMA GAMMA CORRELATION
-                  // for (int j=0; j < nnSize; j++){
-                  //   if (i==j) continue;
-                  //   TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-                  //   double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-                  //   if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
-                  //     obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
-                  //   }
-                  // }
+          //       //if (n == 1) {
+          //         //GAMMA GAMMA CORRELATION
+          //         // for (int j=0; j < nnSize; j++){
+          //         //   if (i==j) continue;
+          //         //   TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+          //         //   double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //         //   if (prompt_timing_gate->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected)){
+          //         //     obj.FillHistogram(dirname, "gamma_gamma", 8192,0,8192, nnEnergy_corrected2, 8192,0,8192, nnEnergy_corrected);
+          //         //   }
+          //         // }
 
-                  //make swapped spectra
-                  // TGretinaHit nnhit1 = nnhit.GetInitialHit();
-                  // TGretinaHit nnhit2 = nnhit.GetNeighbor();
-                  // nnhit2.NNAdd(nnhit1);
-                  // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //         //make swapped spectra
+          //         // TGretinaHit nnhit1 = nnhit.GetInitialHit();
+          //         // TGretinaHit nnhit2 = nnhit.GetNeighbor();
+          //         // nnhit2.NNAdd(nnhit1);
+          //         // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
 
-                  // //POLARIZATION
-                  // std::string polColor = "blank";
-                  // if (PairHit(nnhit,redPairs)) polColor = "red";
-                  // else if (PairHit(nnhit,goldPairs)) polColor = "gold";
-                  // else if (PairHit(nnhit,bluePairs)) polColor = "blue";
+          //         // //POLARIZATION
+          //         // std::string polColor = "blank";
+          //         // if (PairHit(nnhit,redPairs)) polColor = "red";
+          //         // else if (PairHit(nnhit,goldPairs)) polColor = "gold";
+          //         // else if (PairHit(nnhit,bluePairs)) polColor = "blue";
 
-                  // std::string quadType = "blank";
-                  // if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
-                  // else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
-                  // else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
+          //         // std::string quadType = "blank";
+          //         // if (PairHit(nnhit,OneQuadPlus)) quadType = "qd1+";
+          //         // else if (PairHit(nnhit,OneQuadDefault)) quadType = "qd1";
+          //         // else if (PairHit(nnhit,TwoQuadPairs)) quadType = "qd2";
 
-                  // if ( polColor.compare("blank") != 0 ){
-                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
-                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, nnEnergy_corrected);
-                  //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
-                  //   obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
-                  // }
+          //         // if ( polColor.compare("blank") != 0 ){
+          //         //   obj.FillHistogram(dirname,Form("ab_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+          //         //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",polColor.c_str()), 8192,0,8192, nnEnergy_corrected);
+          //         //   obj.FillHistogram(dirname,Form("ab_prompt_%s_pair",quadType.c_str()), 8192,0,8192, nnEnergy_corrected);
+          //         //   obj.FillHistogram(dirname,Form("ab_swapped_prompt_%s_%s_pair",polColor.c_str(),quadType.c_str()), 8192,0,8192, swappedEnergy);
+          //         // }
 
-                //}
+          //       //}
 
-                char *multiplicity = Form("%d",n);
-                if (n == 3) multiplicity = Form("g");
-                obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
-              }
-            }
-          }
+          //       char *multiplicity = Form("%d",n);
+          //       if (n == 3) multiplicity = Form("g");
+          //       obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+          //     }
+          //   }
+          // }
         } 
       }
     }

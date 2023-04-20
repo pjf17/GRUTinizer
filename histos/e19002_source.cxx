@@ -321,7 +321,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
       if (timeflag != "") {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
-        obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 8192,0,8192, core_energy, 100, 0, 2.5, theta);
+        obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
         if (hit.NumberOfInteractions() > 1){
@@ -329,50 +329,50 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double xi = azimuthalCompton(hit,track);
           double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
           
-          obj.FillHistogram(dirname, Form("%s_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-          if (alpha*TMath::RadToDeg() < 2)
-            obj.FillHistogram(dirname, Form("%s_xi_alpha<2deg",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          if (theta*TMath::RadToDeg() >= 80 && theta*TMath::RadToDeg() <= 100)
+            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
         }
       }
     }
 
     //NNADDBACK
     //loop over multiplicity
-    for (int n=0; n<4; n++){
-      //loop over hits for each multiplicity spectrum
-      int nnSize = gretina->NNAddbackSize(n);
-      for (int i=0; i < nnSize; i++){
+    // for (int n=0; n<4; n++){
+    //   //loop over hits for each multiplicity spectrum
+    //   int nnSize = gretina->NNAddbackSize(n);
+    //   for (int i=0; i < nnSize; i++){
 
-        //get hit and hit data 
-        TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-        int cryID = nnhit.GetCrystalId();
-        int ringNum = nnhit.GetRingNumber();
-        double core_energy = nnhit.GetCoreEnergy();
-        double timestamp = nnhit.GetTime();
-        int nInteractions = nnhit.NumberOfInteractions();
-        double theta = nnhit.GetTheta()*TMath::RadToDeg();
+    //     //get hit and hit data 
+    //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+    //     int cryID = nnhit.GetCrystalId();
+    //     int ringNum = nnhit.GetRingNumber();
+    //     double core_energy = nnhit.GetCoreEnergy();
+    //     double timestamp = nnhit.GetTime();
+    //     int nInteractions = nnhit.NumberOfInteractions();
+    //     double theta = nnhit.GetTheta()*TMath::RadToDeg();
         
-        bool prompt = false; 
-        if (prompt_timing_gate) prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy);
-        if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
+    //     bool prompt = false; 
+    //     if (prompt_timing_gate) prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy);
+    //     if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
 
-        std::string timeflag = "";
-        if ((bank29 && prompt)) timeflag = "prompt";
-        else if ((timestamp-timeZero)/1000000000 < 90) timeflag = "gtTime";
+    //     std::string timeflag = "";
+    //     if ((bank29 && prompt)) timeflag = "prompt";
+    //     else if ((timestamp-timeZero)/1000000000 < 90) timeflag = "gtTime";
 
-        if (timeflag != ""){
-          //exclude the ng spectrum (n==3)
-          if (n < 3){
-            obj.FillHistogram(dirname, Form("%s_core_energy_addback",timeflag.c_str()), 8192,0,8192, core_energy);
-          }
+    //     if (timeflag != ""){
+    //       //exclude the ng spectrum (n==3)
+    //       if (n < 3){
+    //         obj.FillHistogram(dirname, Form("%s_core_energy_addback",timeflag.c_str()), 8192,0,8192, core_energy);
+    //       }
 
-          char *multiplicity = Form("%d",n);
-          if (n == 3) multiplicity = Form("g");
-          obj.FillHistogram(dirname, Form("%s_addback_n%s",timeflag.c_str(),multiplicity), 8192,0,8192, core_energy);
-          obj.FillHistogram(dirname, Form("%s_addback_n%s_vs_crystalID",timeflag.c_str(),multiplicity), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
-        }
-      }
-    }
+    //       char *multiplicity = Form("%d",n);
+    //       if (n == 3) multiplicity = Form("g");
+    //       obj.FillHistogram(dirname, Form("%s_addback_n%s",timeflag.c_str(),multiplicity), 8192,0,8192, core_energy);
+    //       obj.FillHistogram(dirname, Form("%s_addback_n%s_vs_crystalID",timeflag.c_str(),multiplicity), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
+    //     }
+    //   }
+    // }
   }
   
   if(numobj!=list->GetSize()){
