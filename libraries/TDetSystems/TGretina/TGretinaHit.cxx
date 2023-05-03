@@ -147,7 +147,7 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   // bool SortByEng = true;
   // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
   // if (SortByEng) std::sort(fSegments.begin(),fSegments.end());
-  std::reverse(fSegments.begin(),fSegments.end());
+  // std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
   // }
 }
@@ -522,4 +522,36 @@ void TGretinaHit::SimTracking(const double realTheta){
   }
   if (minIndex != 0) std::swap(fSegments[0],fSegments[minIndex]);
   return;
+}
+
+double TGretinaHit::GetAlpha(int p1, int p2) const {
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    return GetIntPosition(p1).Angle(GetIntPosition(p2));
+  }
+  else return -100;
+}
+
+double TGretinaHit::GetScatterAngle(int p1, int p2) const {
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    TVector3 diff = GetIntPosition(p2) - GetIntPosition(p1);
+    return GetIntPosition(p1).Angle(diff);
+  }
+  else return -100;
+}
+
+double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    if (!beam) beam = new TVector3(0,0,1);
+
+    TVector3 interaction1 = GetIntPosition(p1);
+    TVector3 comptonPlaneNorm = interaction1.Cross(GetIntPosition(p2));
+    TVector3 reactionPlaneNorm = beam->Cross(interaction1);
+    TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
+
+    double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
+    if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+
+    return xi;
+  }
+  else return -100;
 }
