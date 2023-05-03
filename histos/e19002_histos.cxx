@@ -148,23 +148,6 @@ bool check_energy_gate(double E, std::pair<double,double> E_gate){
   return E > E_gate.first && E < E_gate.second;
 }
 
-double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
-  TVector3 interaction1 = hit.GetIntPosition(0);
-  TVector3 interaction2 = hit.GetIntPosition(1);
-  TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
-  TVector3 reactionPlaneNorm = beam->Cross(interaction1);
-  // TVector3 reactionPlaneNorm = interaction1.Cross(*beam);
-  TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
-  double angle = reactionPlaneNorm.Angle(comptonPlaneNorm);
-  if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) angle = TMath::TwoPi() - angle;
-  return angle;
-}
-
-double thetaCM(double theta,double beta){
-  double cosT = TMath::Cos(theta);
-  return TMath::ACos((cosT - beta)/(1 - beta*cosT));
-}
-
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -351,10 +334,26 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             if (prompt_timing_gate && tgate){
               if (hit.NumberOfInteractions() > 1){
-                double xi = azimuthalCompton(hit,&track);
-                double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
-                obj.FillHistogram(dirname, "gamma_corrected_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
-                obj.FillHistogram(dirname, "gamma_corrected_vs_alpha",40,0,40,alpha*TMath::RadToDeg(), 1024,0,2048, energy_corrected);
+                double xi = hit.GetXi();
+                double nu = hit.GetScatterAngle(true);
+                double alpha = hit.GetAlpha();
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                if (nu > 1.2*TMath::ACos(1-511/core_energy)) {
+                  obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                  if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
+                    obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta55-100",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                  else
+                    obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta_NOT_55-100",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                  // double thAngles[6] = {40,55,73,95,120,149}; 
+                  // for (int th=0; th < 5; th++){
+                  //   if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
+                  //     obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_vs_xi_scatter_gated_theta%3.0f-%3.0f",thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                  // }
+                } 
+                else {
+                  obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_not_gated",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                }
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_alpha",100,0,40,alpha*TMath::RadToDeg(), 2048,0,2048, energy_corrected);
                 for (auto gate : polarization_gates){
                   if (gate->IsInside(xi,energy_corrected)){
                     obj.FillHistogram(dirname, Form("xi_%s_gated",gate->GetName()),360,0,TMath::TwoPi(),xi);
@@ -367,12 +366,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt", 8192,0,8192, energy_corrected);
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt_summary", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta", 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta_cm", 180, 0, 180, thetaCM(theta,GValue::Value("BETA"))*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
 
-              if (cryID > 40) 
-                obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
-              else 
-                obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_fwdqds", 8192,0,8192, energy_corrected);
+              // if (cryID > 40) 
+              //   obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
+              // else 
+              //   obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_fwdqds", 8192,0,8192, energy_corrected);
               
               // int nE_gates = energy_gates.size();
               // for (int eg=0; eg < nE_gates; eg++){

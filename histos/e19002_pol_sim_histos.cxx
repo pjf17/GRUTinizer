@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include <cstdio>
+#include <unordered_set>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -44,12 +45,6 @@ int scatterType(const TGretinaHit& abhit){
   if (cryId1%2 == 0 && cryId2%2 == 0) out = -1; //both are B type
   else if (cryId1%2 != 0 && cryId2%2 != 0) out = 1; //both are A type
   return out;
-}
-
-double calcScatteringAngle(const TGretinaHit &hit1, const TGretinaHit &hit2){
-  TVector3 pos1 = hit1.GetPosition();
-  TVector3 diff = hit2.GetPosition() - pos1;
-  return TMath::Cos(diff.Angle(pos1));
 }
 
 double calcComptonAngle(double E1, double E2){
@@ -97,22 +92,26 @@ double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam, double &dp
 }
 
 void EnergySmear(TGretinaHit &hit, TRandom3 *rand){
-  double E = hit.GetCoreEnergy();
-  double sigma = (2.1*TMath::Exp(-0.1*E/1000.0) + 60.0*TMath::Exp(-10.2*E/1000.0));
-  if(sigma > 3.8) {
-    sigma = 3.8;
+  int nPoints = hit.NumberOfInteractions();
+  if (nPoints > 1) nPoints = 2; 
+  for (int i=0; i<nPoints; i++){
+    double E = hit.GetSegmentEng(i);
+    double sigma = (2.1*TMath::Exp(-0.1*E/1000.0) + 60.0*TMath::Exp(-10.2*E/1000.0));
+    if(sigma > 3.8) {
+      sigma = 3.8;
+    }
+    if(E < 150.) {
+      sigma = 6.0;
+    }
+    TVector3 local_pos(hit.GetLocalPosition(i));
+    double smear_x = local_pos.X() + rand->Gaus(0, sigma); 
+    double smear_y = local_pos.Y() + rand->Gaus(0, sigma);
+    double smear_z = local_pos.Z() + rand->Gaus(0, sigma);
+    hit.SetPosition(i,smear_x,smear_y,smear_z);
   }
-  if(E < 150.) {
-    sigma = 6.0;
-  }
-  TVector3 local_pos(hit.GetLocalPosition(0));
-  double smear_x = local_pos.X() + rand->Gaus(0, sigma); 
-  double smear_y = local_pos.Y() + rand->Gaus(0, sigma);
-  double smear_z = local_pos.Z() + rand->Gaus(0, sigma);
-  hit.SetPosition(0,smear_x,smear_y,smear_z);
 }
 
-double altDoppler(double beta, const TVector3 &beam, double yta, const TGretinaHit &hit, int pos){
+double altDoppler(double beta, double yta, const TVector3 &beam, const TGretinaHit &hit, int pos){
   double gamma = 1./(sqrt(1.-pow(beta,2.)));
   TVector3 gret_pos = hit.GetIntPosition(pos);
   gret_pos.SetY(gret_pos.Y() + yta);
@@ -122,6 +121,33 @@ double altDoppler(double beta, const TVector3 &beam, double yta, const TGretinaH
 double thetaCM(double theta,double beta){
   double cosT = TMath::Cos(theta);
   return TMath::ACos((cosT - beta)/(1 - beta*cosT));
+}
+
+int testXi(double xi, double gatewidth){
+    //0 is parallel 1 is perpendicular
+    int flag = -1;
+    double gw = gatewidth/2;
+    if ((xi >= 90-gw && xi <= 90+gw) || (xi >= 270-gw && xi <= 270+gw)){
+        flag = 1;
+    }
+    else if ((xi >= 360-gw || xi <= gw) || (xi >= 180-gw && xi <= 180+gw)){
+        flag = 0;
+    }
+    return flag;
+}
+
+int trueThetaPoint(const TGretinaHit &hit, const TVector3 &beam, double trueTheta){
+  int npoints = hit.NumberOfInteractions();
+  int minpoint = 0;
+  double diff = std::pow(TMath::Cos(hit.GetIntPosition(0).Angle(beam))-TMath::Cos(trueTheta),2);
+  for (int i=1; i <npoints; i++){
+    double comp = std::pow(TMath::Cos(hit.GetIntPosition(i).Angle(beam))-TMath::Cos(trueTheta),2);
+    if (diff > comp){
+      diff = comp;
+      minpoint = i;
+    }
+  }
+  return minpoint;
 }
 
 // extern "C" is needed to prevent name mangling.
@@ -186,6 +212,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   bool ytaGate = std::abs(yta) < 0.0002;
   if (gretina){
     TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
+    double simTheta = simHit.GetTheta();
     // double gammaEn = simHit.GetEn();
     // obj.FillHistogram(dirname,"GEANT_gretsim_size",20,0,20,gretsim->Size());
     // obj.FillHistogram(dirname,"GEANT_s800sim_size",20,0,20,s800sim->Size());
@@ -200,13 +227,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit &hit = gretina->GetGretinaHit(i);
       hit.SortSegments();
       EnergySmear(hit,rand_gen);
+      int nInteractions = hit.NumberOfInteractions();
       double energy_corrected = rand_gen->Gaus(hit.GetCoreEnergy(),hit.GetCoreEnergy()*0.0027/2.35);
       if (!stopped) energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
       
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
       double phi = hit.GetPhi();
-      int nInteractions = hit.NumberOfInteractions();
       int cryID = hit.GetCrystalId();
       
       obj.FillHistogram(dirname,"gretina-map",180,0,180,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
@@ -217,51 +244,52 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta", 180, 0, 180,theta*TMath::RadToDeg(), 2048,0,2048, energy_corrected);
       obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta_cm", 180, 0, 180,thetaCM(theta,GValue::Value("BETA"))*TMath::RadToDeg(), 2048,0,2048, energy_corrected);
       
-      if (nInteractions > 1){
-        double dummy;
-        double xi = azimuthalCompton(hit,&track,dummy);
-        obj.FillHistogram(dirname,"gamma_corrected_singles_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-      }
       if (simHit.IsFEP()) {
         obj.FillHistogram(dirname, "core_energy_FEP", 2048,0,2048, energy_corrected);
         obj.FillHistogram(dirname, "gamma_corrected_singles_FEP_theta_dist", 360,0,180,theta*TMath::RadToDeg());
         obj.FillHistogram(dirname, "gamma_corrected_singles_vs_nInteraction",12,0,12,nInteractions, 2048,0,2048, energy_corrected);
+        int segs[nInteractions];
+        for (int inter=0; inter< nInteractions; inter++){
+          segs[inter] = hit.GetSegmentId(inter);
+        }
+        size_t len = sizeof(segs) / sizeof(segs[0]);
+        std::unordered_set<int> s(segs,segs+len);
+        obj.FillHistogram(dirname, "gamma_corrected_singles_nSegments_vs_nInteraction",12,0,12,nInteractions,12,0,12,(int)s.size());
 
         if (nInteractions > 1){
           nEvents++;
-          double dummy;
-          double xi = azimuthalCompton(hit,&track,dummy);
-          double xiDeg = xi*TMath::RadToDeg();
-          if ((xiDeg >= 75 && xiDeg <= 105) || (xiDeg >= 255 && xiDeg <= 285)){
-            Ntot++;
-            obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_asym",2,0,2,0.0,2048,0,2048,energy_corrected);
-          }
-          if ((xiDeg >= 345 || xiDeg <= 15) || (xiDeg >= 165 && xiDeg <= 195)){
-            Ntot++;
-            obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_asym",2,0,2,1.0,2048,0,2048,energy_corrected);
-          }
-          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_xi",360,0,360,xi*TMath::RadToDeg());
-          if (Ntot <= 600) obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_600Ntot",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          if (Ntot <= 2400) obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_2400Ntot",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          // if (nEvents <= 2000) obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_2000counts",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          // if (nEvents <= 4000) obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_4000counts",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          // if (nEvents <= 8000) obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_8000counts",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-
-          // if (theta*TMath::RadToDeg() >= 80 && theta*TMath::RadToDeg() <= 100){
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_theta_gate",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_xi_theta_gate",360,0,360,xi*TMath::RadToDeg());
-          // }
-          // for (int i=60; i<=100; i+=10){
-          //   int hw = 5; //half width
-          //   if (theta*TMath::RadToDeg() >= i-hw && theta*TMath::RadToDeg() <= i+hw){
-          //     obj.FillHistogram(dirname,Form("xi_theta_%d_%d",i-hw,i+hw),360,0,360,xi*TMath::RadToDeg());
-          //   }
-          // }
-          // double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
-          // if (alpha*TMath::RadToDeg() < 1.5)
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi_alpha<1.5deg",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          double xi = hit.GetXi(&track);
+          double alpha = hit.GetAlpha();
+          double scatterAngle = hit.GetScatterAngle();
+          double E2 = altDoppler(s800sim->AdjustedBeta(GValue::Value("BETA")),yta,track,hit,1);
           
+          double magR = hit.GetIntPosition(1).Mag()/hit.GetIntPosition(0).Mag();
+          double nu = hit.GetScatterAngle(1,0); //swap the first two points
+          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_scatterAngle",180,0,180,scatterAngle*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_nuprime",180,0,180,nu*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_xi_vs_scatterAngle",180,0,180,scatterAngle*TMath::RadToDeg(),360,0,360,xi*TMath::RadToDeg());
+          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_xi_vs_magRatio",100,0,2,magR,360,0,360,xi*TMath::RadToDeg());
+          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_xi_vs_alpha",100,0,25,alpha*TMath::RadToDeg(),360,0,360,xi*TMath::RadToDeg());
+
+          //NU GATED
+          if (nu > 1.2*TMath::ACos(1-511/core_energy)){
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUGATE_FEP_vs_Nu",180,0,180,nu*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUGATE_FEP_vs_ScattAngle",180,0,180,scatterAngle*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUGATE_FEP_vs_Alpha",100,0,25,alpha*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUGATE_FEP_vs_PosRatio",500,0,2,magR,2048,0,2048,energy_corrected);
+          } else {
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_vs_Alpha",100,0,25,alpha*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_E2_vs_Alpha",100,0,25,alpha*TMath::RadToDeg(),2048,0,2048,E2);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_vs_PosRatio",500,0,2,magR,2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_E2_vs_PosRatio",500,0.0,2.0,magR,2048,0,2048,E2);
+            obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_vs_AltDop",2048,0,2048,E2,2048,0,2048,energy_corrected);
+            // if (abs(energy_corrected - 1018) < 20) obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_Alpha_vs_PosRatio_GOOD",500,0,2,magR,100,0,25,alpha*TMath::RadToDeg());
+            // else obj.FillHistogram(dirname,"gamma_corrected_singles_NUNOTGATE_FEP_Alpha_vs_PosRatio_BAD",500,0,2,magR,100,0,25,alpha*TMath::RadToDeg());
+          }
+
           // if (nInteractions == 2) 
             // obj.FillHistogram(dirname,"2INT_gamma_corrected_singles_FEP_vs_xi",360,0,360,xi,2048,0,2048,energy_corrected);
           // obj.FillHistogram(dirname, ">1INT_gamma_energy_vs_thetadiff",200,-20,20,(theta-simTheta)*TMath::RadToDeg(),700,700,1400,energy_corrected);

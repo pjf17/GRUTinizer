@@ -323,12 +323,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
+        obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
         if (hit.NumberOfInteractions() > 1){
           TVector3 *track = new TVector3(0,0,1);
-          double xi = azimuthalCompton(hit,track);
-          double alpha = hit.GetIntPosition(0).Angle(hit.GetIntPosition(1));
+          double xi = hit.GetXi();
           
+          if (hit.GetScatterAngle(true) > 1.2*TMath::ACos(1-511/core_energy)) {
+            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+            double thAngles[6] = {40,55,73,95,120,149}; 
+            for (int th=0; th < 5; th++){
+              if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
+                obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated_%3.0f-%3.0f",timeflag.c_str(),thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+            }
+          }
           obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
           if (theta*TMath::RadToDeg() >= 80 && theta*TMath::RadToDeg() <= 100)
             obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
