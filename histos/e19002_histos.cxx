@@ -3,6 +3,8 @@
 #include <iostream>
 #include <map>
 #include <cstdio>
+#include <vector>
+#include <string>
 
 #include <TH1.h>
 #include <TH2.h>
@@ -29,29 +31,8 @@ std::map<int,int> detMapRing = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
-std::vector<GCutG*> incoming_gates = {};
-std::vector<GCutG*> outgoing_gates = {};
-std::vector<GCutG*> isoline_gates = {};
-std::vector<GCutG*> polarization_gates = {};
-GCutG *prompt_timing_gate=0;
-GCutG *afp_gate=0;
-int gates_loaded=0;
-
 double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
-}
-
-//Get the corresponding OBJE1 TOF based on whether there are AFP and XFP corrections
-bool GetGoodMTOFObjE1(TS800 *s800, double &obje1){
-  bool flag = true; 
-  if(std::isnan(GValue::Value("OBJ_MTOF_CORR_AFP")) || 
-    std::isnan(GValue::Value("OBJ_MTOF_CORR_XFP")) ) {
-      obje1 = -123;
-      flag = false;
-  } else {
-    obje1 = s800->GetMTofObjE1();
-  }
-  return flag;
 }
 
 //Get the Ion Chamber DE depending on whether IC_DE_XTILT is set
@@ -77,100 +58,53 @@ double GetGoodICE(TS800 *s800){
   return value;
 }
 
-void CheckGates(std::vector<unsigned short> &incoming_passed, std::vector<unsigned short> &outgoing_passed, std::vector<unsigned short> &isoline_passed);
-
-void LoadGates(TRuntimeObjects &obj){
-  TList *gates = &(obj.GetGates());
-  TIter iter(gates);
+void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
+  TIter iter(gates_list);
   std::cout << "loading gates:" <<std::endl;
   while(TObject *obj = iter.Next()) {
     GCutG *gate = (GCutG*)obj;
     std::string tag = gate->GetTag();
-    if(!tag.compare("incoming")) {
-      incoming_gates.push_back(gate);
-      std::cout << "\t incoming: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("outgoing")) {
-      outgoing_gates.push_back(gate);
-      std::cout << "\t outgoing: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("pol")){
-      polarization_gates.push_back(gate);
-      std::cout << "\t polarization: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("isoline")){
-      isoline_gates.push_back(gate);
-      std::cout << "\t isoline: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("prompt")){
-      prompt_timing_gate = new GCutG(*gate);
-      std::cout << "\t prompt_timing_gate: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("afp")){
-      afp_gate = new GCutG(*gate);
-      std::cout << "\t afp_gate: << " << gate->GetName() << std::endl;
-    } else {
-      std::cout << "\t unknown: << " << gate->GetName() << std::endl;
-    }
-    gates_loaded++;
+    gates[tag].push_back(gate);
   }
-  std::cout << "outgoing size: " << outgoing_gates.size() << std::endl;
+  for (std::map<std::string,std::vector<GCutG*>>::iterator it=gates.begin(); it!=gates.end(); ++it){
+    std::cout<<"\t"<<it->first<<": "<<it->second.size()<<std::endl;
+  }
+  return;
 }
 
-void CheckGates(TS800 *s800, std::vector<unsigned short> &incoming_passed, std::vector<unsigned short> &outgoing_passed, std::vector<unsigned short> &isoline_passed){
-  for(unsigned short i=0;i<incoming_gates.size();i++) {
-    if(incoming_gates.at(i)->IsInside(s800->GetMTof().GetCorrelatedObjE1(), 
-                                      s800->GetMTof().GetCorrelatedXfpE1())){
-      incoming_passed.push_back(i);
-    }
+void CheckGates(std::vector<GCutG*> gates, std::vector<unsigned short> &passed, double x, double y){
+  unsigned short ngates = gates.size();
+  for (unsigned short i=0; i < ngates; i++){
+    if (gates.at(i)->IsInside(x,y)) passed.push_back(i);
   }
-
-  double corr_obje1 = s800->GetMTofObjE1();
-  double ic = GetGoodICE(s800);
-  
-  for(unsigned int i=0;i<outgoing_gates.size();i++) {
-    if(outgoing_gates.at(i)->IsInside(corr_obje1,ic)){
-      outgoing_passed.push_back(i);
-    }
-  }
-
-  for(unsigned int i=0;i<isoline_gates.size();i++) {
-    if(isoline_gates.at(i)->IsInside(corr_obje1,ic)){
-      isoline_passed.push_back(i);
-    }
-  }
+  return;
 }
 
-std::vector<std::pair<double,double>> energy_gates = {
-  std::make_pair(714,731),
-  std::make_pair(732,762),
-  std::make_pair(1000,1037),
-  std::make_pair(1063,1099),
-  std::make_pair(1161,1193)
-};
-
-bool check_energy_gate(double E, std::pair<double,double> E_gate){
-  return E > E_gate.first && E < E_gate.second;
-}
+bool gates_loaded = false;
+std::map<std::string,std::vector<GCutG*>> gates;
 
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
 extern "C"
 void MakeHistograms(TRuntimeObjects& obj) {
-  FILE *tout;
-  tout = fopen("rundata.txt","a");
-
   TGretina *gretina = obj.GetDetector<TGretina>();
   TBank29  *bank29  = obj.GetDetector<TBank29>();
   TS800    *s800    = obj.GetDetector<TS800>();
   TList    *list    = &(obj.GetObjects());
-  int numobj = list->GetSize();
-
-  TList *gates = &(obj.GetGates());
+  
   if (!s800){
     return;
   }
+  
+  int numobj = list->GetSize();
 
-  if(gates_loaded!=gates->GetSize()) {
-    LoadGates(obj);
+  //load in the gates
+  if (!gates_loaded) {
+    LoadGates(&(obj.GetGates()),gates);
+    gates_loaded = true;
   }
-
+  
   //Use this spectrum for the time-energy cut for GRETINA
   if(bank29 && gretina) {
     for(unsigned int i=0;i<gretina->Size();i++) {
@@ -225,8 +159,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
   obj.FillHistogram("ungated", "crdc1 X_Y", 600, -300, 300, crdc_1_x, ybins, ylow, yhigh, crdc_1_y);  
   obj.FillHistogram("ungated", "crdc2 X_Y", 600, -300, 300, crdc_2_x, ybins, ylow, yhigh, crdc_2_y);
 
-  //GET TOFs FOR PID AND CORRELATION PLOTS
-  double tof_obje1_corr;
+  //---------------------------------------------------------------
+  //GATED
+  std::vector<unsigned short> incoming_passed;
+  CheckGates(gates["incoming"],incoming_passed,tof_obje1,tof_xfpe1);
+  
+  //GET TOFs AND DE FOR PID AND CORRELATION PLOTS
+  double tof_obje1_corr = 0;
   double ic_energy = GetGoodICE(s800);
   
   //obje1 xfp correlation hist binning parameters
@@ -242,68 +181,59 @@ void MakeHistograms(TRuntimeObjects& obj) {
     xocor_nbins = 256;
   }
 
-  //---------------------------------------------------------------
-  //GATED
-
-  std::vector<unsigned short> incoming_passed;
   std::vector<unsigned short> outgoing_passed;
-  std::vector<unsigned short> isoline_passed;
-  CheckGates(s800, incoming_passed, outgoing_passed, isoline_passed);
-  std::string dirname  = "";
+  
+  //check if proper TOF GValues are set to work with outoing PID
+  if (std::isnan(GValue::Value("OBJ_MTOF_CORR_AFP")) || std::isnan(GValue::Value("OBJ_MTOF_CORR_XFP"))){
+    std::cout<<"OBJ_MTOF_CORR_AFP OR OBJ_MTOF_CORR_XFP NOT SET, SKIPPING OUTGOING GATES"<<std::endl;
+  } 
+  else {
+    tof_obje1_corr = s800->GetMTofObjE1();
+    CheckGates(gates["outgoing"],outgoing_passed,tof_obje1_corr,ic_energy);
+  }
 
+  std::string dirname  = "";
   for (auto ind_out : outgoing_passed){
-    dirname = Form("%s_gated", outgoing_gates.at(ind_out)->GetName());
+    dirname = Form("%s_gated", gates["outgoing"].at(ind_out)->GetName());
     obj.FillHistogram(dirname, "incoming_pid", 500, -5000, -3000, tof_obje1,
                                                500,  2000,  5000, tof_xfpe1);   
   }
 
+  //---------------------------------------------------------------
   //INCOMING
-  for (auto ind_in : incoming_passed){
-    dirname = Form("%s_gated", incoming_gates.at(ind_in)->GetName());
-    double ic_ave = s800->GetIonChamber().GetAve();
+  for (auto ind_in: incoming_passed){
+    dirname = Form("%s_gated", gates["incoming"].at(ind_in)->GetName());
     obj.FillHistogram(dirname, "outgoing_pid_uncorrected", 2000, -5000, -3000, tof_obje1, 2048, 0, 4096, ic_energy);
-    if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
-      obj.FillHistogram(dirname, "outgoing_pid", 2000, -5000, -3000, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
-    }
-
-    //CRDC DE CORRECTION
-    for (auto ind_iso : isoline_passed){
-      dirname = Form("%s_%s_gated", incoming_gates.at(ind_in)->GetName(), isoline_gates.at(ind_iso)->GetName());
-      obj.FillHistogram(dirname, "crdc1x_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_x);
-      obj.FillHistogram(dirname, "crdc1x_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_x);
-      obj.FillHistogram(dirname, "crdc1y_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_y);
-      obj.FillHistogram(dirname, "crdc1y_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_y);
-    }
+    obj.FillHistogram(dirname, "outgoing_pid", 2000, -5000, -3000, tof_obje1_corr, 2048, 0, 4096, ic_energy);                                                
     
+    //CRDC DE CORRECTION
+    // double ic_ave = s800->GetIonChamber().GetAve();
+    // for (auto ind_iso : isoline_passed){
+    //   dirname = Form("%s_%s_gated", gates["incoming"].at(ind_in)->GetName(), isoline_gates.at(ind_iso)->GetName());
+    //   obj.FillHistogram(dirname, "crdc1x_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_x);
+    //   obj.FillHistogram(dirname, "crdc1x_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_x);
+    //   obj.FillHistogram(dirname, "crdc1y_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_y);
+    //   obj.FillHistogram(dirname, "crdc1y_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_y);
+    // }
+    
+    //---------------------------------------------------------------
     //OUTGOING
     for (auto ind_out : outgoing_passed){
-      dirname = Form("%s_%s_gated", incoming_gates.at(ind_in)->GetName(), outgoing_gates.at(ind_out)->GetName());
+      dirname = Form("%s_%s_gated", gates["incoming"].at(ind_in)->GetName(), gates["outgoing"].at(ind_out)->GetName());
 
       //CRDC PLOTS
       obj.FillHistogram(dirname, "crdc1_XvsY", 600, -300, 300, crdc_1_x, 1000, -500, 500, crdc_1_y);  
       obj.FillHistogram(dirname, "crdc2_XvsY", 600, -300, 300, crdc_2_x, 1000, -500, 500, crdc_2_y);
       
       //CORRELATION PLOTS
-      if (GetGoodMTOFObjE1(s800, tof_obje1_corr)){
-        obj.FillHistogram(dirname, "corrobje1_crdc1x", 3000, -6000, 0, tof_obje1_corr,
-                                              600, -300, 300, crdc_1_x);
+      obj.FillHistogram(dirname, "corrobje1_crdc1x", 3000, -6000, 0, tof_obje1_corr,600, -300, 300, crdc_1_x);
+      obj.FillHistogram(dirname, "obje1_crdc1x", 3000, -6000, 0, tof_obje1,600, -300, 300, crdc_1_x);                                     
+      obj.FillHistogram(dirname, "corrobje1_afp", 3000, -6000, 0, tof_obje1_corr,1000, -0.1, 0.1, afp);
+      obj.FillHistogram(dirname, "obje1_afp", 3000, -6000, 0, tof_obje1,1000, -0.1, 0.1, afp);
+      obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 3000, -6000, 0, tof_obje1_corr,xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
+      obj.FillHistogram(dirname, "obje1_tofxfpobj", 3000, -6000, 0, tof_obje1,xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
 
-        obj.FillHistogram(dirname, "obje1_crdc1x", 3000, -6000, 0, tof_obje1,
-                                              600, -300, 300, crdc_1_x);                                     
-
-        obj.FillHistogram(dirname, "corrobje1_afp", 3000, -6000, 0, tof_obje1_corr,
-                                                    1000, -0.1, 0.1, afp);
-
-        obj.FillHistogram(dirname, "obje1_afp", 3000, -6000, 0, tof_obje1,
-                                                    1000, -0.1, 0.1, afp);
-
-        obj.FillHistogram(dirname, "corrobje1_tofxfpobj", 3000, -6000, 0, tof_obje1_corr,
-                                        xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
-        
-        obj.FillHistogram(dirname, "obje1_tofxfpobj", 3000, -6000, 0, tof_obje1,
-                                        xocor_nbins, xocor_lowbin, xocor_highbin, xfp_obj);
-      }
-
+      //GAMMA RAY ANALYSIS
       if (gretina){
         TVector3 track = s800->Track();
         if (bank29){
@@ -329,11 +259,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
-            //prompt
+            
+            //PROMPT GATE
             bool tgate = false;
-            if (prompt_timing_gate) tgate = prompt_timing_gate->IsInside(timeBank29-hit.GetTime(), energy_corrected);
+            if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-hit.GetTime(), energy_corrected);
+            else std::cout<<"NO PROMPT GATE LOADED\n";
 
-            if (prompt_timing_gate && tgate){
+            if (tgate){
               if (hit.NumberOfInteractions() > 1){
                 double xi = hit.GetXi();
                 double nu = hit.GetScatterAngle();
@@ -357,7 +289,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_not_gated",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
                 }
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_alpha",100,0,40,alpha*TMath::RadToDeg(), 2048,0,2048, energy_corrected);
-                for (auto gate : polarization_gates){
+                for (auto gate : gates["pol"]){
                   if (gate->IsInside(xi,energy_corrected)){
                     obj.FillHistogram(dirname, Form("xi_%s_gated",gate->GetName()),360,0,TMath::TwoPi(),xi);
                   }
@@ -374,12 +306,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
               //   obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_90qds", 8192,0,8192, energy_corrected);
               // else 
               //   obj.FillHistogram(dirname, "gamma_corrected_singles_prompt_fwdqds", 8192,0,8192, energy_corrected);
-              
-              // int nE_gates = energy_gates.size();
-              // for (int eg=0; eg < nE_gates; eg++){
-              //   if (!check_energy_gate(energy_corrected,energy_gates[eg]))
-              //     obj.FillHistogram(dirname, "core_energy_summary", 48, 0, 48, detMapRing[cryID], 8192,0,8192, core_energy);
-              // }
             } 
           }
 
@@ -480,7 +406,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
     }
   }
-  fclose(tout);
   if(numobj!=list->GetSize()){
     list->Sort();
   }

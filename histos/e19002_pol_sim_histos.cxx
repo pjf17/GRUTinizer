@@ -62,18 +62,6 @@ double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
 }
 
-// int LoadGates(TRuntimeObjects &obj, std::map<std::string, std::vector<GCutG*>> loaded_gates){
-//   TList *gates = &(obj.GetGates());
-//   TIter iter(gates);
-//   std::cout << "loading gates:" <<std::endl;
-//   while(TObject *obj = iter.Next()) {
-//     GCutG *gate = (GCutG*)obj;
-//     std::string tag = gate->GetTag();
-//     loaded_gates[tag].push_back(gate);
-//   }
-//   std::cout << "outgoing size: " << outgoing_gates.size() << std::endl;
-// }
-
 double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam, double &dp, bool doSwap=false){
   TVector3 interaction1 = hit.GetIntPosition(0);
   TVector3 interaction2 = hit.GetIntPosition(1);
@@ -173,10 +161,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
 
-  // TList *gates = &(obj.GetGates());
-  // if(gates_loaded!=gates->GetSize()) {
-    // LoadGates(obj);
-  // }
   static TRandom3 *rand_gen = new TRandom3(59953614);
   static int nEvents = 0;
   bool stopped = false;
