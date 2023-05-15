@@ -334,6 +334,19 @@ void MultiPlotter::Scroll(std::string control){
     it->second->Draw();
 }
 
+//pick one histogram and divide all others by it
+void MultiPlotter::RatioToHist(std::string key){
+    mYMax = 0;
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    while (it != end){
+        it->second->Divide(mHistos[key]);
+        it++;
+    }
+    mHistos.erase(key);
+    return;
+}
+
 //PRIVATE FUNCTIONS
 
 void MultiPlotter::SortMax(){

@@ -54,6 +54,8 @@ class MultiPlotter{
         void Norm(std::string mode="area");
         void Norm(double lo, double hi);
 
+        void RatioToHist(std::string key);
+
         void Fit(std::string key, TF1 *f, double xlo, double xhi);
         void Fit(TF1 *f, double xlo, double xhi);
         void FitPearson(double xlo, double xhi, double h, double c, double w);
