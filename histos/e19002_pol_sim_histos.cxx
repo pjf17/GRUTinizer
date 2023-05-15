@@ -149,6 +149,24 @@ int getTrueFirst(const TGretinaHit &hitSm, const TGretinaHit &hitTr){
   return p;
 }
 
+void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
+  TIter iter(gates_list);
+  std::cout << "loading gates:" <<std::endl;
+  while(TObject *obj = iter.Next()) {
+    GCutG *gate = (GCutG*)obj;
+    std::string tag = gate->GetTag();
+    gates[tag].push_back(gate);
+  }
+  for (std::map<std::string,std::vector<GCutG*>>::iterator it=gates.begin(); it!=gates.end(); ++it){
+    int ngate = it->second.size();
+    for (int i=0; i < ngate; i++) std::cout<<it->first<<" << "<<it->second[i]->GetName()<<std::endl;
+  }
+  return;
+}
+
+bool gates_loaded = false;
+std::map<std::string,std::vector<GCutG*>> gates;
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
@@ -160,6 +178,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TGretina *gretina = obj.GetDetector<TGretina>();
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
+
+  //load in the gates
+  if (!gates_loaded) {
+    LoadGates(&(obj.GetGates()),gates);
+    gates_loaded = true;
+  }
 
   static TRandom3 *rand_gen = new TRandom3(59953614);
   static int nEvents = 0;
