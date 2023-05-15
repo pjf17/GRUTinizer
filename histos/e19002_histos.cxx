@@ -67,7 +67,8 @@ void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gat
     gates[tag].push_back(gate);
   }
   for (std::map<std::string,std::vector<GCutG*>>::iterator it=gates.begin(); it!=gates.end(); ++it){
-    std::cout<<"\t"<<it->first<<": "<<it->second.size()<<std::endl;
+    int ngate = it->second.size();
+    for (int i=0; i < ngate; i++) std::cout<<it->first<<" << "<<it->second[i]->GetName()<<std::endl;
   }
   return;
 }
