@@ -154,7 +154,7 @@ public:
 
 
   Int_t    NumberOfInteractions()        const { return fNumberOfInteractions; }
-  Int_t    GetNSegments()                const { return (int)fSegments.size(); }
+  Int_t    GetNSegments()                const; //{ return (int)fSegments.size(); }
   Int_t    GetSegmentId(int i=-1)        const { if(i>=GetNSegments()||GetNSegments()==0) return -1;
                                                  if(i==-1) return fSegments.at(0).fSeg;
                                                            return fSegments.at(i).fSeg;  }
@@ -180,6 +180,7 @@ public:
   bool IsClean() const { return !fPad; }
 
   void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
+  void ComptonSort(double cut=0.0);
   void SimTracking(const double realTheta);
 
 private:

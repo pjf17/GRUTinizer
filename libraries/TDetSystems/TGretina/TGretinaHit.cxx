@@ -480,6 +480,15 @@ void TGretinaHit::Clear(Option_t *opt) {
   fSegments.clear();
 }
 
+Int_t TGretinaHit::GetNSegments() const {
+  int segs[fNumberOfInteractions];
+  for (int i=0; i< fNumberOfInteractions; i++){
+    segs[i] = fSegments[i].fSeg;
+  }
+  size_t len = sizeof(segs) / sizeof(segs[0]);
+  std::unordered_set<int> s(segs,segs+len);
+  return (Int_t) s.size();
+}
 
 void TGretinaHit::TrimSegments(int type) {
   // 0: drop multiple ident int pnts.  
@@ -554,4 +563,59 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     return xi;
   }
   else return -100;
+}
+
+void TGretinaHit::ComptonSort(double cut){
+  if (fNumberOfInteractions < 2) return;
+  double E = GetCoreEnergy();
+  double x = 511.0/E * GetSegmentEng(0)/(E - GetSegmentEng(0));
+  double y = TMath::Cos(GetScatterAngle());
+  if (y < cut - x || x > 2) {
+    if (fNumberOfInteractions == 2) std::swap(fSegments[0],fSegments[1]);
+    else{
+
+      int p0 = 0;
+      int p1 = 1;
+      double fom = 0;
+      double FOM = 1000;
+      // double x,y;
+      for (int i=0; i < fNumberOfInteractions; i++){
+        x = 511.0/E * GetSegmentEng(i)/(E - GetSegmentEng(i));
+        if (x > 2) continue; //skip unphysical first interaction energies
+        for (int j=0; j < fNumberOfInteractions; j++){
+          if (i == j) continue;
+          y = TMath::Cos(GetScatterAngle(i,j));
+          fom = std::pow(x+y-1,2);
+          if (fom < FOM){
+            FOM = fom;
+            p0 = i;
+            p1 = j;
+          }
+        }
+      }
+
+      interaction_point ip0 = fSegments[p0];
+      interaction_point ip1 = fSegments[p1];
+      if (p1 > p0){
+        fSegments.erase(fSegments.begin() + p1);
+        fSegments.erase(fSegments.begin() + p0);
+      } else {
+        fSegments.erase(fSegments.begin() + p0);
+        fSegments.erase(fSegments.begin() + p1);
+      }
+      fSegments.insert(fSegments.begin(),ip1);
+      fSegments.insert(fSegments.begin(),ip0);
+    }
+  }
+
+  //verify first interaction point is physical, otherwise choose highest E that is
+  // int p = 0;
+  // x = 511.0/E * GetSegmentEng(0)/(E - GetSegmentEng(0));
+  // while (x > 2 && p < fNumberOfInteractions) {
+  //   x = 511.0/E * GetSegmentEng(p)/(E - GetSegmentEng(p));
+  //   p++;
+  // }
+  // if (p != 0) std::swap(fSegments[0],fSegments[p]);
+  
+  return;
 }

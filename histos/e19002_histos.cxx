@@ -313,6 +313,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int gSize = gretina->Size();
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
+            hit.ComptonSort();
             double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             double energy = hit.GetDoppler(GValue::Value("BETA"));
             double core_energy = hit.GetCoreEnergy();
@@ -335,10 +336,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (prompt_timing_gate && tgate){
               if (hit.NumberOfInteractions() > 1){
                 double xi = hit.GetXi();
-                double nu = hit.GetScatterAngle(true);
+                double nu = hit.GetScatterAngle();
                 double alpha = hit.GetAlpha();
+                double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
-                if (nu > 1.2*TMath::ACos(1-511/core_energy)) {
+                // if (nu > 1.2*TMath::ACos(1-511/core_energy)) {
+                if (TMath::Cos(nu) > -Eratio) {
                   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
                   if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
                     obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta55-100",360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
