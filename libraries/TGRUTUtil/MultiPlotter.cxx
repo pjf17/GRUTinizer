@@ -42,6 +42,7 @@ void MultiPlotter::Add(TFile *f, const char *hname){
 
 void MultiPlotter::Add(TDirectoryFile *f){
     // print out hists you can choose
+    std::cout<<"*** Reading "<<f->GetName()<<" ***"<<std::endl;
     TList *hlist = f->GetListOfKeys();
     std::vector<TKey *> sortedList;
     TIter next(hlist);

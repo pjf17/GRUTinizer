@@ -35,7 +35,11 @@ class MultiPlotter{
         void Add(TH1* pHist);
         void Add(TFile *f, const char *hname);
         void Add(TDirectoryFile *f);
-
+        void Add(TDirectoryFile *f1,TDirectoryFile *f2,TDirectoryFile *f3=nullptr,
+                 TDirectoryFile *f4=nullptr,TDirectoryFile *f5=nullptr) {
+                    Add(f1); Add(f2); if(f3) Add(f3); if(f4) Add(f4); if(f5) Add(f5);
+                 }
+                 
         void Clear();
         void Erase(std::string key);
         void List();
