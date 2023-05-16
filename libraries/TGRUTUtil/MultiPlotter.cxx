@@ -338,9 +338,10 @@ void MultiPlotter::Scroll(std::string control){
 void MultiPlotter::RatioToHist(std::string key){
     mYMax = 0;
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator div = mHistos.find(key);
     std::map<std::string, TH1*>::iterator end = mHistos.end();
     while (it != end){
-        it->second->Divide(mHistos[key]);
+        if (it != div) it->second->Divide(div->second);
         it++;
     }
     mHistos.erase(key);
