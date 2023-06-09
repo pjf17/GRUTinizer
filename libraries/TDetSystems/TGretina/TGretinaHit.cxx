@@ -147,6 +147,7 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   // bool SortByEng = true;
   // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
   // if (SortByEng) std::sort(fSegments.begin(),fSegments.end());
+  std::sort(fSegments.begin(),fSegments.end());
   // std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
   // }
@@ -573,12 +574,11 @@ void TGretinaHit::ComptonSort(double cut){
   if (y < cut - x || x > 2) {
     if (fNumberOfInteractions == 2) std::swap(fSegments[0],fSegments[1]);
     else{
-
       int p0 = 0;
       int p1 = 1;
       double fom = 0;
       double FOM = 1000;
-      // double x,y;
+      double x,y;
       for (int i=0; i < fNumberOfInteractions; i++){
         x = 511.0/E * GetSegmentEng(i)/(E - GetSegmentEng(i));
         if (x > 2) continue; //skip unphysical first interaction energies
@@ -607,15 +607,5 @@ void TGretinaHit::ComptonSort(double cut){
       fSegments.insert(fSegments.begin(),ip0);
     }
   }
-
-  //verify first interaction point is physical, otherwise choose highest E that is
-  // int p = 0;
-  // x = 511.0/E * GetSegmentEng(0)/(E - GetSegmentEng(0));
-  // while (x > 2 && p < fNumberOfInteractions) {
-  //   x = 511.0/E * GetSegmentEng(p)/(E - GetSegmentEng(p));
-  //   p++;
-  // }
-  // if (p != 0) std::swap(fSegments[0],fSegments[p]);
-  
   return;
 }
