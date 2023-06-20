@@ -190,12 +190,13 @@ TVector3 TGretinaHit::GetLocalPosition(unsigned int i) const {
 }
 
 
-double TGretinaHit::GetDopplerYta(double beta, double yta, const TVector3 *vec, int EngRange) const {
+double TGretinaHit::GetDopplerYta(double beta, double yta, const TVector3 *vec, int point, int EngRange) const {
   if(Size()<1)
     return 0.0;
   if(vec==0) {
     vec = &BeamUnitVec;
   }
+  if (point == -1 || point > fNumberOfInteractions) point = 0;
   //Target offsets determine new reference point in lab frame
   double xoffset = GValue::Value("TARGET_X_OFFSET");
   if(std::isnan(xoffset))
@@ -206,10 +207,10 @@ double TGretinaHit::GetDopplerYta(double beta, double yta, const TVector3 *vec, 
   double zoffset = GValue::Value("TARGET_Z_OFFSET");
   if(std::isnan(zoffset))
       zoffset=0.00; 
-  return GetDopplerYta(beta, yta, xoffset, yoffset, zoffset, vec, EngRange);
+  return GetDopplerYta(beta, yta, xoffset, yoffset, zoffset, vec, point, EngRange);
 }
 
-double TGretinaHit::GetDopplerYta(double beta, double yta, double xoffset, double yoffset, double zoffset, const TVector3 *vec, int EngRange) const {
+double TGretinaHit::GetDopplerYta(double beta, double yta, double xoffset, double yoffset, double zoffset, const TVector3 *vec, int point, int EngRange) const {
   if(Size()<1)
     return 0.0;
   if(vec==0) {
@@ -217,7 +218,7 @@ double TGretinaHit::GetDopplerYta(double beta, double yta, double xoffset, doubl
   }
   double tmp = 0.0;
   double gamma = 1./(sqrt(1.-pow(beta,2.)));
-  TVector3 gret_pos = GetPosition();
+  TVector3 gret_pos = GetIntPosition(point);
 
   //Target offsets determine new reference point in lab frame
   gret_pos.SetX(gret_pos.X() - xoffset);
@@ -570,15 +571,20 @@ void TGretinaHit::ComptonSort(double cut){
   if (fNumberOfInteractions < 2) return;
   double E = GetCoreEnergy();
   double x = 511.0/E * GetSegmentEng(0)/(E - GetSegmentEng(0));
+  // if (x > 2) {
+  //   std::swap(fSegments[0],fSegments[1]);
+  //   if (fNumberOfInteractions > 2) std::swap(fSegments[1],fSegments[fNumberOfInteractions-1]);
+  // }
+
   double y = TMath::Cos(GetScatterAngle());
-  if (y < cut - x || x > 2) {
+  if (x > 2) {
     if (fNumberOfInteractions == 2) std::swap(fSegments[0],fSegments[1]);
     else{
       int p0 = 0;
       int p1 = 1;
       double fom = 0;
       double FOM = 1000;
-      double x,y;
+      // double x,y;
       for (int i=0; i < fNumberOfInteractions; i++){
         x = 511.0/E * GetSegmentEng(i)/(E - GetSegmentEng(i));
         if (x > 2) continue; //skip unphysical first interaction energies

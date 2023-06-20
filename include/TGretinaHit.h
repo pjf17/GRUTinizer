@@ -111,7 +111,7 @@ public:
       return phi;
     }
   }
-  double GetTheta()    const { return GetPosition().Theta(); }
+  double GetTheta(int point = 0)    const { return GetIntPosition(point).Theta(); }
   double GetPhiDeg()   const { return GetPhi()*TMath::RadToDeg(); }
   double GetThetaDeg() const { return GetTheta()*TMath::RadToDeg(); }
   double GetAlpha(int p1=0, int p2=1) const; //get the angle between two interaction points
@@ -146,8 +146,8 @@ public:
     return tmp;
   } 
   
-  double GetDopplerYta(double beta , double yta, const TVector3 *vec=0, int EngRange =-1) const;
-  double GetDopplerYta(double beta , double yta, double target_x_shift, double target_y_shift, double target_z_shift, const TVector3 *vec=0, int EngRange =-1) const;
+  double GetDopplerYta(double beta , double yta, const TVector3 *vec=0, int point = -1, int EngRange =-1) const;
+  double GetDopplerYta(double beta , double yta, double target_x_shift, double target_y_shift, double target_z_shift, const TVector3 *vec=0, int point = -1, int EngRange =-1) const;
   double GetDoppler(const TS800 *s800,bool doDTAcorr=false,int EngRange=-1);
   double GetDoppler_dB(double beta,const TVector3 *vec=0, double Dta=0);
 
