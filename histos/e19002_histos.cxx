@@ -244,12 +244,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int gSize = gretina->Size();
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
-            // hit.ComptonSort(0.0);
+            hit.ComptonSort();
             double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
             double energy = hit.GetDoppler(GValue::Value("BETA"));
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
             int cryID = hit.GetCrystalId();
+            int nInteractions = hit.NumberOfInteractions();
 
             //time energy spectrum
             if (bank29){
@@ -267,7 +268,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
             else std::cout<<"NO PROMPT GATE LOADED\n";
 
             if (tgate){
-              if (hit.NumberOfInteractions() > 1){
+              if (nInteractions > 1){
+                double EPsum = 0;
+                for (int ip=0; ip < nInteractions; ip++) EPsum+= hit.GetSegmentEng(ip);
+                obj.FillHistogram(dirname, "Ecore_vs_intPSum",1024,0,2048,EPsum,1024,0,2048,core_energy);
+                // for (int in=0; in < nInteractions; in++){
+                //   double th = hit.GetTheta(in)*TMath::RadToDeg();
+                //   double eng = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, in);
+                //   obj.FillHistogram(dirname,"theta_vs_gam_dop_sgl_prompt_INTP",180,0,180,th,4096,0,4096,eng);
+                //   obj.FillHistogram(dirname,"theta_vs_core_eng_INTP",180,0,180,th,4096,0,4096,core_energy);
+                // }
                 double xi = hit.GetXi();
                 double nu = hit.GetScatterAngle();
                 double alpha = hit.GetAlpha();
@@ -280,6 +290,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 double plXi = xi;
                 double xiMax = TMath::TwoPi();
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                
+                if (Eratio > 2) obj.FillHistogram(dirname, "eratio>2",2048,0,4096, energy_corrected);
+                else obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",15,-1.5,3.5,TMath::Cos(nu)+Eratio,2048,0,4096, energy_corrected);
                 // if (nu > 1.2*TMath::ACos(1-511/core_energy)) {
                 if (TMath::Cos(nu) > 0.25 - Eratio) {
                   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
@@ -296,7 +309,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 else {
                   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_not_gated",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
                 }
-                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_alpha",100,0,40,alpha*TMath::RadToDeg(), 2048,0,4096, energy_corrected);
                 for (auto gate : gates["pol"]){
                   if (gate->IsInside(xi,energy_corrected)){
                     obj.FillHistogram(dirname, Form("xi_%s_gated",gate->GetName()),360,0,TMath::TwoPi(),xi);
@@ -319,37 +331,37 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //NNADDBACK
           //loop over multiplicity
-          for (int n=0; n<4; n++){
-            //loop over hits for each multiplicity spectrum
-            int nnSize = gretina->NNAddbackSize(n);
-            for (int i=0; i < nnSize; i++){
+          // for (int n=0; n<4; n++){
+          //   //loop over hits for each multiplicity spectrum
+          //   int nnSize = gretina->NNAddbackSize(n);
+          //   for (int i=0; i < nnSize; i++){
 
-              //get hit and hit data 
-              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-              // int cryID = nnhit.GetCrystalId();
-              // int ringNum = nnhit.GetRingNumber();
-              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-              // double nnCore_energy = nnhit.GetCoreEnergy();
-              // double theta = nnhit.GetThetaDeg();
-              // double phi = nnhit.GetPhiDeg();
-              int nInteractions = nnhit.NumberOfInteractions();
+          //     //get hit and hit data 
+          //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+          //     // int cryID = nnhit.GetCrystalId();
+          //     // int ringNum = nnhit.GetRingNumber();
+          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     // double nnCore_energy = nnhit.GetCoreEnergy();
+          //     // double theta = nnhit.GetThetaDeg();
+          //     // double phi = nnhit.GetPhiDeg();
+          //     int nInteractions = nnhit.NumberOfInteractions();
               
-              bool tgate = false;
-              if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected);
+          //     bool tgate = false;
+          //     if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected);
 
-              //make sure hits are prompt
-              if (tgate){
-                //exclude the ng spectrum (n==3)
-                // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
-                char *multiplicity = Form("%d",n);
-                if (n == 3) multiplicity = Form("g");
-                obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+          //     //make sure hits are prompt
+          //     if (tgate){
+          //       //exclude the ng spectrum (n==3)
+          //       // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
+          //       char *multiplicity = Form("%d",n);
+          //       if (n == 3) multiplicity = Form("g");
+          //       obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
                 
-                if (n < 3)
-                  obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
-              }
-            }
-          }
+          //       if (n < 3)
+          //         obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+          //     }
+          //   }
+          // }
                   // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_nInteractions",20,0,20,nInteractions,1024,0,2048,nnEnergy_corrected);
                   // obj.FillHistogram(dirname, "core_energy_addback_prompt", 8192,0,8192,nnCore_energy);
           //         if (nInteractions > 1){

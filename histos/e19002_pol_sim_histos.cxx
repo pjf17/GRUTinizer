@@ -277,10 +277,13 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, "gamma_corrected_singles_nSegments_vs_nInteraction",12,0,12,nInteractions,12,0,12,nSegments);
         
         if (nInteractions > 1){
-          TVector3 firstPoint = hit.GetIntPosition(0);
-          TVector3 diff = hit.GetIntPosition(1) - firstPoint;
-          obj.FillHistogram(dirname, "ScatterLength_vs_InteractionDist",150,150,300,firstPoint.Mag(),90,0,90,diff.Mag());
-          obj.FillHistogram(dirname, "ScatterLengthRatio",400,0,200,firstPoint.Mag()/diff.Mag());
+          double EPsum = 0;
+          for (int ip=0; ip < nInteractions; ip++) EPsum+= hit.GetSegmentEng(ip);
+          obj.FillHistogram(dirname, "Ecore_vs_intPSum",1024,0,2048,EPsum,1024,0,2048,core_energy);
+          // TVector3 firstPoint = hit.GetIntPosition(0);
+          // TVector3 diff = hit.GetIntPosition(1) - firstPoint;
+          // obj.FillHistogram(dirname, "ScatterLength_vs_InteractionDist",150,150,300,firstPoint.Mag(),90,0,90,diff.Mag());
+          // obj.FillHistogram(dirname, "ScatterLengthRatio",400,0,200,firstPoint.Mag()/diff.Mag());
           nEvents++;
           double xi = hit.GetXi(&track);
           double alpha = hit.GetAlpha();
@@ -323,6 +326,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //NU GATED
           // if (nu > 1.5*TMath::ACos(1-1.0/(nInteractions-1) * 511.0/core_energy)){
+          if (diffEratio > 2) obj.FillHistogram(dirname, "eratio>2",2048,0,4096, energy_corrected);
+          else obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",32,-1,3,TMath::Cos(scatterAngle)+diffEratio,2048,0,4096, energy_corrected);
           if (diffEratio > 2){
             obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
             obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
