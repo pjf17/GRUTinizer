@@ -521,6 +521,17 @@ void TGretinaHit::TrimSegments(int type) {
   }
 }
 
+void TGretinaHit::ScaleIntEng(){
+  if (fNumberOfInteractions == 1) return;
+  double sum = 0;
+  for (int i=0; i < fNumberOfInteractions; i++){
+    sum += fSegments[i].fEng;
+  }
+  for (int i=0; i < fNumberOfInteractions; i++){
+    fSegments[i].fEng *= fCoreEnergy/sum;
+  }
+}
+
 void TGretinaHit::SimTracking(const double realTheta){
   double mindiff = std::abs(GetIntPosition(0).Theta() - realTheta);
   int minIndex = 0;
