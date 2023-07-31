@@ -214,53 +214,33 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
-std::vector<GCutG*> incoming_gates = {};
-std::vector<GCutG*> outgoing_gates = {};
-std::vector<GCutG*> isoline_gates = {};
-GCutG *prompt_timing_gate=0;
-GCutG *afp_gate=0;
-int gates_loaded=0;
-
-void LoadGates(TRuntimeObjects &obj){
-  TList *gates = &(obj.GetGates());
-  TIter iter(gates);
+void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
+  TIter iter(gates_list);
   std::cout << "loading gates:" <<std::endl;
   while(TObject *obj = iter.Next()) {
     GCutG *gate = (GCutG*)obj;
     std::string tag = gate->GetTag();
-    if(!tag.compare("incoming")) {
-      incoming_gates.push_back(gate);
-      std::cout << "\t incoming: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("outgoing")) {
-      outgoing_gates.push_back(gate);
-      std::cout << "\t outgoing: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("isoline")){
-      isoline_gates.push_back(gate);
-      std::cout << "\t isoline: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("prompt")){
-      prompt_timing_gate = new GCutG(*gate);
-      std::cout << "\t prompt_timing_gate: << " << gate->GetName() << std::endl;
-    } else if(!tag.compare("afp")){
-      afp_gate = new GCutG(*gate);
-      std::cout << "\t afp_gate: << " << gate->GetName() << std::endl;
-    } else {
-      std::cout << "\t unknown: << " << gate->GetName() << std::endl;
-    }
-    gates_loaded++;
+    gates[tag].push_back(gate);
   }
-  std::cout << "outgoing size: " << outgoing_gates.size() << std::endl;
+  for (std::map<std::string,std::vector<GCutG*>>::iterator it=gates.begin(); it!=gates.end(); ++it){
+    int ngate = it->second.size();
+    for (int i=0; i < ngate; i++) std::cout<<it->first<<" << "<<it->second[i]->GetName()<<std::endl;
+  }
+  return;
 }
 
-double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam){
-  TVector3 interaction1 = hit.GetIntPosition(0);
-  TVector3 interaction2 = hit.GetIntPosition(1);
-  TVector3 comptonNorm = interaction1.Cross(interaction2);
-  TVector3 reactionNorm = beam->Cross(interaction1);
-  TVector3 basisNorm = interaction1.Cross(reactionNorm);
-  double angle = reactionNorm.Angle(comptonNorm);
-  if (basisNorm.Angle(comptonNorm) > TMath::PiOver2()) angle = TMath::TwoPi() - angle;
-  return angle;
+void CheckGates(std::vector<GCutG*> gates, std::vector<unsigned short> &passed, double x, double y){
+  unsigned short ngates = gates.size();
+  for (unsigned short i=0; i < ngates; i++){
+    if (gates.at(i)->IsInside(x,y)) passed.push_back(i);
+  }
+  return;
 }
+
+bool gates_loaded = false;
+std::map<std::string,std::vector<GCutG*>> gates;
+
+const double TIMESCALE = 1E8; // 10ns
 
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
@@ -275,11 +255,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
   TList    *list    = &(obj.GetObjects());
   int numobj = list->GetSize();
 
-  TList *gates = &(obj.GetGates());
-
-  if(gates_loaded!=gates->GetSize()) {
-    LoadGates(obj);
+  //load in the gates
+  if (!gates_loaded) {
+    LoadGates(&(obj.GetGates()),gates);
+    gates_loaded = true;
   }
+  
 
   //Use this spectrum for the time-energy cut for GRETINA
   if(bank29 && gretina) {
@@ -309,37 +290,43 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double timestamp = hit.GetTime();
 
       bool prompt = false; 
-      if (prompt_timing_gate) prompt = prompt_timing_gate->IsInside(timeBank29-timestamp, core_energy); 
+      if (gates["prompt"][0]) prompt = gates["prompt"][0]->IsInside(timeBank29-timestamp, core_energy); 
       if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
       
       std::string timeflag = "";
+      double timethresh = 15*60; //seconds
       if (bank29 && prompt) timeflag = "prompt";
       else if (bank29) timeflag = "not-prompt";
-      else if ((timestamp-timeZero)/1000000000 < 90) timeflag = "gtTime";
+      
+      if ((timestamp-timeZero)/TIMESCALE < timethresh) timeflag = "gtTime"; //timestamp is in 10ns convert to seconds
 
-      obj.FillHistogram(dirname, "prompt_gretina_timestamps_t0",500000,0,5000,(timestamp-timeZero)/1000000000);
+      obj.FillHistogram(dirname, "prompt_gretina_timestamps_t0",3600,0,3600,(timestamp-timeZero)/TIMESCALE);
 
       if (timeflag != "") {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
-        obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
+        // obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
         if (hit.NumberOfInteractions() > 1){
-          TVector3 *track = new TVector3(0,0,1);
           double xi = hit.GetXi();
           
-          if (hit.GetScatterAngle(true) > 1.2*TMath::ACos(1-511/core_energy)) {
-            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-            double thAngles[6] = {40,55,73,95,120,149}; 
-            for (int th=0; th < 5; th++){
-              if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
-                obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated_%3.0f-%3.0f",timeflag.c_str(),thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-            }
-          }
+          // if (hit.GetScatterAngle() > 1.2*TMath::ACos(1-511/core_energy)) {
+          //   obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          //   double thAngles[6] = {40,55,73,95,120,149}; 
+          //   for (int th=0; th < 5; th++){
+          //     if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
+          //       obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated_%3.0f-%3.0f",timeflag.c_str(),thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          //   }
+          // }
           obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-          if (theta*TMath::RadToDeg() >= 80 && theta*TMath::RadToDeg() <= 100)
+          if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
             obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+
+          if (cryID < 40)
+            obj.FillHistogram(dirname, Form("%s_IP_fwd_pass_Edop_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+          else 
+            obj.FillHistogram(dirname, Form("%s_IP_90deg_pass_Edop_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
         }
       }
     }

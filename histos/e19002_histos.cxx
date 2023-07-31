@@ -284,42 +284,49 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 double xi = hit.GetXi(&track);
                 double nu = hit.GetScatterAngle();
                 double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
+                for (int ip=0; ip < nInteractions; ip++)
+                  obj.FillHistogram(dirname, "IP_Ecore_vs_theta",120,0.6,2.1,hit.GetTheta(ip),2048,0,2048,core_energy);
 
-                // interaction point scan
-                std::vector<int> IPpass;
-                std::vector<int> IPCorepass;
-                for (int ip=0; ip < nInteractions; ip++){
-                  obj.FillHistogram(dirname, "INTP_Ecore_vs_theta",120,0.6,2.1,hit.GetTheta(ip),2048,0,2048,core_energy);
-                  for (auto gate : gates["intpnt"]){
-                    if (gate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
+                // ECORE THETA INTERACTION POINT GATES
+                for (auto ipgate : gates["intpnt"]){
+                  std::string ipgname = std::string(ipgate->GetName());
+                  std::vector<int> IPCorepass;
+                  for (int ip=0; ip < nInteractions; ip++){
+                    if (ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
                       IPCorepass.push_back(ip);
                     }
                   }
-                }
 
-                if (IPCorepass.size() > 0){
-                  obj.FillHistogram(dirname, "INTP_Core_npass_vs_totalPoints",11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
-                  double xEr = 511.0/core_energy * hit.GetSegmentEng(IPCorepass[0])/(core_energy - hit.GetSegmentEng(IPCorepass[0]));
-                  double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPCorepass[0]);
+                  if (IPCorepass.size() > 0){
+                    obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
+                    double xEr = 511.0/core_energy * hit.GetSegmentEng(IPCorepass[0])/(core_energy - hit.GetSegmentEng(IPCorepass[0]));
+                    double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPCorepass[0]);
 
-                  if (nInteractions == 2){
-                    int p1 = 0;
-                    int p2 = 1;
-                    if (IPCorepass[0] == 1) std::swap(p1,p2);
-                    obj.FillHistogram(dirname, "INTP_Core_pass_2INT_Edop",360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
+                    // if (nInteractions == 2){
+                    //   int p1 = 0;
+                    //   int p2 = 1;
+                    //   if (IPCorepass[0] == 1) std::swap(p1,p2);
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_2INT_Edop",ipgname.c_str()),360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
+                    //   if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
+                    //     obj.FillHistogram(dirname, Form("IP_%s_pass_2INT_Edop_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
+                    // }
+                    
+                    double IPxi = xi;
+                    if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
+                    else if (IPCorepass[0] != 0) IPxi = hit.GetXi(&track,IPCorepass[0],0);
+                    
+                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
+                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size(),18,0,360,IPxi*TMath::RadToDeg());
+                    // obj.FillHistogram(dirname, "IP_pass_Edop_vs_totPoint",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
+                    // if (IPCorepass.size() == 3) obj.FillHistogram(dirname, "IP_3pass_Edop",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
                     if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                      obj.FillHistogram(dirname, "INTP_Core_pass_2INT_Edop_thetagate",360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
+                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    
+                    if (cryID < 40)
+                      obj.FillHistogram(dirname, Form("IP_fwd_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    else 
+                      obj.FillHistogram(dirname, Form("IP_90deg_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
                   }
-                  
-                  double IPxi = xi;
-                  if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
-                  else if (IPCorepass[0] != 0) IPxi = hit.GetXi(&track,IPCorepass[0],0);
-                  
-                  if (IPCorepass.size() == 1 && nInteractions == 2) obj.FillHistogram(dirname, "INTP_Core_1pass_Edop",360,0,360,IPxi*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
-                  if (IPCorepass.size() == 2 && nInteractions == 2) obj.FillHistogram(dirname, "INTP_Core_2pass_Edop",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
-                  // if (IPCorepass.size() == 3) obj.FillHistogram(dirname, "INTP_Core_3pass_Edop",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
-                  if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                    obj.FillHistogram(dirname, "INTP_Core_pass_Edop_vs_xi",360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
                 }
 
                 //cos vs e ratio
@@ -340,7 +347,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // else {
                 //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",15,-1.5,3.5,TMath::Cos(nu)+Eratio,2048,0,4096, energy_corrected);
                 //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_Phase_reg",50,-1,3,TMath::Cos(nu)+Eratio,2048,0,4096, energy_corrected);
-                //   // obj.FillHistogram(dirname, "phase_reg_INTP_test",50,-1,3,TMath::Cos(nu)+Eratio,2048,0,4096, energy_corrected);
+                //   // obj.FillHistogram(dirname, "phase_reg_IP_test",50,-1,3,TMath::Cos(nu)+Eratio,2048,0,4096, energy_corrected);
 
                 //   //picking better interaction points
                 //   if (TMath::Cos(nu)+Eratio < 0.9){
