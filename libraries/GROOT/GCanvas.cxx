@@ -36,6 +36,8 @@
 #include "GH2I.h"
 #include "GH2D.h"
 #include "GH1D.h"
+#include "GGaus.h"
+#include "GValue.h"
 
 #include "TRuntimeObjects.h"
 
@@ -1320,6 +1322,128 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
         TGRUTint::instance()->LoadTCutG(cut);
       }
       edited = true;
+      RemoveMarker("all");
+      break;
+    case kKey_d: //doppler
+      // automatic gate generation for doppler shifted lines (must be energy vs theta)
+      if(GetNMarkers()<2)
+        break;
+      {
+        gHist = NULL;
+        for(auto hist : hists) {
+          if(hist->InheritsFrom(GH2::Class())){
+            gHist = (GH2*)hist;
+            break;
+          }
+        }
+        if (!gHist) break;
+        // get the y axis bounds
+        int yAxMin = ((GH2*)gHist)->GetYaxis()->GetFirst();
+        int yAxMax = ((GH2*)gHist)->GetYaxis()->GetLast();
+        ((GH2*)gHist)->GetYaxis()->UnZoom();
+        
+        double x1 = fMarkers.at(fMarkers.size()-1)->localx;
+        double y1 = fMarkers.at(fMarkers.size()-1)->localy;
+        double x2 = fMarkers.at(fMarkers.size()-2)->localx;
+        double y2 = fMarkers.at(fMarkers.size()-2)->localy;
+        if(y1>y2)
+          std::swap(y1,y2);        
+
+        // double beta = GValue::Value("BETA");
+
+        //get the coordinates for the gate
+        std::vector<std::pair<double, double>> centroids;
+
+        TAxis *intAxis = ((GH2*)gHist)->GetXaxis();
+        int startbin = intAxis->FindBin((x1+x2)/2);
+        int nbins = ((GH2*)gHist)->GetNbinsX();
+        double lo = y1;
+        double hi = y2;
+        double avg_fwhm = 0;
+        
+        //start from input and loop to end
+        const double thresh = 100;
+        const int NINTBINS = 1;
+        for (int b=startbin; b < nbins; b+=NINTBINS){
+          int endbin = b+NINTBINS-1;
+          if (endbin > nbins-1) endbin = nbins-1;
+          GH1D *h1proj = ((GH2*)gHist)->ProjectionY(Form("b%d",b),b,endbin,"");
+          if (h1proj->Integral(lo,hi) < thresh) continue;
+
+          GGaus *gg = GausFit(h1proj,lo,hi,"0no-print");
+          double fwhm = gg->GetFWHM();
+          double cent = gg->GetCentroid();
+
+          lo = cent - 2*fwhm;
+          hi = cent + 2*fwhm;
+
+          centroids.push_back(std::make_pair(intAxis->GetBinCenter(b),cent));
+          avg_fwhm += fwhm;
+        }
+        
+        lo = y1;
+        hi = y2;
+        //start from input and loop backwards to beginning
+        for (int b=startbin-NINTBINS; b > 0; b-=NINTBINS){
+          GH1D *h1proj = ((GH2*)gHist)->ProjectionY(Form("b%d",b),b,b+NINTBINS-1,"");
+          if (h1proj->Integral(lo,hi) < thresh) continue;
+
+          GGaus *gg = GausFit(h1proj,lo,hi,"0no-print");
+          double fwhm = gg->GetFWHM();
+          double cent = gg->GetCentroid();
+
+          lo = cent - 2*fwhm;
+          hi = cent + 2*fwhm;
+
+          centroids.push_back(std::make_pair(intAxis->GetBinCenter(b),cent));
+          avg_fwhm += fwhm;
+        }
+        ((GH2*)gHist)->GetYaxis()->SetRange(yAxMin,yAxMax);
+
+        //format the coords
+        std::sort(centroids.begin(),centroids.end());
+        int npoints = centroids.size();
+        avg_fwhm /= npoints;
+
+        //make a graph and fit with doppler function to get smooth centroid dist
+        double *grX = new double[npoints];
+        double *grY = new double[npoints];
+        for (int i=0; i < npoints; i++){
+          grX[i] = centroids[i].first;
+          grY[i] = centroids[i].second;
+        }
+        TGraph *gr = new TGraph(npoints,grX,grY);
+        TF1 *fdop = new  TF1("fdop","[0]*TMath::Sqrt(1-[1]*[1])/(1 - [1]*TMath::Cos(x))",0,TMath::Pi());
+        gr->Fit(fdop,"QN0");
+        
+        //generate the gate
+        int cutPoints = 25;
+        double gx = intAxis->GetXmin();
+        double xstep = (intAxis->GetXmax()-gx)/cutPoints;
+        
+        static int cutcounter = 0;
+        GCutG *cut = new GCutG(Form("_cut%i",cutcounter++),2*cutPoints+1);
+        double wU = 4;
+        for (int p=0; p < cutPoints; p++){
+          cut->SetPoint(p,gx,fdop->Eval(gx) - avg_fwhm/wU);
+          gx += xstep;
+        }
+        gx = intAxis->GetXmax() - xstep;
+        for (int p=0; p < cutPoints; p++){
+          cut->SetPoint(p+cutPoints,gx,fdop->Eval(gx) + avg_fwhm/wU);
+          gx -= xstep;
+        }
+        gx = intAxis->GetXmin();
+        cut->SetPoint(2*cutPoints,gx,fdop->Eval(gx) - avg_fwhm/wU);
+
+        cut->SetLineColor(kBlack);
+        hists.at(0)->GetListOfFunctions()->Add(cut);
+
+        TGRUTint::instance()->LoadTCutG(cut);
+        
+        edited = true;
+      }
+      // printf("%f %f\n",yAxMin,yAxMax);
       RemoveMarker("all");
       break;
     case kKey_i:
