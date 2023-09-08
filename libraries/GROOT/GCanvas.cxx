@@ -1423,7 +1423,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
         
         static int cutcounter = 0;
         GCutG *cut = new GCutG(Form("_cut%i",cutcounter++),2*cutPoints+1);
-        double wU = 4;
+        double wU = 2.5;
         for (int p=0; p < cutPoints; p++){
           cut->SetPoint(p,gx,fdop->Eval(gx) - avg_fwhm/wU);
           gx += xstep;
