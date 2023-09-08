@@ -291,20 +291,20 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double nu = hit.GetScatterAngle(1,0); //swap the first two points
           double E2 = altDoppler(s800sim->AdjustedBeta(GValue::Value("BETA")),yta,track,hit,getTrueFirst(hit,hitCopy));
           double diffEratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
-        
+
           if (energy_corrected > 1030) 
             obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_cosSA_vs_Eratio_HItail",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
           if (energy_corrected < 1006) 
             obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_cosSA_vs_Eratio_LOtail",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
 
           obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_nInt>2",2048,0,2048, energy_corrected);
-          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",380,-10,370,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
           obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_scatterAngle",180,0,180,scatterAngle*TMath::RadToDeg(),2048,0,2048,energy_corrected);
           obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_nuprime",180,0,180,nu*TMath::RadToDeg(),2048,0,2048,energy_corrected);
           obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
           obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_cosScatterAngle_vs_diffEratio",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
 
-          //print relative coords to first point
+          // print relative coords to first point
           // bool passed = TMath::Cos(scatterAngle) > - diffEratio;
           // TVector3 v1 = hitCopy.GetIntPosition(0);
           // TVector3 v2 = TVector3(0,-v1.Z()/v1.Y(),1);
@@ -326,21 +326,25 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //NU GATED
           // if (nu > 1.5*TMath::ACos(1-1.0/(nInteractions-1) * 511.0/core_energy)){
-          if (diffEratio > 2) obj.FillHistogram(dirname, "eratio>2",2048,0,4096, energy_corrected);
-          else obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",32,-1,3,TMath::Cos(scatterAngle)+diffEratio,2048,0,4096, energy_corrected);
-          if (diffEratio > 2){
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_cosScatterAngle_vs_E-E1/E1",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
-          } else if (TMath::Cos(scatterAngle) > 0.25 - diffEratio) {
+          // if (diffEratio > 2) obj.FillHistogram(dirname, "eratio>2",2048,0,4096, energy_corrected);
+          if (TMath::Cos(scatterAngle) > 0.0 - diffEratio){
             obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_AltDop",2048,0,2048,E2,2048,0,2048,energy_corrected);
-          } else {
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_AltDop",2048,0,2048,E2,2048,0,2048,energy_corrected);
+            obj.FillHistogram(dirname,"gamma_COMPTCUT_FEP_theta_vs_xi",360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
           }
+          // else obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",32,-1,3,TMath::Cos(scatterAngle)+diffEratio,2048,0,4096, energy_corrected);
+          // if (diffEratio > 2){
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_cosScatterAngle_vs_E-E1/E1",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
+          // } else if (TMath::Cos(scatterAngle) > 0.25 - diffEratio) {
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_AltDop",2048,0,2048,E2,2048,0,2048,energy_corrected);
+          // } else {
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,2048,0,2048,energy_corrected);
+          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_AltDop",2048,0,2048,E2,2048,0,2048,energy_corrected);
+          // }
 
           //ENERGY-XI GATE
           for (auto pol_gate : gates["pol"]){

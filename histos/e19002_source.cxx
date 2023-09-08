@@ -290,9 +290,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double timestamp = hit.GetTime();
 
       bool prompt = false; 
-      if (gates["prompt"][0]) prompt = gates["prompt"][0]->IsInside(timeBank29-timestamp, core_energy); 
+      if (gates.count("prompt") > 0) prompt = gates["prompt"][0]->IsInside(timeBank29-timestamp, core_energy);
       if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
-      
+
       std::string timeflag = "";
       double timethresh = 15*60; //seconds
       if (bank29 && prompt) timeflag = "prompt";
@@ -309,7 +309,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
         // obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
         if (hit.NumberOfInteractions() > 1){
+          // double ata = 0.0;
+          // double bta = 0.0;
+          // TVector3 direction = TVector3(ata,-bta,TMath::Sqrt(1-ata*ata-bta*bta));
           double xi = hit.GetXi();
+          double nu = hit.GetScatterAngle();
+          double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
           
           // if (hit.GetScatterAngle() > 1.2*TMath::ACos(1-511/core_energy)) {
           //   obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
@@ -320,13 +325,32 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //   }
           // }
           obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          
+          if (TMath::Cos(nu) > 0.25 - Eratio)
+            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_scattergated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          
           if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
             obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
 
-          if (cryID < 40)
-            obj.FillHistogram(dirname, Form("%s_IP_fwd_pass_Edop_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
-          else 
-            obj.FillHistogram(dirname, Form("%s_IP_90deg_pass_Edop_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+          if (961 < core_energy && core_energy < 968){
+            obj.FillHistogram(dirname, Form("%s_964_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            if ((55 < cryID && cryID < 72) || cryID < 40)
+              obj.FillHistogram(dirname, Form("%s_964_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            if ((59 < cryID && cryID < 68) || cryID < 40)
+              obj.FillHistogram(dirname, Form("%s_964_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+          }
+          if (1108 < core_energy && core_energy < 1116){
+            obj.FillHistogram(dirname, Form("%s_1112_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            if ((55 < cryID && cryID < 72) || cryID < 40)
+              obj.FillHistogram(dirname, Form("%s_1112_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            if ((59 < cryID && cryID < 68) || cryID < 40)
+              obj.FillHistogram(dirname, Form("%s_1112_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+          }
+
+          // if (cryID < 40)
+          //   obj.FillHistogram(dirname, Form("%s_fwd_Ecore_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
+          // else 
+          //   obj.FillHistogram(dirname, Form("%s_90deg_Ecore_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
         }
       }
     }

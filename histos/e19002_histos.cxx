@@ -257,6 +257,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             double energy = hit.GetDoppler(GValue::Value("BETA"));
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
+            double phi = hit.GetPhi();
             int cryID = hit.GetCrystalId();
             int nInteractions = hit.NumberOfInteractions();
 
@@ -269,6 +270,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
+
+            //theta vs phi
+            obj.FillHistogram(dirname, "gretina_theta_vs_phi",360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
             
             //PROMPT GATE
             bool tgate = false;
@@ -280,7 +284,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // double EPsum = 0;
                 // for (int ip=0; ip < nInteractions; ip++) EPsum+= hit.GetSegmentEng(ip);
                 // obj.FillHistogram(dirname, "Ecore_vs_intPSum",1024,0,2048,EPsum,1024,0,2048,core_energy);
-                
+                //xi vs xi'
+                if (nInteractions == 2){
+                  obj.FillHistogram(dirname, "xiprime_vs_xi",360,0,360,hit.GetXi(&track)*TMath::RadToDeg(),360,0,360,hit.GetXi(&track,1,0)*TMath::RadToDeg());
+                  obj.FillHistogram(dirname, "cosxiprime_vs_cosxi",200,-1,1,TMath::Cos(hit.GetXi(&track)),200,-1,1,TMath::Cos(hit.GetXi(&track,1,0)));
+                }
+
                 double xi = hit.GetXi(&track);
                 double nu = hit.GetScatterAngle();
                 double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
@@ -317,10 +326,23 @@ void MakeHistograms(TRuntimeObjects& obj) {
                     
                     obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
                     obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size(),18,0,360,IPxi*TMath::RadToDeg());
+                    
+                    obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),theta);
+                    if (nInteractions == 2) 
+                      obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi_2INT",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),theta);
                     // obj.FillHistogram(dirname, "IP_pass_Edop_vs_totPoint",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
                     // if (IPCorepass.size() == 3) obj.FillHistogram(dirname, "IP_3pass_Edop",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
+                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 66)
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi_theta55-66",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // if (theta*TMath::RadToDeg() > 66 && theta*TMath::RadToDeg() < 82)
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi_theta66-82",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // if (theta*TMath::RadToDeg() > 82 && theta*TMath::RadToDeg() < 100)
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta82-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
                     if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    else 
+                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
                     
                     if (cryID < 40)
                       obj.FillHistogram(dirname, Form("IP_fwd_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
@@ -342,6 +364,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 double plXi = xi;
                 double xiMax = TMath::TwoPi();
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta",180,0,180,theta*TMath::RadToDeg(), 2048,0,4096, energy_corrected);
                 
                 // if (Eratio > 2) obj.FillHistogram(dirname, "eratio>2",2048,0,4096, energy_corrected);
                 // else {
@@ -374,18 +397,29 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // }
 
                 // if (nu > 1.2*TMath::ACos(1-511/core_energy)) {
-                // if (TMath::Cos(nu) > 0.25 - Eratio) {
-                //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
-                //   if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                //     obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta55-100",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
-                //   else
-                //     obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta_NOT_55-100",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
-                //   // double thAngles[6] = {40,55,73,95,120,149}; 
-                //   // for (int th=0; th < 5; th++){
-                //   //   if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
-                //   //     obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_vs_xi_scatter_gated_theta%3.0f-%3.0f",thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
-                //   // }
-                // } 
+                if (TMath::Cos(nu) > 0.0 - Eratio) {
+                  for (auto egate : gates["EngXi"]){
+                    if (egate->IsInside(plXi,energy_corrected))
+                      obj.FillHistogram(dirname, Form("gam_dop_%s_theta_vs_xi",egate->GetName()),360,0,TMath::TwoPi(),plXi,180,0,TMath::Pi(),theta);
+                  }
+                  obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                  if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
+                    obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta55-100",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                  // if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 66)
+                  //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta55-66",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                  // if (theta*TMath::RadToDeg() > 66 && theta*TMath::RadToDeg() < 82)
+                  //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta66-82",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                  // if (theta*TMath::RadToDeg() > 82 && theta*TMath::RadToDeg() < 100)
+                  //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta82-100",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                    
+                  else
+                    obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_gated_theta_NOT_55-100",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
+                  // double thAngles[6] = {40,55,73,95,120,149}; 
+                  // for (int th=0; th < 5; th++){
+                  //   if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
+                  //     obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_vs_xi_scatter_gated_theta%3.0f-%3.0f",thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi, 1024,0,2048, energy_corrected);
+                  // }
+                } 
                 // else {
                 //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_xi_scatter_not_gated",360,0,xiMax,plXi, 2048,0,4096, energy_corrected);
                 // }
