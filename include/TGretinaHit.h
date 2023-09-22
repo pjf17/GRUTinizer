@@ -103,8 +103,8 @@ public:
   double GetY() const { return GetPosition().Y(); }
   double GetZ() const { return GetPosition().Z(); }
   
-  double GetPhi() const {
-    double phi = GetPosition().Phi();
+  double GetPhi(int point = 0) const {
+    double phi = GetIntPosition(point).Phi();
     if(phi<0) {
       return TMath::TwoPi()+phi;
     } else {
@@ -112,8 +112,8 @@ public:
     }
   }
   double GetTheta(int point = 0)    const { return GetIntPosition(point).Theta(); }
-  double GetPhiDeg()   const { return GetPhi()*TMath::RadToDeg(); }
-  double GetThetaDeg() const { return GetTheta()*TMath::RadToDeg(); }
+  double GetPhiDeg(int point = 0)   const { return GetPhi(point)*TMath::RadToDeg(); }
+  double GetThetaDeg(int point = 0) const { return GetTheta(point)*TMath::RadToDeg(); }
   double GetAlpha(int p1=0, int p2=1) const; //get the angle between two interaction points
   double GetScatterAngle(int p1=0, int p2=1) const; //get the polar compton scattering angle 
   double GetXi(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
