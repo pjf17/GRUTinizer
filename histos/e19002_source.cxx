@@ -285,7 +285,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit &hit = gretina->GetGretinaHit(i);
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
-      double phi = hit.GetPhiDeg();
+      double phi = hit.GetPhi();
       int cryID = hit.GetCrystalId();
       double timestamp = hit.GetTime();
 
@@ -334,17 +334,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           if (961 < core_energy && core_energy < 968){
             obj.FillHistogram(dirname, Form("%s_964_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            if ((55 < cryID && cryID < 72) || cryID < 40)
-              obj.FillHistogram(dirname, Form("%s_964_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            if ((59 < cryID && cryID < 68) || cryID < 40)
-              obj.FillHistogram(dirname, Form("%s_964_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            obj.FillHistogram(dirname, Form("%s_964_phi_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
+            obj.FillHistogram(dirname, Form("%s_964_theta_vs_phi",timeflag.c_str()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            // if ((55 < cryID && cryID < 72) || cryID < 40)
+            //   obj.FillHistogram(dirname, Form("%s_964_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            // if ((59 < cryID && cryID < 68) || cryID < 40)
+            //   obj.FillHistogram(dirname, Form("%s_964_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
           }
           if (1108 < core_energy && core_energy < 1116){
             obj.FillHistogram(dirname, Form("%s_1112_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            if ((55 < cryID && cryID < 72) || cryID < 40)
-              obj.FillHistogram(dirname, Form("%s_1112_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            if ((59 < cryID && cryID < 68) || cryID < 40)
-              obj.FillHistogram(dirname, Form("%s_1112_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            obj.FillHistogram(dirname, Form("%s_1112_phi_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
+            obj.FillHistogram(dirname, Form("%s_1112_theta_vs_phi",timeflag.c_str()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            // if ((55 < cryID && cryID < 72) || cryID < 40)
+            //   obj.FillHistogram(dirname, Form("%s_1112_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+            // if ((59 < cryID && cryID < 68) || cryID < 40)
+            //   obj.FillHistogram(dirname, Form("%s_1112_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
           }
 
           // if (cryID < 40)
