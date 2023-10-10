@@ -223,6 +223,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
     //   obj.FillHistogram(dirname, "crdc1y_dE", 2048, 0, 4096, ic_energy, 600, -300, 300, crdc_1_y);
     //   obj.FillHistogram(dirname, "crdc1y_Ave", 2048, 0, 4096, ic_ave, 600, -300, 300, crdc_1_y);
     // }
+
+    //time energy spectrum
+    if (bank29 && gretina){
+      int gSize = gretina->Size();
+      double timeBank29 = bank29->Timestamp();
+      for (int i=0; i < gSize; i++){
+        TGretinaHit &hit = gretina->GetGretinaHit(i);
+        obj.FillHistogram(dirname,"core_energy_t0_Bank29_time",
+            1600,-400,400,timeBank29-hit.GetTime(),
+            2500,0,10000,hit.GetCoreEnergy());
+      }
+    }
     
     //---------------------------------------------------------------
     //OUTGOING
@@ -249,6 +261,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           
           //SINGLES
           int gSize = gretina->Size();
+          int nPromptGamma = 0;
+          double total_corrected_energy = 0;
+          double total_core_energy = 0;
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
             // hit.ScaleIntEng();
@@ -261,13 +276,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
             int cryID = hit.GetCrystalId();
             int nInteractions = hit.NumberOfInteractions();
 
-            //time energy spectrum
-            if (bank29){
-              obj.FillHistogram(dirname,"gamma_corrected_t0_Bank29_time",
-                  600,-600,600,timeBank29-hit.GetTime(),
-                  2500,0,10000,energy_corrected);
-            }
-
             //Make all the singles spectra
             obj.FillHistogram(dirname, "gamma_singles", 8192,0,8192, energy);
 
@@ -276,14 +284,17 @@ void MakeHistograms(TRuntimeObjects& obj) {
             
             //PROMPT GATE
             bool tgate = false;
-            if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-hit.GetTime(), energy_corrected);
+            if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-hit.GetTime(), core_energy);
             else std::cout<<"NO PROMPT GATE LOADED\n";
 
             if (tgate){
+              nPromptGamma++;
+              total_corrected_energy += energy_corrected;
+              total_core_energy += core_energy;
               if (nInteractions > 1){
-                // double EPsum = 0;
-                // for (int ip=0; ip < nInteractions; ip++) EPsum+= hit.GetSegmentEng(ip);
-                // obj.FillHistogram(dirname, "Ecore_vs_intPSum",1024,0,2048,EPsum,1024,0,2048,core_energy);
+                double EPsum = 0;
+                for (int ip=0; ip < nInteractions; ip++) EPsum+= hit.GetSegmentEng(ip);
+                obj.FillHistogram(dirname, "Ecore_vs_intPSum",1024,0,2048,EPsum,1024,0,2048,core_energy);
                 //xi vs xi'
                 // if (nInteractions == 2){
                 //   obj.FillHistogram(dirname, "xiprime_vs_xi",360,0,360,hit.GetXi(&track)*TMath::RadToDeg(),360,0,360,hit.GetXi(&track,1,0)*TMath::RadToDeg());
@@ -490,57 +501,75 @@ void MakeHistograms(TRuntimeObjects& obj) {
             } 
           }
 
-          // //NNADDBACK
-          // //loop over multiplicity
-          // for (int n=0; n<4; n++){
-          //   //loop over hits for each multiplicity spectrum
-          //   int nnSize = gretina->NNAddbackSize(n);
-          //   for (int i=0; i < nnSize; i++){
+          //count multiplicity
+          obj.FillHistogram(dirname, "gamma_multi_vs_prompt_gamma_multi", 20,0,20,nPromptGamma,20,0,20,gSize);
+          if (total_corrected_energy > 0) obj.FillHistogram(dirname,"total_corrected_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_corrected_energy);
+          if (total_core_energy > 0) obj.FillHistogram(dirname,"total_core_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_core_energy);
 
-          //     //get hit and hit data 
-          //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-          //     // int cryID = nnhit.GetCrystalId();
-          //     // int ringNum = nnhit.GetRingNumber();
-          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-          //     // double nnCore_energy = nnhit.GetCoreEnergy();
-          //     // double theta = nnhit.GetThetaDeg();
-          //     // double phi = nnhit.GetPhiDeg();
-          //     int nInteractions = nnhit.NumberOfInteractions();
+          //NNADDBACK
+          int nABpromptGamma = 0;
+          int nTotalABgamma = 0;
+          double tot_energy_corrected_AB = 0;
+          double tot_energy_core_AB = 0;
+
+          //loop over multiplicity
+          for (int n=0; n<4; n++){
+            //loop over hits for each multiplicity spectrum
+            int nnSize = gretina->NNAddbackSize(n);
+            nTotalABgamma += nnSize;
+            for (int i=0; i < nnSize; i++){
+              //get hit and hit data 
+              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+              // int cryID = nnhit.GetCrystalId();
+              // int ringNum = nnhit.GetRingNumber();
+              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              double nnCore_energy = nnhit.GetCoreEnergy();
+              // double theta = nnhit.GetThetaDeg();
+              // double phi = nnhit.GetPhiDeg();
+              int nInteractions = nnhit.NumberOfInteractions();
               
-          //     bool tgate = false;
-          //     if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnEnergy_corrected);
+              bool tgate = false;
+              if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
 
-          //     //make sure hits are prompt
-          //     if (tgate){
-          //       //exclude the ng spectrum (n==3)
-          //       // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
-          //       char *multiplicity = Form("%d",n);
-          //       if (n == 3) multiplicity = Form("g");
-          //       obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+              //make sure hits are prompt
+              if (tgate){
+                nABpromptGamma++;
+                tot_energy_corrected_AB += nnEnergy_corrected;
+                tot_energy_core_AB += nnCore_energy;
+                //exclude the ng spectrum (n==3)
+                // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
+                char *multiplicity = Form("%d",n);
+                if (n == 3) multiplicity = Form("g");
+                obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
                 
-          //       if (n < 3)
-          //         obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
-          //     }
+                if (n < 3)
+                  obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+              }
 
-          //     if (n < 2) {
-          //       // GAMMA GAMMA CORRELATION
-          //       for (int j=0; j < nnSize; j++){
-          //         if (i==j) continue;
-          //         TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-          //         double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+              // if (n < 3) {
+              //   // GAMMA GAMMA CORRELATION
+              //   for (int j=0; j < nnSize; j++){
+              //     if (i==j) continue;
+              //     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+              //     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
 
-          //         bool tgate2 = false;
-          //         if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnEnergy_corrected2);
+              //     bool tgate2 = false;
+              //     if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
                   
-          //         if (tgate2){
-          //           obj.FillHistogram(dirname, "gamma_gamma", 2048,0,4096, nnEnergy_corrected2, 2048,0,4096, nnEnergy_corrected);
-          //           if (n==0) obj.FillHistogram(dirname, "gamma_gamma_n0", 2048,0,4096, nnEnergy_corrected2, 2048,0,4096, nnEnergy_corrected);
-          //           if (n==1) obj.FillHistogram(dirname, "gamma_gamma_n1", 2048,0,4096, nnEnergy_corrected2, 2048,0,4096, nnEnergy_corrected);
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
+              //     if (tgate2){
+              //       obj.FillHistogram(dirname, "gamma_gamma", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+              //       if (n==0) obj.FillHistogram(dirname, "gamma_gamma_n0", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+              //       if (n==1) obj.FillHistogram(dirname, "gamma_gamma_n1", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+              //     }
+              //   }
+              // }
+            }
+          }
+
+          //count ab multiplicity
+          obj.FillHistogram(dirname, "gamma_multi_vs_prompt_gamma_multi_AB", 20,0,20,nABpromptGamma,20,0,20,nTotalABgamma);
+          if (tot_energy_corrected_AB > 0) obj.FillHistogram(dirname, "total_corrected_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_corrected_AB);
+          if (tot_energy_core_AB > 0) obj.FillHistogram(dirname, "total_core_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_core_AB);
 
                   // //make swapped spectra
                   // TGretinaHit nnhit1 = nnhit.GetInitialHit();
