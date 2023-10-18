@@ -84,9 +84,9 @@ void TGretina::BuildAddback(int EngRange) const {
   }
 }
 
-void TGretina::BuildNNAddback(int EngRange) const {
-  //Algorithm adapted from Dirk Weisshaar in https://doi.org/10.1016/j.nima.2016.12.001
-  
+void TGretina::BuildNNAddback(int SortDepth, int EngRange) const {
+  //See D. Weisshaar et al., Nucl. Instrum. Methods Phys. Res., Sect. A 847, 18, (2017). Sec 3.3 for details
+  //of addback procedure
   if( nn_hits.size() > 0 || gretina_hits.size() == 0) {
     return;
   }
@@ -114,62 +114,105 @@ void TGretina::BuildNNAddback(int EngRange) const {
   else {
     std::reverse(temp_hits.begin(),temp_hits.end());
   }
-  
+
+  //vector used to store hit indices when crystals are pairs
+  std::vector<int> paired;
   //loop through every hit
   for(unsigned int i=0; i < temp_hits.size(); i++) {
+    paired.clear();
     TGretinaHit &current_hit = temp_hits[i];
-    int nNeighborHits = 0;
-    int n1_index, n2_index = -1;
-
     //only pick unqiue pairs of hits
-    for(unsigned int j=i+1; j < temp_hits.size(); j++) {    
-      if (IsNeighbor(current_hit,temp_hits[j])){
-        nNeighborHits++;
-        n1_index = j;
-
-        //check every hit k to see if it is a neighbor with j
-        for (unsigned int k=0; k < temp_hits.size(); k++){
-          if (k==i || k==j) continue;
-          if (IsNeighbor(temp_hits[j],temp_hits[k])){
-            nNeighborHits++;
-            //if hit k is a neighbor with hit i then this is an n2 hit
-            if (IsNeighbor(current_hit,temp_hits[k])){
-              n2_index = k;
+    if(SortDepth > 1) {
+      for(unsigned int j=i+1; j < temp_hits.size(); j++) {
+        if (IsNeighbor(current_hit,temp_hits[j])){
+          paired.push_back(j);
+          //check every hit k to see if it is a neighbour with j
+          if(SortDepth > 2) {
+            for (unsigned int k=0; k < temp_hits.size(); k++){
+              if( (i == k) || (j == k) ) continue;
+              if (IsNeighbor(temp_hits[j],temp_hits[k])){
+                paired.push_back(k);
+                //Edge cases, requires at least 4 crystals in a line
+                if(SortDepth > 3) {
+                  for (unsigned int l=0; l < temp_hits.size(); l++){
+                    if( (i == l) || (j == l) || (k == l)) continue;
+                    if (IsNeighbor(temp_hits[k],temp_hits[l])) {
+                      paired.push_back(l);
+                      //Really Edge cases, requires at least 5 crystals in a line
+                      if(SortDepth > 4) {
+                        for (unsigned int m=0; m < temp_hits.size(); m++){
+                          if( (i == m) || (j == m) || (k == m) || (l == m)) continue;
+                          if(IsNeighbor(temp_hits[l],temp_hits[m])) {
+                            paired.push_back(m);
+                            //Extreme Edge cases, requires at least 6 crystals in a line
+                            if(SortDepth > 5) {
+                              for (unsigned int n=0; n < temp_hits.size(); n++){
+                                if( (i == n) || (j == n) || (k == n) || (l == n) || (m == n)) continue;
+                                if(IsNeighbor(temp_hits[m],temp_hits[n])) paired.push_back(n);
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
       }
     }
-    
+    //Reverse sort paired vector required when removing hits later
+    std::sort(paired.rbegin(), paired.rend());
+    //Vector can contain multiple version of same hit, removes duplicate values
+    paired.erase(unique(paired.begin(), paired.end()), paired.end());
     //n0
-    if (nNeighborHits == 0){
+    if (paired.size() == 0){
       n0_hits.push_back(current_hit);
-    } 
+    }
     //n1
-    else if (nNeighborHits == 1) {
-      current_hit.NNAdd(temp_hits[n1_index]);
+    else if (paired.size() == 1) {
+      current_hit.NNAdd(temp_hits[paired.at(0)]);
       n1_hits.push_back(current_hit);
-      temp_hits.erase(temp_hits.begin() + n1_index);
-    } 
+      //Erase hit after adding otherwise event can make a new addback event
+      temp_hits.erase(temp_hits.begin() + paired.at(0));
+    }
     //n2
-    else if (nNeighborHits == 2 && n2_index != -1) {
-      current_hit.NNAdd(temp_hits[n1_index]);
-      current_hit.NNAdd(temp_hits[n2_index]);
-      n2_hits.push_back(current_hit);
-      if (n2_index < n1_index) std::swap(n1_index,n2_index);
-      temp_hits.erase(temp_hits.begin() + n2_index);
-      temp_hits.erase(temp_hits.begin() + n1_index);
-    } 
+    else if (paired.size() == 2) {
+      if(IsNeighbor(current_hit,temp_hits[paired.at(0)]) && IsNeighbor(current_hit,temp_hits[paired.at(1)]) && IsNeighbor(temp_hits[paired.at(0)],temp_hits[paired.at(1)]) ) {     
+        current_hit.NNAdd(temp_hits[paired.at(1)]);
+        current_hit.NNAdd(temp_hits[paired.at(0)]);
+        
+        n2_hits.push_back(current_hit);
+        //Erase hit after adding otherwise event can make a new addback event
+        temp_hits.erase(temp_hits.begin() + paired.at(0));
+        temp_hits.erase(temp_hits.begin() + paired.at(1));
+      } else { //Also ng
+        ng_hits.push_back(current_hit);
+        for(int p = 0; p < (int)paired.size(); p++) {
+          ng_hits.push_back(temp_hits[paired.at(p)]);
+          //Erase hit after adding otherwise event can make a new addback event
+          temp_hits.erase(temp_hits.begin() + paired.at(p));
+        }
+      }
+    }
     //ng
     else {
       ng_hits.push_back(current_hit);
+      for(int p = 0; p < (int)paired.size(); p++) {
+        ng_hits.push_back(temp_hits[paired.at(p)]);
+        //Erase hit after adding otherwise event can make a new addback event
+        temp_hits.erase(temp_hits.begin() + paired.at(p));
+      }
     }
   }
+
   nn_hits.push_back(n0_hits);
   nn_hits.push_back(n1_hits);
   nn_hits.push_back(n2_hits);
   nn_hits.push_back(ng_hits);
-  // std::cout<<"BUILDNNADDBACK EXIT"<<std::endl;
+
   return;
 }
 
