@@ -24,6 +24,8 @@ class MultiPlotter{
         int mLineWidth = 1;
         double mXlo = -123;
         double mXhi = -123;
+        double mYlo = -123;
+        double mYhi = -123;
 
         //functions
         void SortMax();
@@ -52,6 +54,7 @@ class MultiPlotter{
         void SetLineWidth(int w);
         void SetLineColor(std::string key, int c);
         void SetRange(double xlo, double xhi);
+        void SetYrange(double ylo, double yhi);
         void ResetRange();
         void IterateLineStyle();
 

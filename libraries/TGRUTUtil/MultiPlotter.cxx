@@ -54,45 +54,52 @@ void MultiPlotter::Add(TDirectoryFile *f){
             sortedList.push_back(key);
         }
     }
-    //sort alphabetically
-    std::sort(sortedList.begin(),sortedList.end(), 
-        [] (TKey *a, TKey *b) {
-            int result = strcmp(a->GetName(),b->GetName());
-            if (result >= 0) return false;
-            else return true;
-        });
-    printf("Available objects\n");
-    
-    int nKeys = (int) sortedList.size();
-    for (int i=0; i<nKeys; i++){
-        TKey *key = (TKey *) sortedList[i];
-        if (key->IsFolder()) 
-            printf("--> d%d %s%s%s\n",i,"\033[1;34m",key->GetName(),"\033[m");
-        else 
-            printf("--> %d %s%s%s\n",i,"",key->GetName(),"");
+    //if only one object and it's not a folder, just add it
+    if (sortedList.size() == 1 && !(sortedList[0]->IsFolder())){
+        TH1 *hout = (TH1*) sortedList[0]->ReadObj();
+        this->Add(hout);
     }
-    
-    char input[50];
-    while (true){
-        std::cout<<"add hist ('q' to quit): ";
-        std::cin>>input;
-        if (strcmp(input,"q") == 0) break;
-        else {
-            std::vector<int> nums;
-            bool isfolder = ParseInput(input,nums);
-            if (isfolder){
-                TKey *key = sortedList[nums.back()];
-                std::cout<<key->GetName()<<std::endl;
-                TDirectoryFile *dir = (TDirectoryFile*) key->ReadObj();
-                this->Add(dir);
-                break;
-            } else {
-                int N = nums.size();
-                for (int i=0; i < N; i++){
-                    if (nums[i] < nKeys && nums[i] >= 0){
-                        TKey *key = sortedList[nums[i]];
-                        TH1 *hout = (TH1*) key->ReadObj();
-                        this->Add(hout);
+    else {
+        //sort alphabetically
+        std::sort(sortedList.begin(),sortedList.end(), 
+            [] (TKey *a, TKey *b) {
+                int result = strcmp(a->GetName(),b->GetName());
+                if (result >= 0) return false;
+                else return true;
+            });
+        printf("Available objects\n");
+        
+        int nKeys = (int) sortedList.size();
+        for (int i=0; i<nKeys; i++){
+            TKey *key = (TKey *) sortedList[i];
+            if (key->IsFolder()) 
+                printf("--> d%d %s%s%s\n",i,"\033[1;34m",key->GetName(),"\033[m");
+            else 
+                printf("--> %d %s%s%s\n",i,"",key->GetName(),"");
+        }
+        
+        char input[50];
+        while (true){
+            std::cout<<"add hist ('q' to quit): ";
+            std::cin>>input;
+            if (strcmp(input,"q") == 0) break;
+            else {
+                std::vector<int> nums;
+                bool isfolder = ParseInput(input,nums);
+                if (isfolder){
+                    TKey *key = sortedList[nums.back()];
+                    std::cout<<key->GetName()<<std::endl;
+                    TDirectoryFile *dir = (TDirectoryFile*) key->ReadObj();
+                    this->Add(dir);
+                    break;
+                } else {
+                    int N = nums.size();
+                    for (int i=0; i < N; i++){
+                        if (nums[i] < nKeys && nums[i] >= 0){
+                            TKey *key = sortedList[nums[i]];
+                            TH1 *hout = (TH1*) key->ReadObj();
+                            this->Add(hout);
+                        }
                     }
                 }
             }
@@ -137,6 +144,11 @@ void MultiPlotter::SetLineColor(std::string key, int c){
         mCustomColors = true;
         mHistos[key]->SetLineColor(c);   
     }
+}
+
+void MultiPlotter::SetYrange(double ylo, double yhi){
+    mYlo = ylo;
+    mYhi = yhi;
 }
 
 void MultiPlotter::SetRange(double xlo, double xhi){
@@ -293,6 +305,7 @@ void MultiPlotter::Draw(int ndraw, int noffset){
         leg->AddEntry(it->second,it->second->GetName(),"l");
 
         if (mXhi != mXlo) it->second->GetXaxis()->SetRangeUser(mXlo,mXhi);
+        if (mYhi != mYlo) it->second->GetYaxis()->SetRangeUser(mYlo,mYhi);
         
         if (nloops == 0){
             it->second->Draw("hist");
