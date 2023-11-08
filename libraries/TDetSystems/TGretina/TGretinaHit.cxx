@@ -145,7 +145,7 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   //std::cout << "[15].z :  " << raw.intpts[15].z << std::endl;
   //std::cout << "fTOffset :  " << fTOffset             << std::endl;
   
-  // std::sort(fSegments.begin(),fSegments.end());
+  std::sort(fSegments.begin(),fSegments.end());
   // std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
   // }
@@ -574,6 +574,25 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     return xi;
   }
   else return -1;
+}
+
+double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    if (!beam) beam = new TVector3(0,0,1);
+
+    TVector3 vZ = GetIntPosition(p1);
+    TVector3 vY = vZ.Cross(*beam);
+    TVector3 vX = vY.Cross(vZ);
+    TVector3 r2 = vZ - GetIntPosition(p2);
+
+    double mtxData[9] = {vX.Unit().X(),vX.Unit().Y(),vX.Unit().Z(),vY.Unit().X(),vY.Unit().Y(),vY.Unit().Z(),vZ.Unit().X(),vZ.Unit().Y(),vZ.Unit().Z()};
+    TMatrixT <double> mtx = TMatrixT<double> (3,3,mtxData,"F");
+    mtx.Invert();
+    r2 = mtx*r2; //x' = A(inv)x
+
+    return r2.Phi()+TMath::Pi();
+  }
+  else return -10;
 }
 
 void TGretinaHit::ComptonSort(double cut){

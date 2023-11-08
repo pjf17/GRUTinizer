@@ -117,6 +117,7 @@ public:
   double GetAlpha(int p1=0, int p2=1) const; //get the angle between two interaction points
   double GetScatterAngle(int p1=0, int p2=1) const; //get the polar compton scattering angle 
   double GetXi(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
+  double GetXiChris(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
 
   Int_t Compare(const TObject *obj) const { 
     TGretinaHit *other = (TGretinaHit*)obj;
