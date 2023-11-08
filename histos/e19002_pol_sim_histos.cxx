@@ -293,6 +293,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
           obj.FillHistogram(dirname, "nopolgate_FEP_theta_vs_xi",360,0,TMath::TwoPi(),xi,360,0,TMath::Pi(),theta);
           obj.FillHistogram(dirname, "nopolgate_FEP_phi_vs_xi",360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),phi);
 
+          obj.FillHistogram(dirname, "nopolgate_FEP_PeterXi_vs_ChrisXi",360,0,360,hit.GetXiChris(&track)*TMath::RadToDeg(),360,0,360,xi*TMath::RadToDeg());
+
           bool allBad = true;
           for (int ip=0; ip < nInteractions; ip++){
             if (std::abs(simTheta-hit.GetTheta(ip))*TMath::RadToDeg() < 1.5) {

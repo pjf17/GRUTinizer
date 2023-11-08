@@ -305,112 +305,138 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 double nu = hit.GetScatterAngle();
                 double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
                 bool comptonCut = TMath::Cos(nu) > 0.0 - Eratio;
+                if (comptonCut && theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
+                  obj.FillHistogram(dirname, "comptCut_dopE_vs_xi",360,0,TMath::TwoPi(),xi,2048,0,2048,energy_corrected);
+
                 for (int ip=0; ip < nInteractions; ip++)
                   obj.FillHistogram(dirname, "IP_Ecore_vs_theta",120,0.6,2.1,hit.GetTheta(ip),2048,0,2048,core_energy);
 
                 // ECORE THETA INTERACTION POINT GATES
-                for (auto ipgate : gates["intpnt"]){
+                std::map<std::string,std::vector<int>> IPpass;
+                for (auto ipgate : gates["EnergyTheta"]){
                   std::string ipgname = std::string(ipgate->GetName());
-                  std::vector<int> IPCorepass;
                   for (int ip=0; ip < nInteractions; ip++){
-                    if (ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
-                      IPCorepass.push_back(ip);
+                    if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) != std::string::npos && 
+                        ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
+                      IPpass[ipgname].push_back(ip);
                     }
                   }
+                }
 
-                  if (IPCorepass.size() > 0){
+                //one event cannot pass more than one gate, choose the best point for the right gate
+                if (/*IPpass.size() > 1*/ false){ 
+                  obj.FillHistogram(dirname, "IPDUALPASS_nPassg1018_vs_nPassg1079",10,1,11,(int) IPpass["g1079"].size(),10,1,11,(int) IPpass["g1018"].size());
+                
+                  std::map<std::string,std::vector<int>>::iterator it = IPpass.begin();
+                  std::map<std::string,std::vector<int>>::iterator end = IPpass.end();
+                  std::pair<std::string,std::vector<int>> best;
+                  double maxE = 0;
+                  int maxSize = 0;
+                  while (it != end){
+                    if (it->second.size() > maxSize || hit.GetSegmentEng(it->second[0]) > maxE) {
+                      maxE = hit.GetSegmentEng(it->second[0]);
+                      maxSize = it->second.size();
+                      best = std::make_pair(it->first,it->second);
+                    }
+                    it++;
+                  }
+
+                  IPpass.clear();
+                  IPpass[best.first] = best.second;
+                } 
+
+                //loop over gates again
+                for (auto ipgate : gates["EnergyTheta"]){
+                  std::string ipgname = std::string(ipgate->GetName());
+                  if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) == std::string::npos) continue;
+                  if (IPpass.count(ipgname)) {              
                     //NEW FIRST INTERACTION POINT
-                    double IP_theta = hit.GetTheta(IPCorepass[0]);
-                    double IP_phi = hit.GetPhi(IPCorepass[0]);
+                    double IP_theta = hit.GetTheta(IPpass[ipgname][0]);
+                    double IP_phi = hit.GetPhi(IPpass[ipgname][0]);
                     bool thetacut = IP_theta*TMath::RadToDeg() > 55 && IP_theta*TMath::RadToDeg() < 100;
 
-                    obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
-                    double xEr = 511.0/core_energy * hit.GetSegmentEng(IPCorepass[0])/(core_energy - hit.GetSegmentEng(IPCorepass[0]));
-                    double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPCorepass[0]);
+                    obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPpass[ipgname].size());
+                    double xEr = 511.0/core_energy * hit.GetSegmentEng(IPpass[ipgname][0])/(core_energy - hit.GetSegmentEng(IPpass[ipgname][0]));
+                    double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
 
-                    // if (nInteractions == 2){
-                    //   int p1 = 0;
-                    //   int p2 = 1;
-                    //   if (IPCorepass[0] == 1) std::swap(p1,p2);
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_2INT_Edop",ipgname.c_str()),360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
-                    //   if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                    //     obj.FillHistogram(dirname, Form("IP_%s_pass_2INT_Edop_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),hit.GetXi(&track,p1,p2),2048,0,2048,E_pass_dop);
-                    // }
+                    if (abs(E_pass_dop-energy_corrected) > 0.1)
+                      obj.FillHistogram(dirname, Form("IP_%s_DiffAsMain",ipgname.c_str()),4096,0,4096,energy_corrected,4096,0,4096,E_pass_dop);
+                    else {
+                      obj.FillHistogram(dirname, Form("IP_%s_SameAsMain",ipgname.c_str()),4096,0,4096,energy_corrected);
+                    }
+
                     
                     double IPxi = xi;
-                    if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
-                    else if (IPCorepass[0] != 0) IPxi = hit.GetXi(&track,IPCorepass[0],0);
+                    if (IPpass[ipgname][0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPpass[ipgname][0],IPpass[ipgname][0]+1);
+                    else if (IPpass[ipgname][0] != 0) IPxi = hit.GetXi(&track,IPpass[ipgname][0],0);
 
-                    if (IPCorepass.size() < 5){
-                      obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPCorepass.size()),360,0,TMath::TwoPi(),IPxi);
+                    if (IPpass[ipgname].size() < 5){
+                      obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPpass[ipgname].size()),360,0,TMath::TwoPi(),IPxi);
                     }
+
+                    if (nInteractions < 5 && thetacut)
+                      obj.FillHistogram(dirname, Form("IP_%s_xi_%dINTPNT",ipgname.c_str(), nInteractions),360,0,TMath::TwoPi(),IPxi);
+
+                    obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+                    if (thetacut) obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi_thct",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
                     
-                    if (thetacut){
-                      if (comptonCut && (xi != IPxi)){
-                        obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_unique_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                      } 
+                    // if (thetacut){
+                    //   if (comptonCut && (xi != IPxi)){
+                    //     obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_unique_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //   } 
                       
-                      if (comptonCut) {
-                        obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                        obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size());
-                        obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nInteractions",ipgname.c_str()),9,1,10,nInteractions);
-                        if (abs(abs(xi - IPxi) - TMath::Pi()) < 0.1 || abs(xi - IPxi) < 0.1)
-                          obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_SAME&PHASE_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //   if (comptonCut) {
+                    //     obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //     obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass",ipgname.c_str()),9,1,10,(int) IPpass[ipgname].size());
+                    //     obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nInteractions",ipgname.c_str()),9,1,10,nInteractions);
+                    //     if (abs(abs(xi - IPxi) - TMath::Pi()) < 0.1 || abs(xi - IPxi) < 0.1)
+                    //       obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_SAME&PHASE_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
 
-                        if (abs(xi - IPxi) < 0.1) {
-                          obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_SAMEXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_SAMEXI",ipgname.c_str()),9,1,10,(int) IPCorepass.size());
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_SAMEXI",ipgname.c_str()),9,1,10,nInteractions);
-                        }
-                        else if (abs(abs(xi - IPxi) - TMath::Pi()) < 0.1){
-                          obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_PHASEXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_PHASEXI",ipgname.c_str()),9,1,10,(int) IPCorepass.size());
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_PHASEXI",ipgname.c_str()),9,1,10,nInteractions);
-                        }
-                        else{
-                          obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_NOCORXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_NOCORXI",ipgname.c_str()),9,1,10,(int) IPCorepass.size());
-                          obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_NOCORXI",ipgname.c_str()),9,1,10,nInteractions);
-                        }
-                      } 
-                      else {
-                        obj.FillHistogram(dirname, Form("IP_%s_xi_vs_NOTComptCut_xi_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
-                      }
-                    }
-                    
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size(),18,0,360,IPxi*TMath::RadToDeg());
-                    
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi",ipgname.c_str()),360,0,360,IPxi*TMath::RadToDeg(),180,0,180,IP_theta*TMath::RadToDeg());
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_phi",ipgname.c_str()),360,0,360,IP_phi*TMath::RadToDeg(),180,0,180,IP_theta*TMath::RadToDeg());
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_phi_vs_xi",ipgname.c_str()),360,0,360,IPxi*TMath::RadToDeg(),360,0,360,IP_phi*TMath::RadToDeg());
-                    // if (nInteractions < 5) {
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_%dINT_theta_vs_xi",ipgname.c_str(),nInteractions),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),IP_theta);
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_%dINT_theta_vs_phi",ipgname.c_str(),nInteractions),360,0,TMath::TwoPi(),IP_phi,180,0,TMath::Pi(),IP_theta);
+                    //     if (abs(xi - IPxi) < 0.1) {
+                    //       obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_SAMEXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_SAMEXI",ipgname.c_str()),9,1,10,(int) IPpass[ipgname].size());
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_SAMEXI",ipgname.c_str()),9,1,10,nInteractions);
+                    //     }
+                    //     else if (abs(abs(xi - IPxi) - TMath::Pi()) < 0.1){
+                    //       obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_PHASEXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_PHASEXI",ipgname.c_str()),9,1,10,(int) IPpass[ipgname].size());
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_PHASEXI",ipgname.c_str()),9,1,10,nInteractions);
+                    //     }
+                    //     else{
+                    //       obj.FillHistogram(dirname, Form("IP_%s_xi_vs_ComptCut_xi_NOCORXI_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nPass_NOCORXI",ipgname.c_str()),9,1,10,(int) IPpass[ipgname].size());
+                    //       obj.FillHistogram(dirname, Form("IP_%s_ComptCut_nIPS_NOCORXI",ipgname.c_str()),9,1,10,nInteractions);
+                    //     }
+                    //   } 
+                    //   else {
+                    //     obj.FillHistogram(dirname, Form("IP_%s_xi_vs_NOTComptCut_xi_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),IPxi);
+                    //   }
                     // }
                     
-                    if (nInteractions == 2) 
-                      obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi_2INT",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),IP_theta);
-                    // obj.FillHistogram(dirname, "IP_pass_Edop_vs_totPoint",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
-                    // if (IPCorepass.size() == 3) obj.FillHistogram(dirname, "IP_3pass_Edop",360,0,360,hit.GetXi(&track,IPCorepass[0],IPCorepass[1])*TMath::RadToDeg(),2048,0,2048,E_pass_dop);
-                    obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    // if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 66)
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi_theta55-66",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    // if (theta*TMath::RadToDeg() > 66 && theta*TMath::RadToDeg() < 82)
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi_theta66-82",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    // if (theta*TMath::RadToDeg() > 82 && theta*TMath::RadToDeg() < 100)
-                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta82-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    if (thetacut)
-                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    else 
-                      obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
+                    // obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPpass[ipgname].size(),18,0,360,IPxi*TMath::RadToDeg());
                     
-                    if (cryID < 40)
-                      obj.FillHistogram(dirname, Form("IP_fwd_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                    else 
-                      obj.FillHistogram(dirname, Form("IP_90deg_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
-                  } else if (comptonCut) {
-                    obj.FillHistogram(dirname, Form("IP_%s_NOTxi_ComptCutxi_thetagate",ipgname.c_str()),360,0,TMath::TwoPi(),xi);
+                    // obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi",ipgname.c_str()),360,0,360,IPxi*TMath::RadToDeg(),180,0,180,IP_theta*TMath::RadToDeg());
+                    // obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_phi",ipgname.c_str()),360,0,360,IP_phi*TMath::RadToDeg(),180,0,180,IP_theta*TMath::RadToDeg());
+                    // obj.FillHistogram(dirname, Form("IP_%s_pass_phi_vs_xi",ipgname.c_str()),360,0,360,IPxi*TMath::RadToDeg(),360,0,360,IP_phi*TMath::RadToDeg());
+                    
+                    // if (thetacut)
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // else 
+                    //   obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    
+                    // if (cryID < 40)
+                    //   obj.FillHistogram(dirname, Form("IP_fwd_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                    // else 
+                    //   obj.FillHistogram(dirname, Form("IP_90deg_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,2048,0,2048,E_pass_dop);
+                  }
+
+                  if (IPpass.count(ipgname)){
+                    double Enew = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
+                    obj.FillHistogram(dirname, Form("IP_%s_Edop_pass",ipgname.c_str()),4096,0,4096,Enew);
+                    obj.FillHistogram(dirname, Form("IP_%s_Edop_pass_vs_EmainInteraction",ipgname.c_str()),4096,0,4096,energy_corrected,4096,0,4096,Enew);
+                  } else {
+                    obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass",ipgname.c_str()),4096,0,4096,energy_corrected);
                   }
                 }
 
@@ -506,70 +532,70 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if (total_corrected_energy > 0) obj.FillHistogram(dirname,"total_corrected_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_corrected_energy);
           if (total_core_energy > 0) obj.FillHistogram(dirname,"total_core_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_core_energy);
 
-          //NNADDBACK
-          int nABpromptGamma = 0;
-          int nTotalABgamma = 0;
-          double tot_energy_corrected_AB = 0;
-          double tot_energy_core_AB = 0;
+          // //NNADDBACK
+          // int nABpromptGamma = 0;
+          // int nTotalABgamma = 0;
+          // double tot_energy_corrected_AB = 0;
+          // double tot_energy_core_AB = 0;
 
-          //loop over multiplicity
-          for (int n=0; n<4; n++){
-            //loop over hits for each multiplicity spectrum
-            int nnSize = gretina->NNAddbackSize(n);
-            nTotalABgamma += nnSize;
-            for (int i=0; i < nnSize; i++){
-              //get hit and hit data 
-              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-              // int cryID = nnhit.GetCrystalId();
-              // int ringNum = nnhit.GetRingNumber();
-              double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-              double nnCore_energy = nnhit.GetCoreEnergy();
-              // double theta = nnhit.GetThetaDeg();
-              // double phi = nnhit.GetPhiDeg();
-              int nInteractions = nnhit.NumberOfInteractions();
+          // //loop over multiplicity
+          // for (int n=0; n<4; n++){
+          //   //loop over hits for each multiplicity spectrum
+          //   int nnSize = gretina->NNAddbackSize(n);
+          //   nTotalABgamma += nnSize;
+          //   for (int i=0; i < nnSize; i++){
+          //     //get hit and hit data 
+          //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
+          //     // int cryID = nnhit.GetCrystalId();
+          //     // int ringNum = nnhit.GetRingNumber();
+          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     double nnCore_energy = nnhit.GetCoreEnergy();
+          //     // double theta = nnhit.GetThetaDeg();
+          //     // double phi = nnhit.GetPhiDeg();
+          //     int nInteractions = nnhit.NumberOfInteractions();
               
-              bool tgate = false;
-              if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
+          //     bool tgate = false;
+          //     if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
 
-              //make sure hits are prompt
-              if (tgate){
-                nABpromptGamma++;
-                tot_energy_corrected_AB += nnEnergy_corrected;
-                tot_energy_core_AB += nnCore_energy;
-                //exclude the ng spectrum (n==3)
-                // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
-                char *multiplicity = Form("%d",n);
-                if (n == 3) multiplicity = Form("g");
-                obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
+          //     //make sure hits are prompt
+          //     if (tgate){
+          //       nABpromptGamma++;
+          //       tot_energy_corrected_AB += nnEnergy_corrected;
+          //       tot_energy_core_AB += nnCore_energy;
+          //       //exclude the ng spectrum (n==3)
+          //       // obj.FillHistogram(dirname,"crystal-map",180,0,180,theta,360,0,360,phi);
+          //       char *multiplicity = Form("%d",n);
+          //       if (n == 3) multiplicity = Form("g");
+          //       obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
                 
-                if (n < 3)
-                  obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
-              }
+          //       if (n < 3)
+          //         obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+          //     }
 
-              // if (n < 3) {
-              //   // GAMMA GAMMA CORRELATION
-              //   for (int j=0; j < nnSize; j++){
-              //     if (i==j) continue;
-              //     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-              //     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     // if (n < 3) {
+          //     //   // GAMMA GAMMA CORRELATION
+          //     //   for (int j=0; j < nnSize; j++){
+          //     //     if (i==j) continue;
+          //     //     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
+          //     //     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
 
-              //     bool tgate2 = false;
-              //     if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
+          //     //     bool tgate2 = false;
+          //     //     if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
                   
-              //     if (tgate2){
-              //       obj.FillHistogram(dirname, "gamma_gamma", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
-              //       if (n==0) obj.FillHistogram(dirname, "gamma_gamma_n0", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
-              //       if (n==1) obj.FillHistogram(dirname, "gamma_gamma_n1", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
-              //     }
-              //   }
-              // }
-            }
-          }
+          //     //     if (tgate2){
+          //     //       obj.FillHistogram(dirname, "gamma_gamma", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+          //     //       if (n==0) obj.FillHistogram(dirname, "gamma_gamma_n0", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+          //     //       if (n==1) obj.FillHistogram(dirname, "gamma_gamma_n1", 1024,0,4096, nnEnergy_corrected2, 1024,0,4096, nnEnergy_corrected);
+          //     //     }
+          //     //   }
+          //     // }
+          //   }
+          // }
 
-          //count ab multiplicity
-          obj.FillHistogram(dirname, "gamma_multi_vs_prompt_gamma_multi_AB", 20,0,20,nABpromptGamma,20,0,20,nTotalABgamma);
-          if (tot_energy_corrected_AB > 0) obj.FillHistogram(dirname, "total_corrected_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_corrected_AB);
-          if (tot_energy_core_AB > 0) obj.FillHistogram(dirname, "total_core_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_core_AB);
+          // //count ab multiplicity
+          // obj.FillHistogram(dirname, "gamma_multi_vs_prompt_gamma_multi_AB", 20,0,20,nABpromptGamma,20,0,20,nTotalABgamma);
+          // if (tot_energy_corrected_AB > 0) obj.FillHistogram(dirname, "total_corrected_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_corrected_AB);
+          // if (tot_energy_core_AB > 0) obj.FillHistogram(dirname, "total_core_energy_vs_prompt_multi_AB",20,0,20,nPromptGamma,2048,0,8192,tot_energy_core_AB);
 
                   // //make swapped spectra
                   // TGretinaHit nnhit1 = nnhit.GetInitialHit();
