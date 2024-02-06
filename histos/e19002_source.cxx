@@ -298,16 +298,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
       if (bank29 && prompt) timeflag = "prompt";
       else if (bank29) timeflag = "not-prompt";
       
-      if ((timestamp-timeZero)/TIMESCALE < timethresh) timeflag = "gtTime"; //timestamp is in 10ns convert to seconds
+      if ((timestamp-timeZero)/TIMESCALE < timethresh && (timestamp-timeZero)/TIMESCALE > 10.0) timeflag = "gtTime"; //timestamp is in 10ns convert to seconds
 
       obj.FillHistogram(dirname, "prompt_gretina_timestamps_t0",3600,0,3600,(timestamp-timeZero)/TIMESCALE);
+
+      if (theta*TMath::RadToDeg() < 5) continue;
 
       if (timeflag != "") {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
         // obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
-        obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi,360,0,180,theta*TMath::RadToDeg());
+        obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi*TMath::RadToDeg(),360,0,180,theta*TMath::RadToDeg());
+
         if (hit.NumberOfInteractions() > 1){
           // double ata = 0.0;
           // double bta = 0.0;

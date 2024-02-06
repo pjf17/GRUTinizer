@@ -120,7 +120,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit &hit = gretina->GetGretinaHit(i);
       obj.FillHistogram("Bank29","Gretina_dop_t0_Bank29_time",
           600,-600,600,bank29->Timestamp()-hit.GetTime(),
-          2500,0,10000, hit.GetDoppler(GValue::Value("BETA")));
+          2500,0,10000, hit.GetCoreEnergy());
     }//loop over gretina hits
   }//bank29 and gretina exist
 
@@ -258,6 +258,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
         TVector3 track = s800->Track();
         if (bank29){
           double timeBank29 = bank29->Timestamp();
+
+          //get Beta
+          double outgoingBeta = GValue::Value(Form("BETA_%s",gates["outgoing"].at(ind_out)->GetName()));
           
           //SINGLES
           int gSize = gretina->Size();
@@ -268,8 +271,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit &hit = gretina->GetGretinaHit(i);
             // hit.ScaleIntEng();
             // hit.ComptonSort();
-            double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
-            double energy = hit.GetDoppler(GValue::Value("BETA"));
+            double energy_corrected = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
+            double energy = hit.GetDoppler(outgoingBeta);
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
             double phi = hit.GetPhi();
@@ -309,7 +312,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   obj.FillHistogram(dirname, "comptCut_dopE_vs_xi",360,0,TMath::TwoPi(),xi,2048,0,2048,energy_corrected);
 
                 for (int ip=0; ip < nInteractions; ip++)
-                  obj.FillHistogram(dirname, "IP_Ecore_vs_theta",120,0.6,2.1,hit.GetTheta(ip),2048,0,2048,core_energy);
+                  obj.FillHistogram(dirname, "IP_Ecore_vs_theta",60,0.6,2.1,hit.GetTheta(ip),2048,0,4096,core_energy);
 
                 // ECORE THETA INTERACTION POINT GATES
                 std::map<std::string,std::vector<int>> IPpass;
@@ -357,7 +360,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
                     obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPpass[ipgname].size());
                     double xEr = 511.0/core_energy * hit.GetSegmentEng(IPpass[ipgname][0])/(core_energy - hit.GetSegmentEng(IPpass[ipgname][0]));
-                    double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
+                    double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track, IPpass[ipgname][0]);
 
                     if (abs(E_pass_dop-energy_corrected) > 0.1)
                       obj.FillHistogram(dirname, Form("IP_%s_DiffAsMain",ipgname.c_str()),4096,0,4096,energy_corrected,4096,0,4096,E_pass_dop);
@@ -370,12 +373,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
                     if (IPpass[ipgname][0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPpass[ipgname][0],IPpass[ipgname][0]+1);
                     else if (IPpass[ipgname][0] != 0) IPxi = hit.GetXi(&track,IPpass[ipgname][0],0);
 
-                    if (IPpass[ipgname].size() < 5){
-                      obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPpass[ipgname].size()),360,0,TMath::TwoPi(),IPxi);
-                    }
+                    // if (IPpass[ipgname].size() < 5){
+                    //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPpass[ipgname].size()),360,0,TMath::TwoPi(),IPxi);
+                    // }
 
-                    if (nInteractions < 5 && thetacut)
-                      obj.FillHistogram(dirname, Form("IP_%s_xi_%dINTPNT",ipgname.c_str(), nInteractions),360,0,TMath::TwoPi(),IPxi);
+                    // if (nInteractions < 5 && thetacut)
+                    //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dINTPNT",ipgname.c_str(), nInteractions),360,0,TMath::TwoPi(),IPxi);
 
                     obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
                     if (thetacut) obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi_thct",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
@@ -432,7 +435,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   }
 
                   if (IPpass.count(ipgname)){
-                    double Enew = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
+                    double Enew = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track, IPpass[ipgname][0]);
                     obj.FillHistogram(dirname, Form("IP_%s_Edop_pass",ipgname.c_str()),4096,0,4096,Enew);
                     obj.FillHistogram(dirname, Form("IP_%s_Edop_pass_vs_EmainInteraction",ipgname.c_str()),4096,0,4096,energy_corrected,4096,0,4096,Enew);
                   } else {
@@ -441,7 +444,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 }
 
                 //cos vs e ratio
-                // double halo = thetaCorrelation(xi,6,90,GValue::Value("BETA"),1018);
+                // double halo = thetaCorrelation(xi,6,90,outgoingBeta,1018);
                 // if ((1034 >= energy_corrected && energy_corrected >= 1002) || (halo > energy_corrected && energy_corrected > 1002) || (1034 > energy_corrected && energy_corrected > halo)){
                 //   obj.FillHistogram(dirname, "1018-cos_vs_Eratio",1000,0,10,Eratio,200,-1,1,TMath::Cos(nu));
                 //   obj.FillHistogram(dirname, "1018-xi",360,0,TMath::TwoPi(),xi,2048,0,4096, energy_corrected);
@@ -467,14 +470,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 //     int minp = 0;
                 //     if (1048 > energy_corrected && 988){
                 //       for (int in=0; in < nInteractions; in++){
-                //         double diff = std::abs(hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, in) - 1018);
+                //         double diff = std::abs(hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track, in) - 1018);
                 //         if (diff < mindiff){
                 //           mindiff = diff;
                 //           minp = in;
                 //         }
                 //       }
                 //     }
-                //     double eng = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, minp);
+                //     double eng = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track, minp);
                 //     if ((1036 > eng && eng > 1000) && minp != 0){
                 //       obj.FillHistogram(dirname, "1018-xi",360,0,TMath::TwoPi(),hit.GetXi(&track,minp,0),2048,0,4096, eng);
                 //     }
@@ -517,7 +520,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "core_energy_prompt", 8192,0,8192, core_energy);
               // obj.FillHistogram(dirname, "core_energy_vs_theta_prompt", 360, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, hit.GetCoreEnergy());
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt", 8192,0,8192, energy_corrected);
-              // obj.FillHistogram(dirname, "gam_dop_sgl_prompt_summary", 48, 0, 48, detMapRing[cryID], 2048,0,2048, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_summary", 48, 0, 48, detMapRing[cryID], 4096,0,4096, energy_corrected);
+              obj.FillHistogram(dirname, "core_energy_prompt_summary", 48, 0, 48, detMapRing[cryID], 4096,0,4096, core_energy);
               // obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta", 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, energy_corrected);
 
               // if (cryID > 40) 
@@ -548,7 +552,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
           //     // int cryID = nnhit.GetCrystalId();
           //     // int ringNum = nnhit.GetRingNumber();
-          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     double nnEnergy_corrected = nnhit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
           //     double nnCore_energy = nnhit.GetCoreEnergy();
           //     // double theta = nnhit.GetThetaDeg();
           //     // double phi = nnhit.GetPhiDeg();
@@ -577,7 +581,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //     //   for (int j=0; j < nnSize; j++){
           //     //     if (i==j) continue;
           //     //     TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-          //     //     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+          //     //     double nnEnergy_corrected2 = nnhit2.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
 
           //     //     bool tgate2 = false;
           //     //     if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
@@ -601,7 +605,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   // TGretinaHit nnhit1 = nnhit.GetInitialHit();
                   // TGretinaHit nnhit2 = nnhit.GetNeighbor();
                   // nnhit2.NNAdd(nnhit1);
-                  // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track);
+                  // double swappedEnergy = nnhit2.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
 
                   // //POLARIZATION
                   // std::string polColor = "blank";

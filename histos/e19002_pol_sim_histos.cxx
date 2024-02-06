@@ -245,16 +245,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
       TGretinaHit &hit = gretina->GetGretinaHit(i);
-      // TGretinaHit hitCopy;
-      // hit.Copy(hitCopy);
+      TGretinaHit hitCopy;
+      hit.Copy(hitCopy);
       // hit.SortSegments();
       // hit.ReverseSegments();
       // EnergySmear(hit,rand_gen);
+      // EnergySmear(hitCopy,rand_gen);
       
       int nInteractions = hit.NumberOfInteractions();
       double energy_corrected = rand_gen->Gaus(hit.GetCoreEnergy(),hit.GetCoreEnergy()*0.0027/2.35);
       // if (!stopped) energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
-      if (!stopped) energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track);
+      if (!stopped) energy_corrected = hit.GetDoppler(simHit.GetBeta(),&track);
+      double true_energy = simHit.GetDoppler(0.0);
       
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
@@ -268,6 +270,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
       obj.FillHistogram(dirname, "theta_vs_core_energy",8192,0,8192, core_energy,100,0.5,2.5,theta);
       obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta", 180, 0, 180,theta*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
       obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta_cm", 180, 0, 180,thetaCM(theta,GValue::Value("BETA"))*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
+
+      if (simHit.IsFEP()) {
+        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_beta",300,0.3,0.45, simHit.GetBeta(), 4096,0,4096, energy_corrected);
+        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_adj_beta",300,0.3,0.45, simHit.GetBeta(), 4096,0,4096, hit.GetDoppler(s800sim->AdjustedBeta(simHit.GetBeta()),&track));
+        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_core_energy",4096,0,4096, core_energy, 4096,0,4096, energy_corrected);
+        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_theta", 180, 0, 180,theta*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
+        // obj.FillHistogram(dirname, "gam_dop_sgl_vs_trueE",1600, 1250,1410,true_energy, 1600,1250,1410, energy_corrected);
+      }
       
       if (nInteractions > 1) obj.FillHistogram(dirname,"gamma_corrected_singles_nInt>2",4096,0,4096, energy_corrected);
       if (simHit.IsFEP()) {
@@ -315,8 +325,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //     }
           //   }
           // }
+          obj.FillHistogram(dirname, "TimeSorted_Doppler",4096,0,4096,true_energy);
 
           // ECORE THETA INTERACTION POINT GATES
+          obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta_TRUEFP",120,0.6,2.1,hitCopy.GetTheta(),4096,0,4096,core_energy);
           for (int ip=0; ip < nInteractions; ip++)
             obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta",120,0.6,2.1,hit.GetTheta(ip),4096,0,4096,core_energy);
           
@@ -331,7 +343,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
             if (IPCorepass.size() > 0){
               obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
-              double E_pass_dop = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track, IPCorepass[0]);
+              double E_pass_dop = hit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track, IPCorepass[0]);
               
               double IPxi = xi;
               if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
@@ -346,6 +358,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
               else 
                 obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+
+              obj.FillHistogram(dirname, Form("IP_%s_Edop_pass",ipgname.c_str()),4096,0,4096,E_pass_dop);
+            } 
+            else {
+              obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass",ipgname.c_str()),4096,0,4096,energy_corrected);
+              obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),xi,4096,0,4096,energy_corrected);
             }
           }
 
