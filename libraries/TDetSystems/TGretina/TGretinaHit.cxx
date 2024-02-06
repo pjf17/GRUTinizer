@@ -145,7 +145,7 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
   //std::cout << "[15].z :  " << raw.intpts[15].z << std::endl;
   //std::cout << "fTOffset :  " << fTOffset             << std::endl;
   
-  std::sort(fSegments.begin(),fSegments.end());
+  if (std::isnan(GValue::Value("NO_E_SORT"))) std::sort(fSegments.begin(),fSegments.end());
   // std::reverse(fSegments.begin(),fSegments.end());
   //  Print("all");
   // }
