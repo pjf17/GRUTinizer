@@ -1414,6 +1414,15 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
         }
         TGraph *gr = new TGraph(npoints,grX,grY);
         TF1 *fdop = new  TF1("fdop","[0]*TMath::Sqrt(1-[1]*[1])/(1 - [1]*TMath::Cos(x))",0,TMath::Pi());
+        //get Beta to do the fit
+        double grBeta = GValue::Value("BETA");
+        if (std::isnan(grBeta)){
+          std::string directoryName = std::string(gHist->GetDirectory()->GetName());
+          size_t underscore = directoryName.find("_")+1;
+          grBeta = GValue::Value(Form("BETA_%S",directoryName.substr(underscore,directoryName.find("_",underscore) - underscore)));
+        } 
+
+        fdop->FixParameter(1,grBeta);
         gr->Fit(fdop,"QN0");
         
         //generate the gate
@@ -1423,7 +1432,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
         
         static int cutcounter = 0;
         GCutG *cut = new GCutG(Form("_cut%i",cutcounter++),2*cutPoints+1);
-        double wU = 2.5;
+        double wU = 2.0;
         for (int p=0; p < cutPoints; p++){
           cut->SetPoint(p,gx,fdop->Eval(gx) - avg_fwhm/wU);
           gx += xstep;
