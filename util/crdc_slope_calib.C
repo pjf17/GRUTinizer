@@ -11,10 +11,10 @@ TFile *outfile;
 //Path to where you want to put your val files
 // const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e21007/config/crdcY/"; 
 
-GH1D *GetYHist(std::string filename, int crdc){
+GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   TFile *f = new TFile(filename.c_str(),"READ");
   
-  std::string inHistName = Form("ungated/crdc%d X_Y",crdc);
+  std::string inHistName = Form("%s/crdc%d X_Y",histdir.c_str(),crdc);
   GH2D *hist2d = (GH2D*) f->Get(inHistName.c_str());
 
   if (!hist2d){
@@ -59,7 +59,7 @@ double GetMean(GH1D *hy, double low, double high){
   return mean;
 }
 
-void GetNewSlopes(std::vector<std::string> &allfiles, std::string val_file_dir){
+void GetNewSlopes(std::vector<std::string> &allfiles, std::string histdir, std::string val_file_dir){
   outfile = new TFile("crdc_calib_hists.root","RECREATE");
   int nloops = 1;
   int nfiles = (int) allfiles.size();
@@ -77,7 +77,7 @@ void GetNewSlopes(std::vector<std::string> &allfiles, std::string val_file_dir){
   
     for (int i=0; i < 2; i++){
       //get mean and check if its nan
-      double mean = GetMean(GetYHist(filename,i+1),-500,500);
+      double mean = GetMean(GetYHist(filename,histdir,i+1),-500,500);
       // double mean = GetYHist(filename,i+1)->GetMean();
       if (std::isnan(mean)){
         std::cout<<"Error in crdc "<<i+1<< "mean\n";
@@ -116,11 +116,11 @@ void GetNewSlopes(std::vector<std::string> &allfiles, std::string val_file_dir){
   return;
 }
 
-void CheckYDists(std::vector<std::string> allfiles){
+void CheckYDists(std::vector<std::string> allfiles, std::string histdir){
     outfile = new TFile("crdc_calib_hists_check.root","RECREATE");
 
     TH1D *hmeans = new TH1D("means","means",500,-2.5,2.5);
-    TH2D *hindex = new TH2D("run_summary","run_summary",350,0,350,100,-2.5,2.5);
+    TH2D *hindex = new TH2D("run_summary","run_summary",350,0,350,500,-2.5,2.5);
     int nloops = 1;
     int nfiles = (int) allfiles.size();
     for (auto filename : allfiles){
@@ -138,7 +138,7 @@ void CheckYDists(std::vector<std::string> allfiles){
 
         for (int i=0; i < 2; i++){
             //get mean and check if its nan
-            double mean = GetMean(GetYHist(filename,i+1),-60,60);
+            double mean = GetMean(GetYHist(filename,histdir,i+1),-60,60);
             // double mean = GetYHist(filename,i+1)->GetMean();
             if (std::isnan(mean)){
                 std::cout<<"Error with hist"<<runNum<<std::endl;
@@ -170,18 +170,21 @@ bool ReadFiles(std::string filelist, std::vector<std::string> &allfiles){
   return true;
 }
 
-void crdc_slope_calib(std::string mode, std::string val_file_dir = "", std::string filelist="list_o_hists.txt"){
+void crdc_slope_calib(std::string mode, std::string histdir="ungated", std::string val_file_dir = "", std::string filelist="list_o_hists.txt"){
   std::vector<std::string> files;
   if (!ReadFiles(filelist, files)) return;
   
+  if (histdir.compare("ungated") == 0)
+    std::cout<<"No histogram directory specified, assuming ungated directory"<<std::endl;
+
   if (mode == "calib"){
     if (val_file_dir == ""){
       std::cout<<"Must enter .val file output path"<<std::endl;
     } else {
-      GetNewSlopes(files,val_file_dir);
+      GetNewSlopes(files,histdir,val_file_dir);
     }
   } else if (mode == "check"){
-    CheckYDists(files);
+    CheckYDists(files,histdir);
   } else {
     std::cout<<"Enter either calib, or check as your mode\n";
   }
