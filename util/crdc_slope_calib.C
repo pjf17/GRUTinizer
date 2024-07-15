@@ -8,15 +8,12 @@
 
 TFile *outfile;
 
-//Path to where you want to put your val files
-// const std::string VAL_FILE_DIR = "/mnt/analysis/pecan-2015/farris/e21007/config/crdcY/"; 
-
 GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   TFile *f = new TFile(filename.c_str(),"READ");
   
   std::string inHistName = Form("%s/crdc%d X_Y",histdir.c_str(),crdc);
   GH2D *hist2d = (GH2D*) f->Get(inHistName.c_str());
-
+  fprintf("%p\n",&hist2d);
   if (!hist2d){
     std::cout<<"error reading hist in "<<filename<<std::endl;
     return NULL;
@@ -25,7 +22,7 @@ GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   std::string dirname = "run" + filename.substr(4,4);
   outfile->cd(dirname.c_str());
   
-  GH1D *hy = new GH1D(*hist2d->ProjectionY());
+  GH1D *hy = hist2d->ProjectionY("_py",0,-1,"");
   std::string histname = Form("crdc%d_Y",crdc);
   std::string histtitle = dirname + histname;
   hy->SetNameTitle(histname.c_str(),histtitle.c_str());
@@ -33,7 +30,7 @@ GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   delete hist2d;
   f->Close();
   delete f;
-  
+
   return hy;
 }
 
@@ -88,7 +85,7 @@ void GetNewSlopes(std::vector<std::string> &allfiles, std::string histdir, std::
       double old_slope = GValue::Value(gSlope.c_str());
       if (std::isnan(old_slope)){
 	      std::cout<<"No old slope for crdc"<<i+1<<", setting to 1"<<std::endl;
-        slope = 1.0;
+        old_slope = 1.0;
       }
 
       //get offset
