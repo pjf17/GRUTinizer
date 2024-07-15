@@ -123,7 +123,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           2500,0,10000, hit.GetDoppler(GValue::Value("BETA")));
     }//loop over gretina hits
   }//bank29 and gretina exist
-
+  /*
   //---------------------------------------------------------------
   //UNGATED
 
@@ -206,7 +206,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     obj.FillHistogram(dirname, "incoming_pid", 500, -5000, -3000, tof_obje1,
                                                500,  2000,  5000, tof_xfpe1);   
   }
-
+  
   //---------------------------------------------------------------
   //INCOMING
   for (auto ind_in: incoming_passed){
@@ -598,6 +598,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
     }
   }
+
+  */
   if(numobj!=list->GetSize()){
     list->Sort();
   }

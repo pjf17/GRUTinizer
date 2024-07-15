@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <unordered_set>
 
+#include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TMath.h>
@@ -23,29 +24,14 @@
 #include "TChannel.h"
 #include "GValue.h"
 
-bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  bool hit = false;
-  
-  for (auto &p : pairs){
-    if ( (cryId1 == p.first && cryId2 == p.second) 
-        || (cryId2 == p.first && cryId1 == p.second) ) {
-        hit = true;
-        break;
-    }
-  }
-  return hit;
-}
-
-int scatterType(const TGretinaHit& abhit){
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  int out = 0; //one A and one B
-  if (cryId1%2 == 0 && cryId2%2 == 0) out = -1; //both are B type
-  else if (cryId1%2 != 0 && cryId2%2 != 0) out = 1; //both are A type
-  return out;
-}
+std::map<int,int> detMapRing = {
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
+  {50,24}, {58,25}, {66,26}, {82,27}, {44,28}, {60,29}, {68,30}, {76,31},
+  {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
+  {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
+};
 
 double calcComptonAngle(double E1, double E2){
   double argument = 1 - 511/E2 + 511/(E1 + E2);
@@ -60,19 +46,6 @@ double calcComptonAngle(double E1, double E2){
 
 double GetAfp(double crdc_1_x,double  crdc_2_x){
   return TMath::ATan( (crdc_2_x - crdc_1_x)/1073.0 );
-}
-
-double azimuthalCompton(const TGretinaHit &hit, const TVector3 *beam, double &dp, bool doSwap=false){
-  TVector3 interaction1 = hit.GetIntPosition(0);
-  TVector3 interaction2 = hit.GetIntPosition(1);
-  if (doSwap) std::swap(interaction1,interaction2);
-  TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
-  TVector3 reactionPlaneNorm = beam->Cross(interaction1);
-  TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
-  dp = reactionPlaneNorm.Dot(comptonPlaneNorm)/reactionPlaneNorm.Mag()/comptonPlaneNorm.Mag();
-  double angle = reactionPlaneNorm.Angle(comptonPlaneNorm);
-  if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) angle = TMath::TwoPi() - angle;
-  return angle;
 }
 
 void EnergySmear(TGretinaHit &hit, TRandom3 *rand){
@@ -95,58 +68,9 @@ void EnergySmear(TGretinaHit &hit, TRandom3 *rand){
   }
 }
 
-double altDoppler(double beta, double yta, const TVector3 &beam, const TGretinaHit &hit, int pos){
-  double gamma = 1./(sqrt(1.-pow(beta,2.)));
-  TVector3 gret_pos = hit.GetIntPosition(pos);
-  gret_pos.SetY(gret_pos.Y() + yta);
-  return hit.GetCoreEnergy()*gamma*(1 - beta*TMath::Cos(gret_pos.Angle(beam)));
-}
-
 double thetaCM(double theta,double beta){
   double cosT = TMath::Cos(theta);
   return TMath::ACos((cosT - beta)/(1 - beta*cosT));
-}
-
-int testXi(double xi, double gatewidth){
-    //0 is parallel 1 is perpendicular
-    int flag = -1;
-    double gw = gatewidth/2;
-    if ((xi >= 90-gw && xi <= 90+gw) || (xi >= 270-gw && xi <= 270+gw)){
-        flag = 1;
-    }
-    else if ((xi >= 360-gw || xi <= gw) || (xi >= 180-gw && xi <= 180+gw)){
-        flag = 0;
-    }
-    return flag;
-}
-
-int getClosestPoint(const TGretinaHit &hit){
-  int nInteractions = hit.NumberOfInteractions();
-  double length = hit.GetIntPosition(0).Mag();
-  int shortestPoint = 0;
-  for (int i=1; i < nInteractions; i++){
-    double comp = hit.GetIntPosition(i).Mag();
-    if (length > comp){
-      length = comp;
-      shortestPoint = i;
-    }
-  }
-  return shortestPoint;
-}
-
-int getTrueFirst(const TGretinaHit &hitSm, const TGretinaHit &hitTr){
-  int nInteractions = hitSm.NumberOfInteractions();
-  double diff = 200;
-  double target = hitTr.GetSegmentEng(0);
-  int p =0;
-  for (int i=0; i < nInteractions;i++){
-    double comp = std::abs(hitSm.GetSegmentEng(i)-target);
-    if (comp < diff) {
-      diff = comp;
-      p = i;
-    }
-  }
-  return p;
 }
 
 void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
@@ -162,6 +86,280 @@ void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gat
     for (int i=0; i < ngate; i++) std::cout<<it->first<<" << "<<it->second[i]->GetName()<<std::endl;
   }
   return;
+}
+
+bool checkEnergyTheta(TF1* fdop, TF1* fres, double energy, double theta){
+  return fdop->Eval(theta) + fres->Eval(theta) > energy && fdop->Eval(theta) - fres->Eval(theta) < energy;
+}
+
+double dopplerbroad(double *x, double *p){
+  double sum = pow(p[1]*sin(x[0])/(1-p[1]*cos(x[0]))*p[2],2) + 
+                pow( (-p[1]+cos(x[0]))/((1-p[1]*p[1])*(1-p[1]*cos(x[0])))*p[3] ,2) +
+                pow(p[4]*cos(x[0]),2);
+
+  return p[0]*p[5]*TMath::Sqrt(sum);
+}
+
+void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  FP = 0; SP = 1;
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+  for (int fp=0; fp < N; fp++){
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      // double E2 = ghit.GetSegmentEng(sp);
+      // double x = er + cosp;
+      // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,2); // std::pow(E/E2,1.0/3)
+      // if (N==3) ffom *= std::pow(E2/E,1.0/3);
+      // if (N > 3) ffom *= std::pow(E/E2,1.0/3)*ghit.GetLocalPosition(fp).Z()/(TMath::Sqrt(abs(E1-125)*abs(E2-125))/E);
+      double ffom = std::pow(1-er - cosp,2);
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+double lastPointPenalty(double x){
+  double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
+  if (val < 0) val = 0;
+  return val + 1;
+}
+
+bool comptonAllowed(const TGretinaHit &ghit){
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+  bool allowed = true;
+  for (int i=0; i < N-1; i++){
+    if (ghit.GetSegmentEng(i) > 2.0*E/(2+511.0/E)){
+      allowed = false;
+      break;
+    }
+    E -= ghit.GetSegmentEng(i);
+  }
+  return allowed;
+}
+
+double comptonChi2(const TGretinaHit &ghit, int fp, int sp){
+  static int ncalls = 0;
+  static double E = 0;
+  if (ncalls == 0) {
+    E = ghit.GetCoreEnergy();
+  }
+  double Edep = ghit.GetSegmentEng(fp);
+  double cosE = 1 - 511.0/E * Edep/(E - Edep);
+  double cosA = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+  double chi2 = pow(cosE-cosA,2);
+
+  double Edep2 = ghit.GetSegmentEng(sp);
+  double cosE2 = 1 - 511.0/E * Edep/(E - Edep);
+  double cosA2 = TMath::Cos(ghit.GetScatterAngle(sp,fp));
+
+  if (chi2 > pow(cosE2-cosA2,2)) {
+    chi2 = pow(cosE2-cosA2,2);
+    E -= ghit.GetSegmentEng(sp);
+  }
+  else 
+    E -= ghit.GetSegmentEng(fp);
+  
+  ncalls++;
+
+  if (ncalls == ghit.NumberOfInteractions()-1) ncalls = 0;
+  return chi2;
+}
+
+void comptonSortReal(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  int N = ghit.NumberOfInteractions();
+
+  for (int fp=0; fp < N; fp++){
+    double E = ghit.GetCoreEnergy();
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp);
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,3); //*std::pow(E/E2,1.0/3);
+      if (N > 2) ffom *= ghit.GetLocalPosition(fp).Z();
+      ffom *= std::pow(E/E2,0.5);
+      // ffom /= TMath::Sqrt(abs(E1-125)*abs(E2-125))/E;
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2);
+      // double ffom = std::pow(cosp - (1-er),2);
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+void comptonSortTest2(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  FP = 0; SP = 1;
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+
+  for (int fp=0; fp < N; fp++){
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp);
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,2) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2)*ghit.GetLocalPosition(fp).Z();
+
+      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
+      ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
+      // if (N > 2) ffom *= ghit.GetLocalPosition(fp).Z();
+
+      // if (N > 3) ffom += E/E2;
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  FP = 0; SP = 1;
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+  
+  //find the last point
+  int lastpoint = -1;
+  if (N > 2){
+    int lp1 = -1;
+    int lp2 = -1;
+    double hypExp = 0;
+    for (int i=0; i < N; i++){
+      double x = ghit.GetSegmentEng(i)/100;
+      double temphypExp = TMath::TanH((x-3.9809*std::pow(N,-1.08))/0.5)*exp(-4*(x-3.9809*std::pow(N,-1.08)) + 2);
+      if (temphypExp > hypExp){
+        lp2 = lp1;
+        lp1 = i;
+        hypExp = temphypExp;
+      }
+    }
+    if (lp2 == -1) lastpoint = lp1;
+    else if (std::abs(ghit.GetSegmentEng(lp1) - ghit.GetSegmentEng(lp2)) < 80) {
+      if (ghit.GetLocalPosition(lp1).Z() > ghit.GetLocalPosition(lp2).Z()) lastpoint = lp1;
+      else lastpoint = lp2;
+    }
+    else lastpoint = lp1;
+  }
+
+  //loop through data and exclude the last point
+  for (int fp=0; fp < N; fp++){
+    if (fp == lastpoint) continue;
+
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp || sp == lastpoint) continue;
+      
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp);
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1*ghit.GetLocalPosition(fp).Z()/100,2);
+      // double ipFactor = 308.76*std::pow(N,-0.542);
+      // if (N > 2) ffom /= TMath::Sqrt(abs(E1-ipFactor)*abs(E2-ipFactor))/E;
+      // if (N-1 == 3) ffom *= 1.0/(E/E2*ghit.GetLocalPosition(sp).Z()/100);
+      if (N-1 > 2) ffom *= std::pow(E/E2*ghit.GetLocalPosition(sp).Z()/100,1.0/3);
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+void comptonSortGate(const TGretinaHit &ghit, std::vector<int> mypassed, int &FP, int &SP) {
+  double FOM = 1e10;
+  int N = ghit.NumberOfInteractions();
+  for (int fp=0; fp < (int) mypassed.size(); fp++){
+    double E = ghit.GetCoreEnergy();
+    double E1 = ghit.GetSegmentEng(mypassed[fp]);
+    double er = 511.0/E * E1/(E - E1);
+    for (int sp=0; sp < N; sp++){
+      if (mypassed[fp] == sp) continue;
+      double cosp = TMath::Cos(ghit.GetScatterAngle(mypassed[fp],sp));
+      double x = er + cosp;
+      double y = ghit.GetAlpha(mypassed[fp],sp);
+      // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(mypassed[fp],sp)),2) );
+      double kn = pow((E - E1)/E1,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(mypassed[fp],sp)),2) );
+      //NOT THIS ONE
+      double ffom = std::pow(std::abs(1-x),2.0/3)*y*kn /*std::pow(E/E1,2)*kn*/;
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = mypassed[fp];
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+double calcE1Compt(const TGretinaHit &ghit, int fp, int sp){
+  double E = ghit.GetCoreEnergy();
+  double E1 = ghit.GetSegmentEng(fp);
+  return E1/E - 1./(1 + 511/E/(1-TMath::Cos(ghit.GetScatterAngle(fp,sp))));
+}
+
+double calcEnergyRatio(double E, double Edep){
+  return 511.0/E * Edep/(E - Edep);
+}
+
+double calcEnergyCos(double E, double Edep){
+  return 1 - 511.0/E * Edep/(E - Edep);
+}
+
+double calcKN(const TGretinaHit &ghit, int fp, int sp){
+  double E = ghit.GetCoreEnergy();
+  double E1 = ghit.GetSegmentEng(fp);
+  return pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );  // *TMath::Sin(ghit.GetScatterAngle(fp,sp));
+}
+
+std::map<int,int> buildCorrectMap(const TGretinaHit &htime,const TGretinaHit &hmain) {
+  int N = htime.Size();
+  std::map<int,int> outmap;
+  for (int i=0; i < N; i++){
+    for (int j=0; j < N; j++){
+      if (htime.GetSegmentEng(i) == hmain.GetSegmentEng(j) && htime.GetTheta(i) == hmain.GetTheta(j) && htime.GetPhi(i) == hmain.GetPhi(j)) {
+        outmap.insert(std::pair<int,int> (j,i));
+        break;
+      }
+    }
+  }
+
+  return outmap;
 }
 
 bool gates_loaded = false;
@@ -189,20 +387,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   // static int nEvents = 0;
   bool stopped = false;
 
-  if (gretsim){
-    int nhits = gretsim->Size();
-    obj.FillHistogram("GEANT", "GEANT_gamma_hits",20,0,20,nhits);
-    for (int i=0; i < nhits; i++){
-      TGretSimHit simHit = gretsim->GetGretinaSimHit(i);
-      double simTheta = simHit.GetTheta();
-      obj.FillHistogram("GEANT", "simtheta_dist", 360,0,180,simTheta*TMath::RadToDeg());
-      obj.FillHistogram("GEANT", "simtheta_cm_dist", 360,0,180,thetaCM(simTheta,simHit.GetBeta())*TMath::RadToDeg());
-      obj.FillHistogram("GEANT", "simBeta", 100,0.3,0.5,simHit.GetBeta());
-      if (simTheta*TMath::RadToDeg() > 40 && simTheta*TMath::RadToDeg() <120)
-        obj.FillHistogram("GEANT", "simtheta_cm_limited_dist", 360,0,180,thetaCM(simTheta,simHit.GetBeta())*TMath::RadToDeg());
-    }
-  }
-
   if (!gretina || gretsim->Size() == 0){
     return;
   }
@@ -210,6 +394,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if (!s800sim || !s800sim->Size() || GValue::Value("BETA") == 0.0){
     stopped = true;
   }
+
+  // int nhits = gretsim->Size();
+  // obj.FillHistogram("GEANT", "GEANT_gamma_hits",20,0,20,nhits);
+  // for (int i=0; i < nhits; i++){
+  //   TGretSimHit simHit = gretsim->GetGretinaSimHit(i);
+  //   double simTheta = simHit.GetTheta();
+  //   obj.FillHistogram("GEANT", "simtheta_dist", 360,0,180,simTheta*TMath::RadToDeg());
+  //   obj.FillHistogram("GEANT", "simtheta_cm_dist", 360,0,180,thetaCM(simTheta,simHit.GetBeta())*TMath::RadToDeg());
+  //   obj.FillHistogram("GEANT", "simBeta", 100,0.3,0.5,simHit.GetBeta());
+  //   if (simTheta*TMath::RadToDeg() > 40 && simTheta*TMath::RadToDeg() <120)
+  //     obj.FillHistogram("GEANT", "simtheta_cm_limited_dist", 360,0,180,thetaCM(simTheta,simHit.GetBeta())*TMath::RadToDeg());
+  // }
   
   std::string dirname("basicsim");
   TVector3 track;
@@ -230,281 +426,451 @@ void MakeHistograms(TRuntimeObjects& obj) {
   bool atabtaGate = std::abs(ata) < 0.002 && std::abs(bta) < 0.002;
   bool ytaGate = std::abs(yta) < 0.0002;
 
-  if (gretina){
-    TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
-    double simTheta = simHit.GetTheta();
-    obj.FillHistogram(dirname,"GEANT_energies",1000,500,1500,simHit.GetDoppler(0,&track));
-    // double gammaEn = simHit.GetEn();
-    // obj.FillHistogram(dirname,"GEANT_gretsim_size",20,0,20,gretsim->Size());
-    // obj.FillHistogram(dirname,"GEANT_s800sim_size",20,0,20,s800sim->Size());
-    // bool isFEP = simHit.IsFEP();
-    // double gammaEnDop = simHit.GetDoppler();
-    // double gammaBeta = simHit.GetBeta();
+  TGretSimHit simHit = gretsim->GetGretinaSimHit(0);
+  double simTheta = simHit.GetTheta();
+  obj.FillHistogram(dirname,"GEANT_energies",1000,500,1500,simHit.GetDoppler(0,&track));
+  // double gammaEn = simHit.GetEn();
+  // obj.FillHistogram(dirname,"GEANT_gretsim_size",20,0,20,gretsim->Size());
+  // obj.FillHistogram(dirname,"GEANT_s800sim_size",20,0,20,s800sim->Size());
+  // bool isFEP = simHit.IsFEP();
+  // double gammaEnDop = simHit.GetDoppler();
+  // double gammaBeta = simHit.GetBeta();
+  /*
+  //ADDBACK
+  int abSize = gretina->NNAddbackSize(0);
+  for (int i=0; i < abSize; i++){
+    TGretinaHit nnhit = gretina->GetNNAddbackHit(0,i);
+    if (nnhit.NumberOfInteractions() > 1){
+      double r0 = 0;
+      for (int ip=0; ip < nnhit.NumberOfInteractions(); ip++){
+        double xx = nnhit.GetLocalPosition(ip).X();
+        double yy = nnhit.GetLocalPosition(ip).Y();
+        double ipPhi = nnhit.GetPhi(ip);
+        double ipTheta = nnhit.GetTheta(ip);
 
-    //SINGLES
-    int gSize = gretina->Size();
-    for (int i=0; i < gSize; i++){
-      TGretinaHit &hit = gretina->GetGretinaHit(i);
-      TGretinaHit hitCopy;
-      hit.Copy(hitCopy);
-      // hit.SortSegments();
-      // hit.ReverseSegments();
-      // EnergySmear(hit,rand_gen);
-      // EnergySmear(hitCopy,rand_gen);
-      
-      int nInteractions = hit.NumberOfInteractions();
-      double energy_corrected = rand_gen->Gaus(hit.GetCoreEnergy(),hit.GetCoreEnergy()*0.0027/2.35);
-      // if (!stopped) energy_corrected = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
-      if (!stopped) energy_corrected = hit.GetDoppler(simHit.GetBeta(),&track);
-      double true_energy = simHit.GetDoppler(0.0);
-      
-      double core_energy = hit.GetCoreEnergy();
-      double theta = hit.GetTheta();
-      double phi = hit.GetPhi();
-      int cryID = hit.GetCrystalId();
-      int ringNum = hit.GetRingNumber();
-      
-      obj.FillHistogram(dirname,"gretina-map",180,0,180,theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
-      
-      obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
-      obj.FillHistogram(dirname, "theta_vs_core_energy",8192,0,8192, core_energy,100,0.5,2.5,theta);
-      obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta", 180, 0, 180,theta*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
-      obj.FillHistogram(dirname, "gam_dop_sgl_vs_theta_cm", 180, 0, 180,thetaCM(theta,GValue::Value("BETA"))*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
-
-      if (simHit.IsFEP()) {
-        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_beta",300,0.3,0.45, simHit.GetBeta(), 4096,0,4096, energy_corrected);
-        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_adj_beta",300,0.3,0.45, simHit.GetBeta(), 4096,0,4096, hit.GetDoppler(s800sim->AdjustedBeta(simHit.GetBeta()),&track));
-        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_core_energy",4096,0,4096, core_energy, 4096,0,4096, energy_corrected);
-        obj.FillHistogram(dirname, "gam_dop_sgl_FEP_vs_theta", 180, 0, 180,theta*TMath::RadToDeg(), 4096,0,4096, energy_corrected);
-        // obj.FillHistogram(dirname, "gam_dop_sgl_vs_trueE",1600, 1250,1410,true_energy, 1600,1250,1410, energy_corrected);
-      }
-      
-      if (nInteractions > 1) obj.FillHistogram(dirname,"gamma_corrected_singles_nInt>2",4096,0,4096, energy_corrected);
-      if (simHit.IsFEP()) {
-        obj.FillHistogram(dirname, "FEP_theta_dist",180,0,180,theta*TMath::RadToDeg());
-
-        obj.FillHistogram(dirname, "core_energy_FEP", 4096,0,4096, core_energy);
-        obj.FillHistogram(dirname, "gamma_corrected_singles_FEP_theta_dist", 360,0,180,theta*TMath::RadToDeg());
-        obj.FillHistogram(dirname, "gamma_corrected_singles_vs_nInteraction",12,0,12,nInteractions, 4096,0,4096, energy_corrected);
-        obj.FillHistogram(dirname, "gamma_corrected_singles_vs_Efrac",200,0,1,hit.GetSegmentEng(0)/core_energy, 4096,0,4096, energy_corrected);
-        
-        if (nInteractions > 1){
-          double xi = 0.0; 
-          if (stopped) xi = hit.GetXi();
-          else xi = hit.GetXi(&track);
-
-          double alpha = hit.GetAlpha();
-          double scatterAngle = hit.GetScatterAngle();
-          double diffEratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
-
-          obj.FillHistogram(dirname, "nopolgate_FEP_scatterAngle",180,0,TMath::Pi(),scatterAngle);
-          obj.FillHistogram(dirname, "core_energy_FEP_vs_xi",360,0,TMath::TwoPi(),xi, 4096,0,4096, core_energy);
-          obj.FillHistogram(dirname, "nopolgate_FEP_Edop_vs_xi",360,0,TMath::TwoPi(),xi,4096,0,4096,energy_corrected);
-          obj.FillHistogram(dirname, "nopolgate_FEP_theta_vs_xi",360,0,TMath::TwoPi(),xi,360,0,TMath::Pi(),theta);
-          obj.FillHistogram(dirname, "nopolgate_FEP_phi_vs_xi",360,0,TMath::TwoPi(),xi,360,0,TMath::TwoPi(),phi);
-
-          obj.FillHistogram(dirname, "nopolgate_FEP_PeterXi_vs_ChrisXi",360,0,360,hit.GetXiChris(&track)*TMath::RadToDeg(),360,0,360,xi*TMath::RadToDeg());
-
-          bool allBad = true;
-          for (int ip=0; ip < nInteractions; ip++){
-            if (std::abs(simTheta-hit.GetTheta(ip))*TMath::RadToDeg() < 1.5) {
-              allBad = false;
-              break;
+        if (simHit.IsFEP()) {
+          obj.FillHistogram(dirname, "n0_local_pos_xy_FEP",200,-50,50,xx,200,-50,50,yy);
+          obj.FillHistogram(dirname, "n0_theta_vs_phi_FEP",720,0,TMath::TwoPi(),ipPhi,360,0,TMath::Pi(),ipTheta);
+        }
+        else {
+          obj.FillHistogram(dirname, "n0_local_pos_xy_!FEP",200,-50,50,xx,200,-50,50,yy);
+          obj.FillHistogram(dirname, "n0_theta_vs_phi_!FEP",720,0,TMath::TwoPi(),ipPhi,360,0,TMath::Pi(),ipTheta);
+        }
+        if (ip == 0) r0 = TMath::Sqrt(xx*xx + yy*yy);
+        else {
+          if (ip == 1 && 19.5 < r0 && r0 < 20.5){
+            if (simHit.IsFEP()) {
+              obj.FillHistogram(dirname, "n0_local_pos_xy_FEP_r0",200,-50,50,xx,200,-50,50,yy);
+              obj.FillHistogram(dirname, "n0_theta_vs_phi_FEP_r0",720,0,TMath::TwoPi(),ipPhi,360,0,TMath::Pi(),ipTheta);
+            }
+            else { 
+              obj.FillHistogram(dirname, "n0_local_pos_xy_!FEP_r0",200,-50,50,xx,200,-50,50,yy);
+              obj.FillHistogram(dirname, "n0_theta_vs_phi_!FEP_r0",720,0,TMath::TwoPi(),ipPhi,360,0,TMath::Pi(),ipTheta);
             }
           }
-          if (allBad) obj.FillHistogram(dirname,"bad_evt_E",300,1200,1500,energy_corrected);
-          else obj.FillHistogram(dirname,"good_evt_E",300,1200,1500,energy_corrected);
+        }
+      }
+    }
+  }
+  */
+  
+  //SINGLES
+  int gSize = gretina->Size();
+  for (int i=0; i < gSize; i++){
+    TGretinaHit &hit = gretina->GetGretinaHit(i);
+    TGretinaHit hitCopy;
+    hit.Copy(hitCopy);
+    hitCopy.SortSegments();
+    std::map<int,int> truePoints = buildCorrectMap(hit,hitCopy);
+    EnergySmear(hit,rand_gen);
+    EnergySmear(hitCopy,rand_gen);
+    
+    int nInteractions = hit.NumberOfInteractions();
+    // double energy_corrected = rand_gen->Gaus(hit.GetCoreEnergy(),hit.GetCoreEnergy()*0.0027/2.35);
+    // if (!stopped) energy_corrected = hit.GetDoppler(simHit.GetBeta(),&track);
+    double core_energy = hit.GetCoreEnergy();
 
-          // for (auto badevts : gates["bad"]){
-          //   if (badevts->IsInside(xi,energy_corrected)){
-          //     // obj.FillHistogram(dirname,"bad_evt_GEANTE_vs_GRUTE",300,1200,1500,energy_corrected,300,1200,1500,simHit.GetDoppler(0,&track));
-          //     for (int ip=0; ip < nInteractions; ip++){
-          //       obj.FillHistogram(dirname,Form("bad_evt_Ediff_%s",badevts->GetName()),12,0,12,ip,200,-100,100,simHit.GetDoppler(0,&track) - hit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track,ip));
-          //       obj.FillHistogram(dirname,Form("bad_evt_thetaDiff_%s",badevts->GetName()),12,0,12,ip,80,-20,20,(simTheta-hit.GetTheta(ip))*TMath::RadToDeg());
-          //       obj.FillHistogram(dirname,Form("bad_evt_thetaSim_%s",badevts->GetName()),180,0,180,simTheta*TMath::RadToDeg());
+    double true_energy = core_energy;
+    double time_energy = core_energy;
+    double main_energy = core_energy;
+    if (!stopped){
+      true_energy = simHit.GetDoppler(0.0);
+      time_energy = hit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")),yta,&track);
+      main_energy = hitCopy.GetDopplerYta(simHit.GetBeta(), yta, &track);
+    }
+    
+    double theta = hit.GetTheta();
+    double phi = hit.GetPhi();
+    int cryID = hit.GetCrystalId();
+    int ringNum = hit.GetRingNumber();
+
+    double xi = 0.0; 
+    if (stopped) xi = hit.GetXi();
+    else xi = hit.GetXi(&track);
+    
+    obj.FillHistogram(dirname, "core_energy", 8192,0,8192, core_energy);
+    obj.FillHistogram(dirname, "gam_dop_sgl",4096,0,4096, time_energy);
+    
+    if (simHit.IsFEP()) {
+      // obj.FillHistogram(dirname, "FEP_spec_true_energy_vs_theta",1000,0,TMath::Pi(),theta,4000,1100,1500,true_energy);
+      // obj.FillHistogram(dirname, "FEP_spec_time_sorted_vs_theta",1000,0,TMath::Pi(),theta,4000,1100,1500,time_energy);
+      // obj.FillHistogram(dirname, "FEP_spec_main_sorted_vs_theta",1000,0,TMath::Pi(),theta,4000,1100,1500,main_energy);
+      obj.FillHistogram(dirname,"FEP_nInteractions",16,0,16,nInteractions);
+      if (nInteractions > 1){
+        int myFP = -1;
+        int mySP = -1;
+        comptonSortTest2(hitCopy,myFP,mySP);
+        obj.FillHistogram(dirname,"gretina_map_FEP_nInt>1",900,0,360,phi*TMath::RadToDeg(),450,0,180,theta*TMath::RadToDeg());
+        double eSum = 0;
+        for (int nip=0; nip < nInteractions; nip++) eSum += hit.GetSegmentEng(nip);
+        obj.FillHistogram(dirname,"Esum_vs_CoreEnergy",1000,1000,2000,eSum,1000,1000,2000,core_energy);
+
+        //Guess Matrices
+        int algoGoodFP = truePoints[myFP] == 0;
+        int algoGoodSP = truePoints[mySP] == 1;
+        int mainGoodFP = truePoints[0] == 0;
+        int mainGoodSP = truePoints[1] == 1;
+        obj.FillHistogram(dirname, "guess_matrix_algo",2,0,2,algoGoodFP,2,0,2,algoGoodSP);
+        obj.FillHistogram(dirname, "guess_matrix_main",2,0,2,mainGoodFP,2,0,2,mainGoodSP);
+
+        // compton and klein nishina quantities
+        // > 1 means that the scattering angle cos is > the energy cos
+        double trueCompt = calcEnergyRatio(core_energy,hit.GetSegmentEng(0)) + TMath::Cos(hit.GetScatterAngle());
+        double mainCompt = calcEnergyRatio(core_energy,hitCopy.GetSegmentEng(0)) + TMath::Cos(hitCopy.GetScatterAngle());
+        double algoCompt = calcEnergyRatio(core_energy,hitCopy.GetSegmentEng(myFP)) + TMath::Cos(hitCopy.GetScatterAngle(myFP,mySP));
+        double trueE1Compt = calcE1Compt(hit,0,1);
+        double trueKn = calcKN(hit,0,1);
+        double mainKn = calcKN(hitCopy,0,1);
+        double algoKn = calcKN(hitCopy,myFP,mySP);
+        double truePosCos = TMath::Cos(hit.GetScatterAngle(0,1));
+        double trueEngCos = calcEnergyCos(core_energy,hit.GetSegmentEng(0));
+        
+        if (nInteractions == 2) {
+          obj.FillHistogram(dirname, "Algo_Chi2",1000,0,5,std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(myFP)) - TMath::Cos(hitCopy.GetScatterAngle(myFP,mySP)),2));
+          double theChi2 = std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(0)) - TMath::Cos(hit.GetScatterAngle(0,1)),2);
+          double swapChi2 = std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(1)) - TMath::Cos(hit.GetScatterAngle(1,0)),2);
+          bool doswap = theChi2 > swapChi2;
+          bool bothRight = truePoints[myFP] == 0 && truePoints[mySP] == 1;
+
+          if (bothRight && doswap) {
+            obj.FillHistogram(dirname,"AlgoChi2_alpha_vs_compt_FEP",400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+            obj.FillHistogram(dirname,"AlgoChi2_kn_vs_compt_FEP",400,-1,3,trueCompt,200,0,2,trueKn);
+            obj.FillHistogram(dirname,"AlgoChi2_scatCos_vs_engCos_FEP",300,-5,1,trueEngCos,200,-1,1,truePosCos);
+          }
+          
+          int theFP = 1;
+          int theSP = 1;
+          if (doswap) {theFP = 0; theSP = 0;}
+          obj.FillHistogram(dirname, "guess_matrix_min_chi2",2,0,2,theFP,2,0,2,theSP);
+        }
+
+        // alpha vs compt
+        obj.FillHistogram(dirname,"surf_TRUE_alpha_vs_compt_FEP",400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+        obj.FillHistogram(dirname,"surf_MAIN_alpha_vs_compt_FEP",400,-1,3,mainCompt,200,0,20,hitCopy.GetAlpha()*TMath::RadToDeg());
+        obj.FillHistogram(dirname,"surf_ALGO_alpha_vs_compt_FEP",400,-1,3,algoCompt,200,0,20,hitCopy.GetAlpha(myFP,mySP)*TMath::RadToDeg());
+        // kn vs compt
+        obj.FillHistogram(dirname,"surf_TRUE_kn_vs_compt_FEP",400,-1,3,trueCompt,200,0,2,trueKn);
+        obj.FillHistogram(dirname,"surf_MAIN_kn_vs_compt_FEP",400,-1,3,mainCompt,200,0,2,mainKn);
+        obj.FillHistogram(dirname,"surf_ALGO_kn_vs_compt_FEP",400,-1,3,algoCompt,200,0,2,algoKn);
+        // e1Compt
+        obj.FillHistogram(dirname,"surf_TRUE_E1compt_vs_compt_FEP",400,-1,3,trueCompt,400,-2,2,trueE1Compt);
+        obj.FillHistogram(dirname,"surf_TRUE_kn_vs_E1compt_FEP",400,-2,2,trueE1Compt,200,0,2,trueKn);
+        obj.FillHistogram(dirname,"surf_TRUE_alpha_vs_E1compt_FEP",400,-2,2,trueE1Compt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+        //eratio vs scatCos
+        obj.FillHistogram(dirname,"surf_TRUE_scatCos_vs_engCos_FEP",300,-5,1,trueEngCos,200,-1,1,truePosCos);
+        obj.FillHistogram(dirname,"surf_TRUE_E1_vs_engCos_FEP",300,-5,1,trueEngCos,200,0,1,hit.GetSegmentEng(0)/core_energy);
+        obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP",400,-1,1,truePosCos,200,0,1,hit.GetSegmentEng(0)/core_energy);
+        //theta & phi vs compt
+        obj.FillHistogram(dirname,"surf_TRUE_theta_vs_compt_FEP",400,-1,3,trueCompt,360,0,180,theta*TMath::RadToDeg());
+        obj.FillHistogram(dirname,"surf_TRUE_phi_vs_compt_FEP",400,-1,3,trueCompt,720,0,360,phi*TMath::RadToDeg());
+
+        //e1 & e2 vs compt
+        obj.FillHistogram(dirname,"surf_TRUE_E1_vs_compt_FEP",400,-1,3,trueCompt,500,0,1,hit.GetSegmentEng(0)/core_energy);
+        obj.FillHistogram(dirname,"surf_TRUE_E2_vs_compt_FEP",400,-1,3,trueCompt,500,0,1,hit.GetSegmentEng(1)/core_energy);
+
+        // if (comptonAllowed(hit))
+        //   obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP_ALLOWED",400,-1,1,TMath::Cos(hit.GetScatterAngle(0,1)),200,0,1,hit.GetSegmentEng(0)/core_energy);
+        // else
+        //   obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP_!ALLOWED",400,-1,1,TMath::Cos(hit.GetScatterAngle(0,1)),200,0,1,hit.GetSegmentEng(0)/core_energy);
+
+        //INTERACTION POINT ANALYSIS
+        if (nInteractions < 5){
+          obj.FillHistogram(dirname, Form("guess_matrix_algo_%dint",nInteractions),2,0,2,algoGoodFP,2,0,2,algoGoodSP);
+          obj.FillHistogram(dirname, Form("guess_matrix_main_%dint",nInteractions),2,0,2,mainGoodFP,2,0,2,mainGoodSP);
+
+          //matrix breakdown
+          obj.FillHistogram(dirname, Form("brkdn_%dint_F%dS%d_TRUE_kn_vs_compt",nInteractions,algoGoodFP,algoGoodSP),400,-1,3,trueCompt,200,0,2,trueKn);
+          obj.FillHistogram(dirname, Form("brkdn_%dint_F%dS%d_TRUE_alpha_vs_compt",nInteractions,algoGoodFP,algoGoodSP),400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+          if (!(algoGoodFP == 1 && algoGoodSP == 1)){
+            obj.FillHistogram(dirname, Form("brkdn_%dint_F%dS%d_ALGO_kn_vs_compt",nInteractions,algoGoodFP,algoGoodSP),400,-1,3,algoCompt,200,0,2,algoKn);
+            obj.FillHistogram(dirname, Form("brkdn_%dint_F%dS%d_ALGO_alpha_vs_compt",nInteractions,algoGoodFP,algoGoodSP),400,-1,3,algoCompt,200,0,20,hitCopy.GetAlpha(myFP,mySP)*TMath::RadToDeg());
+          }
+
+          for (int pp=0; pp < nInteractions; pp++) {
+            obj.FillHistogram(dirname, Form("IP_energy_vs_idx_%dint",nInteractions), 7,0,7, pp, 1800,0,1800,hit.GetSegmentEng(pp)); 
+            obj.FillHistogram(dirname, Form("IP_esort_idx_vs_idx_%dint",nInteractions), 7,0,7, pp, 7,0,7, truePoints[pp]); 
+            obj.FillHistogram(dirname, Form("IP_localz_vs_idx_%dint",nInteractions), 7,0,7, pp, 100,0,100,hit.GetLocalPosition(pp).Z());
+            if (gates.count("e1_cos") && gates["e1_cos"][0]->IsInside(truePosCos,hit.GetSegmentEng(0)/core_energy)) {
+              obj.FillHistogram(dirname, Form("GATED_IP_energy_vs_idx_%dint",nInteractions), 7,0,7, pp, 1800,0,1800,hit.GetSegmentEng(pp));
+              obj.FillHistogram(dirname, Form("GATED_IP_localz_vs_idx_%dint",nInteractions), 7,0,7, pp, 100,0,100,hit.GetLocalPosition(pp).Z());
+            }
+          }
+          if (gates.count("e1_cos") && gates["e1_cos"][0]->IsInside(truePosCos,hit.GetSegmentEng(0)/core_energy)) {
+            obj.FillHistogram(dirname, "GATED_gretina_map",900,0,360,phi*TMath::RadToDeg(),450,0,180,theta*TMath::RadToDeg());
+          }
+          //region gates
+          // if (gates["algo_kn_compt"][0] && gates["algo_kn_compt"][0]->IsInside(trueCompt,trueKn)) {
+          //   obj.FillHistogram(dirname,"GATED_surf_alpha_vs_compt_true_FEP",400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+          //   for (int pp=0; pp < nInteractions; pp++){
+          //     obj.FillHistogram(dirname, Form("GATED_energy_vs_idx_%dint",nInteractions), 7,0,7, pp, 1800,0,1800,hit.GetSegmentEng(pp));
+          //     obj.FillHistogram(dirname, Form("GATED_localz_vs_idx_%dint",nInteractions), 7,0,7, pp, 100,0,100,hit.GetLocalPosition(pp).Z());
+          //     obj.FillHistogram(dirname, Form("GATED_esort_idx_vs_idx_%dint",nInteractions), 7,0,7, pp, 7,0,7, truePoints[pp]);
+          //   }
+          // }
+        }
+
+        //energy spectra + vs xi
+        double algo_energy = core_energy;
+        if (!stopped) algo_energy = hitCopy.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")),yta,&track,myFP);
+        double algo_xi = hitCopy.GetXi(&track,myFP,mySP);
+        // obj.FillHistogram(dirname, "gam_dop_algo_fep",1500,0,1500, algo_energy);
+        // obj.FillHistogram(dirname, "gam_dop_time_fep",1500,0,1500, time_energy);
+        // obj.FillHistogram(dirname, "gam_dop_main_fep",1500,0,1500, main_energy);
+        obj.FillHistogram(dirname, "gam_dop_algo_fep_vs_xi",360,0,TMath::TwoPi(),algo_xi,1500,0,1500,algo_energy);
+        obj.FillHistogram(dirname, "True_xi_vs_Algo_xi",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
+      }
+    }
+
+    if (nInteractions > 1){
+      // obj.FillHistogram(dirname, "core_energy_vs_xi",360,0,TMath::TwoPi(),xi, 4096,0,4096, core_energy);
+      obj.FillHistogram(dirname, "nopolgate_Edop_vs_xi",360,0,TMath::TwoPi(),xi,1500,0,1500,time_energy);
+      if (simHit.IsFEP()) {
+        obj.FillHistogram(dirname, "nopolgate_Edop_vs_xi_FEP",360,0,TMath::TwoPi(),xi,4000,1100,1500,time_energy);
+        // if (nInteractions < 10) 
+        //   obj.FillHistogram(dirname, Form("nopolgate_Edop_vs_xi_FEP_nint%d",nInteractions),360,0,TMath::TwoPi(),xi,4000,1100,1500,time_energy);
+      }
+    }
+
+    // //IP core energy theta
+    // for (int ip=0; ip < nInteractions; ip++) {
+    //   double ip_theta = hit.GetTheta(ip);
+    //   obj.FillHistogram(dirname, "IP_Ecore_vs_theta",120,0.6,2.1,ip_theta,1850,0,1850,core_energy);
+    //   // obj.FillHistogram(dirname, "IP_Ecore_vs_theta_fine",600,0.6,2.1,ip_theta,4000,1000,1800,core_energy);
+    //   // if (ip == 0 && simHit.IsFEP()) obj.FillHistogram(dirname, "IP_Ecore_vs_theta_fine_fp_fep",600,0.6,2.1,ip_theta,4000,1000,1800,core_energy);
+    //   // if (simHit.IsFEP()) 
+    //   //   obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta",120,0.6,2.1,ip_theta,1850,0,1850,core_energy);
+    //   // else 
+    //   //   obj.FillHistogram(dirname, "IP_Ecore_!FEP_vs_theta",120,0.6,2.1,ip_theta,1850,0,1850,core_energy);
+    // }
+    
+    /*
+    if (nInteractions > 1) {
+      TF1 *fDOP = new TF1("fdop","[0]*TMath::Sqrt(1-[1]*[1])/(1 - [1]*TMath::Cos(x))",0,TMath::Pi());
+      TF1 *fRES = new TF1("fresolution",dopplerbroad,0,TMath::Pi(),6);
+      fDOP->SetParameter(1,0.4266);
+      fRES->SetParameter(1,0.4266);
+      fRES->SetParameter(2,GValue::Value("DOPP_BROAD_DTHETA"));
+      fRES->SetParameter(3,GValue::Value("DOPP_BROAD_DBETA"));
+      fRES->SetParameter(4,GValue::Value("DOPP_BROAD_BEAMSPOT"));
+      fRES->SetParameter(5,GValue::Value("DOPP_BROAD_SCALE"));
+
+      double H_elo = 1309;
+      double H_ehi = 1329;
+      int step = 20;
+      int H_nbins = int(H_ehi-H_elo)/step;
+      double CentroidRestEnergy = H_elo;
+      
+      std::vector<int> passedIP;
+      
+      while (CentroidRestEnergy < H_ehi){
+        CentroidRestEnergy += step;
+        fDOP->SetParameter(0,CentroidRestEnergy);
+        fRES->SetParameter(0,CentroidRestEnergy);
+        
+        for (int ip=0; ip < nInteractions; ip++){
+          if (checkEnergyTheta(fDOP,fRES,core_energy,hitCopy.GetTheta(ip))){
+            passedIP.push_back(ip);
+          }
+        }
+
+        // if (CentroidRestEnergy == 1329.0 && simHit.IsFEP()){
+        //   double energyThresh = 0;
+        //   while (energyThresh < 500) {
+        //     bool passedGate = false;
+        //     for (int nps =0 ; nps < passedIP.size(); nps++){
+        //       if (hit.GetSegmentEng(passedIP[nps]) > energyThresh) {
+        //         passedGate = true;
+        //         break;
+        //       }
+        //     }
+        //     if (passedGate) {
+        //       obj.FillHistogram(dirname, Form("RE1329_pass_xi_thresh%f",energyThresh),90,0,TMath::TwoPi(),xi);
+        //       obj.FillHistogram(dirname, Form("RE1329_pass_coreE_vs_theta_thresh%f",energyThresh),600,0.6,2.1,hit.GetTheta(0),4000,1000,1800,core_energy);
+        //     }
+        //     else {
+        //       obj.FillHistogram(dirname, Form("RE1329_fail_xi_thresh%f",energyThresh),90,0,TMath::TwoPi(),xi);
+        //       obj.FillHistogram(dirname, Form("RE1329_fail_coreE_vs_theta_thresh%f",energyThresh),600,0.6,2.1,hit.GetTheta(0),4000,1000,1800,core_energy);
+        //     }
+        //     energyThresh += 50;
+        //   }
+        // }
+
+        if (passedIP.empty()) 
+          obj.FillHistogram(dirname, "CentroidEnergy_vs_DopReconNotPassed",H_nbins,H_elo,H_ehi,main_energy,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+        
+        else {
+          double E_pass_dop = hitCopy.GetDopplerYta(simHit.GetBeta(), 0.0, &track, passedIP[0]);
+          obj.FillHistogram(dirname, "CentroidEnergy_vs_DopRecon",H_nbins,H_elo,H_ehi,E_pass_dop,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+
+          //NEW SECOND INTERACTION POINT
+          double xiOrder, xiMain, xiCompt = hitCopy.GetXi(&track);
+          int spOrder, spMain, spCompt = 1;
+          if (passedIP[0] != 0) {
+            xiMain = hitCopy.GetXi(&track,passedIP[0],0);
+            spMain = 0;
+
+            xiOrder = hitCopy.GetXi(&track,passedIP[0],passedIP[0]+1);
+            spOrder = passedIP[0]+1;
+          }
+
+          int myFP = -1;
+          int mySP = -1;
+          comptonSortGate(hitCopy,passedIP,myFP,mySP);
+          // double FOM = 0;
+          // for (int fp=0; fp < passedIP.size(); fp++){
+          //   double er = 511.0/hitCopy.GetCoreEnergy() * hitCopy.GetSegmentEng(passedIP[fp])/(hitCopy.GetCoreEnergy() - hitCopy.GetSegmentEng(passedIP[fp]));
+          //   for (int sp=0; sp < nInteractions; sp++){
+          //     if (passedIP[fp] == sp) continue;
+          //     double cosp = TMath::Cos(hitCopy.GetScatterAngle(passedIP[fp],sp));
+          //     double x = er + cosp;
+          //     double y = hitCopy.GetAlpha(passedIP[fp],sp);
+          //     double ffom = std::abs(1-x)*y;
+          //     if (FOM < ffom) {
+          //       FOM = ffom;
+          //       // best_points = std::make_pair(fp,sp);
+          //       myFP = passedIP[fp];
+          //       mySP = sp;
           //     }
           //   }
           // }
-          obj.FillHistogram(dirname, "TimeSorted_Doppler",4096,0,4096,true_energy);
-
-          // ECORE THETA INTERACTION POINT GATES
-          obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta_TRUEFP",120,0.6,2.1,hitCopy.GetTheta(),4096,0,4096,core_energy);
-          for (int ip=0; ip < nInteractions; ip++)
-            obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta",120,0.6,2.1,hit.GetTheta(ip),4096,0,4096,core_energy);
+          xiCompt = hitCopy.GetXi(&track,myFP,mySP);
           
-          for (auto ipgate : gates["intpnt"]){
-            std::string ipgname = std::string(ipgate->GetName());
-            std::vector<int> IPCorepass;
-            for (int ip=0; ip < nInteractions; ip++){
-              if (ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
-                IPCorepass.push_back(ip);
-              }
-            }
-
-            if (IPCorepass.size() > 0){
-              obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
-              double E_pass_dop = hit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track, IPCorepass[0]);
-              
-              double IPxi = xi;
-              if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
-              else if (IPCorepass[0] != 0) IPxi = hit.GetXi(&track,IPCorepass[0],0);
-              
-              obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
-              obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size(),18,0,360,IPxi*TMath::RadToDeg());
-              obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),theta);
-              obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
-              
-              if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
-                obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
-              else 
-                obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
-
-              obj.FillHistogram(dirname, Form("IP_%s_Edop_pass",ipgname.c_str()),4096,0,4096,E_pass_dop);
-            } 
-            else {
-              obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass",ipgname.c_str()),4096,0,4096,energy_corrected);
-              obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),xi,4096,0,4096,energy_corrected);
-            }
-          }
-
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_nInt>2",4096,0,4096, energy_corrected);
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_scatterAngle",180,0,180,scatterAngle*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_E-E1/E1",1000,0,10,diffEratio,4096,0,4096,energy_corrected);
-          // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_cosScatterAngle_vs_diffEratio",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
-
-          // print relative coords to first point
-          // bool passed = TMath::Cos(scatterAngle) > - diffEratio;
-          // TVector3 v1 = hitCopy.GetIntPosition(0);
-          // TVector3 v2 = TVector3(0,-v1.Z()/v1.Y(),1);
-          // TVector3 v3 = v1.Cross(v2);
-          // double mtxData[9] = {v1.Unit().X(),v1.Unit().Y(),v1.Unit().Z(),v2.Unit().X(),v2.Unit().Y(),v2.Unit().Z(),v3.Unit().X(),v3.Unit().Y(),v3.Unit().Z()};
-          // TMatrixT <double> mtx = TMatrixT<double> (3,3,mtxData,"F");
-          // mtx.Invert();
-          // TVector3 pos;
-          // if (nEvents < 10001){
-          //   static FILE *pFile;
-          //   pFile = fopen("scatter_coords.dat","a");
-          //   if (nEvents == 1) fprintf(pFile,"evt,nint,cut,eng,x,y,z\n");
-          //   for (int np=0; np < nInteractions; np++){
-          //     pos = mtx*(hitCopy.GetIntPosition(np));
-          //     fprintf(pFile,"%d,%d,%d,%f,%f,%f,%f\n",nEvents-1,nInteractions,passed,hitCopy.GetSegmentEng(np),pos.X(),pos.Y(),pos.Z());
+          // int fpCompt = passedIP[0];
+          // for (int fpidx = 0; fpidx < (int) passedIP.size(); fpidx++){
+          //   double FoM = 0;
+          //   double cosE = 1 - 511.0/hitCopy.GetCoreEnergy() * hitCopy.GetSegmentEng(passedIP[fpidx])/(hitCopy.GetCoreEnergy() - hitCopy.GetSegmentEng(passedIP[fpidx]));
+          //   if (cosE < -1) break;
+          //   for (int sp=0; sp < nInteractions; sp++){
+          //     if (sp == passedIP[fpidx]) continue;
+          //     double cosP = TMath::Cos(hitCopy.GetScatterAngle(passedIP[fpidx],sp));
+          //     if (FoM < std::pow(cosP - cosE,2)){
+          //       FoM = std::pow(cosP - cosE,2);
+          //       fpCompt = passedIP[fpidx];
+          //       spCompt = sp;
+          //     }
           //   }
-          //   fclose(pFile);
-          // } 
+          //   if ((1-cosE) + TMath::Cos(hitCopy.GetScatterAngle(fpCompt,spCompt)) > -0.1) break;
+          // }
+          // xiCompt = hitCopy.GetXi(&track,fpCompt,spCompt);
 
-          //NU GATED
-          if (TMath::Cos(scatterAngle) > 0.0 - diffEratio){
-            obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-            obj.FillHistogram(dirname,"gamma_COMPTCUT_FEP_theta_vs_xi",360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
+          // obj.FillHistogram(dirname, "CentroidEnergy_vs_TrueXi",90,0,TMath::TwoPi(),xi,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+          // obj.FillHistogram(dirname, "CentroidEnergy_vs_OrderXi",90,0,TMath::TwoPi(),xiOrder,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+          // obj.FillHistogram(dirname, "CentroidEnergy_vs_MainXi",90,0,TMath::TwoPi(),xiMain,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+          // obj.FillHistogram(dirname, "CentroidEnergy_vs_ComptXi",90,0,TMath::TwoPi(),xiCompt,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+
+          if (simHit.IsFEP()){
+            // obj.FillHistogram(dirname, "TrueXi_vs_OrderXi",90,0,TMath::TwoPi(),xiOrder,90,0,TMath::TwoPi(),xi);
+            // obj.FillHistogram(dirname, "TrueXi_vs_MainXi",90,0,TMath::TwoPi(),xiMain,90,0,TMath::TwoPi(),xi);
+            obj.FillHistogram(dirname, "TrueXi_vs_ComptXi",360,0,TMath::TwoPi(),xiCompt,360,0,TMath::TwoPi(),xi);
+
+            // int firstPointRight = !(abs(hit.GetTheta() - hitCopy.GetTheta(fpCompt)) > 0.0 || abs(hit.GetPhi() - hitCopy.GetPhi(fpCompt)) > 0.0);
+            // int secndPointRight = !(abs(hit.GetTheta(1) - hitCopy.GetTheta(spCompt)) > 0.0 || abs(hit.GetPhi(1) - hitCopy.GetPhi(spCompt)) > 0.0);
+
+            // obj.FillHistogram(dirname,"Guess_mtx_compt_sp_vs_fp",2,0,2,firstPointRight,2,0,2,secndPointRight);
+            // obj.FillHistogram(dirname, Form("TrueXi_vs_ComptXi_fp%d_sp%d",firstPointRight,secndPointRight),90,0,TMath::TwoPi(),xiCompt,90,0,TMath::TwoPi(),xi);
           }
-          // else obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_phase_reg",32,-1,3,TMath::Cos(scatterAngle)+diffEratio,4096,0,4096, energy_corrected);
-          // if (diffEratio > 2){
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPT>2GATE_FEP_cosScatterAngle_vs_E-E1/E1",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
-          // } else if (TMath::Cos(scatterAngle) > 0.25 - diffEratio) {
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTGATE_FEP_vs_AltDop",4096,0,4096,E2,4096,0,4096,energy_corrected);
-          // } else {
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_E-E1/E1",1000,0,10,diffEratio,4096,0,4096,energy_corrected);
-          //   obj.FillHistogram(dirname,"gamma_corrected_singles_COMPTNOTGATE_FEP_vs_AltDop",4096,0,4096,E2,4096,0,4096,energy_corrected);
+          
+          // if (simHit.IsFEP()) {
+          //   obj.FillHistogram(dirname, "CentroidEnergy_vs_TrueXi_FEP",90,0,TMath::TwoPi(),xi,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+          //   obj.FillHistogram(dirname, "CentroidEnergy_vs_CalcXi_FEP",90,0,TMath::TwoPi(),xi,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
+          // }
+          // else {
+          //   obj.FillHistogram(dirname, "CentroidEnergy_vs_TrueXi_!FEP",90,0,TMath::TwoPi(),xi,H_nbins,H_elo-0.5,H_ehi-0.5,CentroidRestEnergy);
           // }
         }
-      } 
-    }
+        passedIP.clear();
+      }
+    }*/
+    
+    /*
+    if (nInteractions > 1){
+      // ECORE THETA INTERACTION POINT GATES
+      obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta_TRUEFP",120,0.6,2.1,hitCopy.GetTheta(),4096,0,4096,core_energy);
+      for (int ip=0; ip < nInteractions; ip++)
+        obj.FillHistogram(dirname, "IP_Ecore_FEP_vs_theta",120,0.6,2.1,hit.GetTheta(ip),4096,0,4096,core_energy);
+      
+      for (auto ipgate : gates["intpnt"]){
+        std::string ipgname = std::string(ipgate->GetName());
+        std::vector<int> IPCorepass;
+        for (int ip=0; ip < nInteractions; ip++){
+          if (ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
+            IPCorepass.push_back(ip);
+          }
+        }
 
-    //NNADDBACK
-    //loop over multiplicity
-    // for (int n=0; n<3; n++){
-    //   //loop over hits for each multiplicity spectrum
-    //   int nnSize = gretina->NNAddbackSize(n);
-    //   for (int i=0; i < nnSize; i++){
-    //     dirname = "basicsim";
+        if (IPCorepass.size() > 0){
+          obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPCorepass.size());
+          double E_pass_dop = hit.GetDopplerYta(s800sim->AdjustedBeta(simHit.GetBeta()), yta, &track, IPCorepass[0]);
+          
+          double IPxi = xi;
+          if (IPCorepass[0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPCorepass[0],IPCorepass[0]+1);
+          else if (IPCorepass[0] != 0) IPxi = hit.GetXi(&track,IPCorepass[0],0);
+          
+          obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPoint",ipgname.c_str()),9,2,11,nInteractions,18,0,360,IPxi*TMath::RadToDeg());
+          obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_totPass",ipgname.c_str()),9,1,10,(int) IPCorepass.size(),18,0,360,IPxi*TMath::RadToDeg());
+          obj.FillHistogram(dirname, Form("IP_%s_pass_theta_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,180,0,TMath::Pi(),theta);
+          obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+          
+          if (theta*TMath::RadToDeg() > 55 && theta*TMath::RadToDeg() < 100)
+            obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_theta55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+          else 
+            obj.FillHistogram(dirname, Form("IP_%s_pass_Edop_vs_thetaNOT55-100",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
 
-    //     //get hit and hit data 
-    //     TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-    //     bool isFEP = (fabs(gammaEn - nnhit.GetCoreEnergy()) < 1.5);
-    //     double trueTheta = nnhit.GetThetaDeg();
-    //     double truePhi = nnhit.GetPhiDeg();
-    //     double dummy;
-    //     double trueXi = azimuthalCompton(nnhit,&track,dummy)*TMath::RadToDeg();
-    //     double trueEnergy = nnhit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
-    //     int nInteractions = nnhit.NumberOfInteractions();
-    //     // if (std::abs(trueEnergy - 1018) > 4){
-    //     //   double rel_beta = s800sim->AdjustedBeta(GValue::Value("BETA"));
-    //     //   double rel_gamma = 1./(sqrt(1.-pow(rel_beta,2.)));
-    //     //   TVector3 gret_pos = nnhit.GetIntPosition(2);
-    //     //   gret_pos.SetY(gret_pos.Y() + yta);
-    //     //   trueEnergy = nnhit.GetCoreEnergy()*rel_gamma *(1 - rel_beta*TMath::Cos(gret_pos.Angle(track)));
-    //     // }
-    //     if (std::abs(trueEnergy - 1018) > 4 && isFEP && nInteractions > 1 && n < 3){
-    //       obj.FillHistogram(dirname,"bad_events_theta_vs_phi",720,0,360,truePhi,360,0,180,trueTheta);
-    //       obj.FillHistogram(dirname,"bad_events_TrueEnergy_vs_TrueXi",360,0,360,trueXi,4096,0,4096,trueEnergy);
-    //       obj.FillHistogram(dirname,"bad_events_energy_vs_ninteractions>1",10,0,10,nInteractions,4096,0,4096,trueEnergy);
-    //     }
-        
-    //     EnergySmear(nnhit,rand_gen);
-        
-    //     int cryID = nnhit.GetCrystalId();
-    //     int ringNum = nnhit.GetRingNumber();
-    //     double theta = nnhit.GetThetaDeg();
-    //     double phi = nnhit.GetPhiDeg();
-    //     // get the energy depending on whether it's a sim stopped beam
-    //     double gEnergy = 0;
-    //     if (stopped) gEnergy = nnhit.GetCoreEnergy();
-    //     else gEnergy = nnhit.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
+          obj.FillHistogram(dirname, Form("IP_%s_Edop_pass",ipgname.c_str()),4096,0,4096,E_pass_dop);
+        } 
+        else {
+          obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass",ipgname.c_str()),4096,0,4096,energy_corrected);
+          obj.FillHistogram(dirname, Form("IP_%s_Edop_NOpass_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),xi,4096,0,4096,energy_corrected);
+        }
+      }
 
-    //     //only do FEP events
-    //     if (!isFEP) continue;
+      // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_nInt>2",4096,0,4096, energy_corrected);
+      // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_xi",360,0,360,xi*TMath::RadToDeg(),4096,0,4096,energy_corrected);
+      // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_scatterAngle",180,0,180,scatterAngle*TMath::RadToDeg(),4096,0,4096,energy_corrected);
+      // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_vs_E-E1/E1",1000,0,10,diffEratio,4096,0,4096,energy_corrected);
+      // obj.FillHistogram(dirname,"gamma_corrected_singles_FEP_cosScatterAngle_vs_diffEratio",1000,0,10,diffEratio,200,-1,1,TMath::Cos(scatterAngle));
 
-    //     double thresh = 90;
-    //     if (nnhit.GetCoreEnergy() < thresh) continue;
-        
-    //     if (nInteractions == 2) {
-    //       obj.FillHistogram(dirname, "gamma_corrected_2interactions_prompt", 1600,0,1600, gEnergy);
-    //       obj.FillHistogram(dirname, Form("gamma_corrected_2int_n%d",n), 1600,0,1600, gEnergy);
-    //       if (n == 0){
-    //         double int1E = nnhit.GetSegmentEng(0);
-    //         double int2E = nnhit.GetSegmentEng(1);
-    //         obj.FillHistogram(dirname,"ip1_vs_ip2_energy", 1600,0,1600, int2E, 1600,0,1600, int1E);
-    //         if (int1E > int2E) obj.FillHistogram(dirname, "gamma_corrected_ip1>ip2", 1600,0,1600, gEnergy);
-    //         else obj.FillHistogram(dirname, "gamma_corrected_ip1<ip2", 1600,0,1600, gEnergy);
-    //       }
-    //     }
-    //     if (nInteractions > 1 && n < 3){
-    //       double dp;
-    //       double xi = azimuthalCompton(nnhit,&track,dp)*TMath::RadToDeg();
-    //       // obj.FillHistogram(dirname,"energy_vs_ninteractions>1",16,0,16,nInteractions,4096,0,4096,gEnergy);
-    //       obj.FillHistogram(dirname,"energy_vs_dot_product",440,-1.1,1.1,dp,4096,0,4096,gEnergy);
-    //       obj.FillHistogram(dirname,"dp_vs_xi",360,0,360,xi,400,-2,2,dp); 
-    //       obj.FillHistogram(dirname,"energy_vs_xi",360,0,360,xi,1024,0,4096,gEnergy);
-    //       obj.FillHistogram(dirname,"beta_vs_xi",360,0,360,xi,200,0.3,0.5,gammaBeta);
-    //       // obj.FillHistogram(dirname,"trueTheta_vs_trueXi",360,0,360,trueXi,180,0,180,trueTheta);
-    //       // obj.FillHistogram(dirname,"theta_diff_vs_xi_diff",400,-400,400,trueXi - xi,500,-50,50,trueTheta - theta);
-    //       // obj.FillHistogram(dirname,"energy_diff_vs_theta_diff",500,-50,50,theta - trueTheta,600,-300,300,gEnergy - trueEnergy);
-    //       obj.FillHistogram(dirname,"energy_vs_TrueXi",360,0,360,trueXi,4096,0,4096,gEnergy);
-    //       obj.FillHistogram(dirname,"TrueEnergy_vs_TrueXi",360,0,360,trueXi,4096,0,4096,trueEnergy);
-    //       obj.FillHistogram(dirname,"(xi-TrueXi)_vs_(theta-TrueTheta)",200,-50,50,theta-trueTheta,760,-380,380,xi-trueXi);
-    //       // obj.FillHistogram(dirname,"phi_vs_xi",360,0,360,xi,360,0,360,phi);
-    //       // obj.FillHistogram(dirname,"xi_vs_trueXi",360,0,360,trueXi,360,0,360,xi);
-
-    //     } else {
-    //       obj.FillHistogram(dirname, "gamma_corrected_oneIntPoint_prompt", 1600,0,1600, gEnergy);
-    //     }
-        
-    //     //exclude the ng spectrum (n==3)
-    //     if (n < 3){
-    //       obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 1600,0,1600, gEnergy);
-    //     }
-
-    //     char *multiplicity = Form("%d",n);
-    //     if (n == 3) multiplicity = Form("g");
-    //     obj.FillHistogram(dirname, Form("gamma_n%s",multiplicity), 1600,0,1600, gEnergy);
-    //   }
-    // }
+      // print relative coords to first point
+      // bool passed = TMath::Cos(scatterAngle) > - diffEratio;
+      // TVector3 v1 = hitCopy.GetIntPosition(0);
+      // TVector3 v2 = TVector3(0,-v1.Z()/v1.Y(),1);
+      // TVector3 v3 = v1.Cross(v2);
+      // double mtxData[9] = {v1.Unit().X(),v1.Unit().Y(),v1.Unit().Z(),v2.Unit().X(),v2.Unit().Y(),v2.Unit().Z(),v3.Unit().X(),v3.Unit().Y(),v3.Unit().Z()};
+      // TMatrixT <double> mtx = TMatrixT<double> (3,3,mtxData,"F");
+      // mtx.Invert();
+      // TVector3 pos;
+      // if (nEvents < 10001){
+      //   static FILE *pFile;
+      //   pFile = fopen("scatter_coords.dat","a");
+      //   if (nEvents == 1) fprintf(pFile,"evt,nint,cut,eng,x,y,z\n");
+      //   for (int np=0; np < nInteractions; np++){
+      //     pos = mtx*(hitCopy.GetIntPosition(np));
+      //     fprintf(pFile,"%d,%d,%d,%f,%f,%f,%f\n",nEvents-1,nInteractions,passed,hitCopy.GetSegmentEng(np),pos.X(),pos.Y(),pos.Z());
+      //   }
+      //   fclose(pFile);
+      // } 
+      
+    }*/
   }
 
   if(numobj!=list->GetSize()){

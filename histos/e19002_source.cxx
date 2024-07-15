@@ -214,6 +214,56 @@ bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) 
   return hit;
 }
 
+double lastPointPenalty(double x){
+  double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
+  if (val < 0) val = 0;
+  return val + 1;
+}
+
+void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  int N = ghit.NumberOfInteractions();
+  double ipFactor = 308.76*std::pow(N,-0.542);
+  for (int fp=0; fp < N; fp++){
+    double E = ghit.GetCoreEnergy();
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp);
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z(); //*std::pow(E/E2,1.0/3);
+      ffom *= std::pow(E/E2,2)*TMath::Sqrt(ghit.GetLocalPosition(sp).Z());
+      // ffom /= TMath::Sqrt(abs(E1-125)*abs(E2-125))/E;
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2);
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+      // if (fp == sp) continue;
+      // double E2 = ghit.GetSegmentEng(sp);
+      // double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      // double x = er + cosp;
+      // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      // // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      // // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*E/E1;
+      // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,2)*std::pow(E/E2,1.0/3)*kn;
+      // // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,2)*kn;
+
+      // if (ffom < FOM) {
+      //   FOM = ffom;
+      //   FP = fp;
+      //   SP = sp;
+      // }
+    }
+  }
+  return;
+}
+
 void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
   TIter iter(gates_list);
   std::cout << "loading gates:" <<std::endl;
@@ -315,10 +365,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // double ata = 0.0;
           // double bta = 0.0;
           // TVector3 direction = TVector3(ata,-bta,TMath::Sqrt(1-ata*ata-bta*bta));
-          double xi = hit.GetXi();
           double nu = hit.GetScatterAngle();
-          double Eratio = 511.0/core_energy * hit.GetSegmentEng(0)/(core_energy - hit.GetSegmentEng(0));
-          
+
+          int myFP = -1;
+          int mySP = -1;
+          comptonSort(hit,myFP,mySP);
+          double xi = hit.GetXi(nullptr,myFP,mySP);
           // if (hit.GetScatterAngle() > 1.2*TMath::ACos(1-511/core_energy)) {
           //   obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
           //   double thAngles[6] = {40,55,73,95,120,149}; 
@@ -328,9 +380,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //   }
           // }
           obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-          
-          if (TMath::Cos(nu) > 0.25 - Eratio)
-            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_scattergated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
           
           if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
             obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);

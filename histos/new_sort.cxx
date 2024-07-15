@@ -5,6 +5,7 @@
 #include <map>
 #include <cstdio>
 
+#include <TF1.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TMath.h>
@@ -57,6 +58,18 @@ double GetGoodICE(TS800 *s800){
   return value;
 }
 
+double dopplerbroad(double *x, double *p){
+  double sum = pow(p[1]*sin(x[0])/(1-p[1]*cos(x[0]))*p[2],2) + 
+                pow( (-p[1]+cos(x[0]))/((1-p[1]*p[1])*(1-p[1]*cos(x[0])))*p[3] ,2) +
+                pow(p[4]*cos(x[0]),2);
+
+  return p[0]*p[5]*TMath::Sqrt(sum);
+}
+
+bool checkEnergyTheta(TF1* fdop, TF1* fres, double energy, double theta){
+  return fdop->Eval(theta) + fres->Eval(theta) > energy && fdop->Eval(theta) - fres->Eval(theta) < energy;
+}
+
 void LoadGates(TList *gates_list, std::map<std::string,std::vector<GCutG*>> &gates){
   TIter iter(gates_list);
   std::cout << "loading gates:" <<std::endl;
@@ -76,6 +89,30 @@ void CheckGates(std::vector<GCutG*> gates, std::vector<unsigned short> &passed, 
   unsigned short ngates = gates.size();
   for (unsigned short i=0; i < ngates; i++){
     if (gates.at(i)->IsInside(x,y)) passed.push_back(i);
+  }
+  return;
+}
+
+void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  int N = ghit.NumberOfInteractions();
+  for (int fp=0; fp < N; fp++){
+    double E = ghit.GetCoreEnergy();
+    double E1 = ghit.GetSegmentEng(fp);
+    double er = 511.0/E * E1/(E - E1);
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double x = er + cosp;
+      double y = ghit.GetAlpha(fp,sp);
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3)*y*std::pow(E/E1,2)*kn;
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
   }
   return;
 }
@@ -293,7 +330,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           if (tgate){
             obj.FillHistogram(dirname,"gretina_theta_vs_phi",360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            // obj.FillHistogram(dirname,Form("gretina_theta_vs_phi_r%02d",ringnum),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
             obj.FillHistogram(dirname,"core_energy_summary",48,0,48,cryID,4000,0,4000,core_energy);
 
             double yta = s800->GetYta();
@@ -309,7 +345,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
             double xi = hit.GetXi();
 
             obj.FillHistogram(dirname, "prompt_gamma_dop",8192,0,8192,energy_corrected);
+            obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
 
+            if (nInteractions > 1) {
+              int fp, sp;
+              comptonSort(hit,fp,sp);
+              double newxi = hit.GetXi(&track,fp,sp);
+              double new_energy_corrected = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track,fp);
+              obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,new_energy_corrected);
+              obj.FillHistogram(dirname, "new_prompt_gamma_dop_vs_xi",360,0,TMath::TwoPi(),newxi,2000,0,2000,new_energy_corrected);
+            } else {
+              obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,energy_corrected);
+            }
+            /*
             if (!isnan(GValue::Value("BETA_SCAN_STEP"))){
               // beta scan parameters
               double betaMin = GValue::Value("BETA_SCAN_MIN");
@@ -361,49 +409,92 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname,"gamma_singles_corrected",4000,0,4000,energy_btyd);
               obj.FillHistogram(dirname,Form("gamma_singles_corrected_i%02d",detMapRing[cryID]),4000,0,4000,energy_btyd);
             }
+            */
+            if (nInteractions > 1){
+              TF1 *fDOP = new TF1("fdop","[0]*TMath::Sqrt(1-[1]*[1])/(1 - [1]*TMath::Cos(x))",0,TMath::Pi());
+              TF1 *fRES = new TF1("fresolution",dopplerbroad,0,TMath::Pi(),6);
+              fDOP->SetParameter(1,BETA);
+              fRES->SetParameter(1,BETA);
+              fRES->SetParameter(2,GValue::Value("DOPP_BROAD_DTHETA"));
+              fRES->SetParameter(3,GValue::Value("DOPP_BROAD_DBETA"));
+              fRES->SetParameter(4,GValue::Value("DOPP_BROAD_BEAMSPOT"));
+              fRES->SetParameter(5,GValue::Value("DOPP_BROAD_SCALE"));
 
-            for (int ip=0; ip < nInteractions; ip++)
-              obj.FillHistogram(dirname, "IP_Ecore_vs_theta",40,0.6,2.1,hit.GetTheta(ip),2048,0,2048,core_energy);
+              // double CentroidRestEnergy = std::floor(core_energy*(1-BETA*TMath::Cos(0.65))/TMath::Sqrt(1-BETA*BETA));
+              // double ECentMax = std::ceil(core_energy*(1-BETA*TMath::Cos(2.05))/TMath::Sqrt(1-BETA*BETA));
+              // double EMAXCONSIDERED = 4000;
+              double CentroidRestEnergy = 550;
 
-            // ECORE THETA INTERACTION POINT GATES
-            std::map<std::string,std::vector<int>> IPpass;
-            for (auto ipgate : gates["EnergyTheta"]){
-              std::string ipgname = std::string(ipgate->GetName());
-              for (int ip=0; ip < nInteractions; ip++){
-                if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) != std::string::npos && 
-                    ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
-                  IPpass[ipgname].push_back(ip);
+              std::vector<int> passedIP;
+              // while (CentroidRestEnergy < ECentMax && CentroidRestEnergy < EMAXCONSIDERED){
+              while (CentroidRestEnergy < 740){
+                CentroidRestEnergy ++;
+                fDOP->SetParameter(0,CentroidRestEnergy);
+                fRES->SetParameter(0,CentroidRestEnergy);
+                
+                for (int ip=0; ip < nInteractions; ip++){
+                  if (checkEnergyTheta(fDOP,fRES,core_energy,hit.GetTheta(ip))){
+                    passedIP.push_back(ip);
+                  }
+                }
+                if (passedIP.empty()) {
+                  obj.FillHistogram(dirname, "CentroidEnergy_vs_DopReconNotPassed", 120,590,710, energy_corrected, 120,590,710,CentroidRestEnergy);
+                } else {
+                  double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, passedIP[0]);
+                  //NEW SECOND INTERACTION POINT
+                  double IPxi = xi;
+                  if (passedIP[0]+1 < nInteractions) IPxi = hit.GetXi(&track,passedIP[0],passedIP[0]+1);
+                  else if (passedIP[0] != 0) IPxi = hit.GetXi(&track,passedIP[0],0);
+                  obj.FillHistogram(dirname, "CentroidEnergy_vs_Xi",18,0,TMath::TwoPi(),IPxi, 120,590,710,CentroidRestEnergy);
+                  obj.FillHistogram(dirname, "CentroidEnergy_vs_DopRecon", 120,590,710, E_pass_dop, 120,590,710,CentroidRestEnergy);
+                  // obj.FillHistogram(dirname, "CentroidEnergy_vs_Xi_Coarse",360,0,TMath::TwoPi(),IPxi, int(EMAXCONSIDERED),0,EMAXCONSIDERED,CentroidRestEnergy);
+                }
+                passedIP.clear();
+              }
+
+              for (int ip=0; ip < nInteractions; ip++)
+                obj.FillHistogram(dirname, "IP_Ecore_vs_theta",40,0.6,2.1,hit.GetTheta(ip),2048,0,4096,core_energy);
+
+              // ECORE THETA INTERACTION POINT GATES
+              std::map<std::string,std::vector<int>> IPpass;
+              for (auto ipgate : gates["EnergyTheta"]){
+                std::string ipgname = std::string(ipgate->GetName());
+                for (int ip=0; ip < nInteractions; ip++){
+                  if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) != std::string::npos && 
+                      ipgate->IsInside(hit.GetTheta(ip),core_energy) && hit.GetSegmentEng(ip) > 100){
+                    IPpass[ipgname].push_back(ip);
+                  }
                 }
               }
-            }
 
-            //loop over gates again
-            for (auto ipgate : gates["EnergyTheta"]){
-              std::string ipgname = std::string(ipgate->GetName());
-              if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) == std::string::npos) continue;
-              if (IPpass.count(ipgname)) {              
-                //NEW FIRST INTERACTION POINT
-                double IP_theta = hit.GetTheta(IPpass[ipgname][0]);
-                double IP_phi = hit.GetPhi(IPpass[ipgname][0]);
-                bool thetacut = IP_theta*TMath::RadToDeg() > 55 && IP_theta*TMath::RadToDeg() < 100;
-                double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
+              //loop over gates again
+              for (auto ipgate : gates["EnergyTheta"]){
+                std::string ipgname = std::string(ipgate->GetName());
+                if (ipgname.find(gates["outgoing"].at(ind_out)->GetName()) == std::string::npos) continue;
+                if (IPpass.count(ipgname)) {              
+                  //NEW FIRST INTERACTION POINT
+                  double IP_theta = hit.GetTheta(IPpass[ipgname][0]);
+                  double IP_phi = hit.GetPhi(IPpass[ipgname][0]);
+                  bool thetacut = IP_theta*TMath::RadToDeg() > 55 && IP_theta*TMath::RadToDeg() < 100;
+                  double E_pass_dop = hit.GetDopplerYta(s800->AdjustedBeta(GValue::Value("BETA")), s800->GetYta(), &track, IPpass[ipgname][0]);
 
-                obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPpass[ipgname].size());
+                  obj.FillHistogram(dirname, Form("IP_%s_npass_vs_totalPoints",ipgname.c_str()),11,1,12,nInteractions,9,1,10,(int) IPpass[ipgname].size());
 
-                //NEW SECOND INTERACTION POINT
-                double IPxi = xi;
-                if (IPpass[ipgname][0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPpass[ipgname][0],IPpass[ipgname][0]+1);
-                else if (IPpass[ipgname][0] != 0) IPxi = hit.GetXi(&track,IPpass[ipgname][0],0);
+                  //NEW SECOND INTERACTION POINT
+                  double IPxi = xi;
+                  if (IPpass[ipgname][0]+1 < nInteractions) IPxi = hit.GetXi(&track,IPpass[ipgname][0],IPpass[ipgname][0]+1);
+                  else if (IPpass[ipgname][0] != 0) IPxi = hit.GetXi(&track,IPpass[ipgname][0],0);
 
-                // if (IPpass[ipgname].size() < 5){
-                //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPpass[ipgname].size()),360,0,TMath::TwoPi(),IPxi);
-                // }
+                  // if (IPpass[ipgname].size() < 5){
+                  //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dpass",ipgname.c_str(), (int) IPpass[ipgname].size()),360,0,TMath::TwoPi(),IPxi);
+                  // }
 
-                // if (nInteractions < 5 && thetacut)
-                //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dINTPNT",ipgname.c_str(), nInteractions),360,0,TMath::TwoPi(),IPxi);
+                  // if (nInteractions < 5 && thetacut)
+                  //   obj.FillHistogram(dirname, Form("IP_%s_xi_%dINTPNT",ipgname.c_str(), nInteractions),360,0,TMath::TwoPi(),IPxi);
 
-                obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
-                if (thetacut) obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi_thct",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+                  obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+                  if (thetacut) obj.FillHistogram(dirname, Form("IP_%s_Edop_vs_xi_thct",ipgname.c_str()),360,0,TMath::TwoPi(),IPxi,4096,0,4096,E_pass_dop);
+                }
               }
             }
           }
