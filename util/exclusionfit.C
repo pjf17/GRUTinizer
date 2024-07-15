@@ -14,6 +14,10 @@ class ExclusionFit {
     public:
         ExclusionFit() {}
         
+        ExclusionFit(int pRebinFactor) {rebinFactor = pRebinFactor;}
+
+        ExclusionFit(int pRebinFactor, bool pIsExpo) {rebinFactor = pRebinFactor; isExpo = pIsExpo;}
+        
         ExclusionFit(double pXlo,double pXhi) {regions.push_back(std::make_pair(pXlo,pXhi));}
         
         void AddRegion(double pXlo, double pXhi) {
@@ -70,6 +74,10 @@ class ExclusionFit {
         }
 
         void ClearRegions(){regions.clear();}
+
+        void SetExpo() {isExpo = true;}
+        void SetPoly() {isExpo = false;}
+        void SetRebinFactor (int rbf) {rebinFactor = rbf; currentHistName = "";}
         
         double operator() (double *x, double *par){
             bool reject = !rejectSwitch; //reject switch is default true
@@ -77,8 +85,8 @@ class ExclusionFit {
                 if (x[0] >= r.first && x[0] <= r.second) reject = rejectSwitch;
             }
             if (reject) TF1::RejectPoint();
-            // return par[0]*TMath::Exp(par[1]*x[0]) + par[2]*TMath::Exp(par[3]*x[0]);
-            return par[0] + par[1]*x[0] + par[2]*x[0]*x[0];
+            if (isExpo) return TMath::Exp(par[0] + par[1]*x[0]) + TMath::Exp(par[2] + par[3]*x[0]);
+            else        return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
         }
         
         void Fit(TH1D *h, int order, double elo, double ehi, double xlo, double xhi){
@@ -87,7 +95,17 @@ class ExclusionFit {
             regions.pop_back();
         }
         
-        void Fit(TH1D *h, int order, double xlo, double xhi, bool useprev=false){
+        void Fit(TH1D *h, int order, double xlo, double xhi){
+            //get current hist name
+            bool newName = false;
+            if (currentHistName != std::string(h->GetName())) {
+                currentHistName = std::string(h->GetName());
+                newName = true;
+            }
+
+            //rebin hist if needed
+            if (rebinFactor > 1 && newName) h->Rebin(rebinFactor);
+
             //copy og hist to sig and bkg hists before fit
             hsub = (TH1D*) h->Clone("bkg_subtracted");
             hbkg = (TH1D*) h->Clone("bkg");
@@ -95,21 +113,27 @@ class ExclusionFit {
             hsub->SetLineColor(kBlack);
 
             TF1 *f = new TF1("myfitfunc",this,xlo,xhi,order);
-            if (useprev) f->SetParameters(prevpars);
-            // else {
-            //     f->SetParameter(0,1.90826e+03);
-            //     f->SetParameter(1,-0.000828433);
-            //     if (order > 2){
-            //         f->SetParameter(2,10000);
-            //         f->SetParameter(3,-0.01);
-            //     }
-            // }
-            
-            TFitResultPtr fitres = h->Fit(f,"SMLR");
-            int npars = fitres->NPar();
-            for (int p=0; p < npars; p++){
-                prevpars[p] = fitres->Parameter(p);
+
+            if (isExpo) {
+                f->SetParameter(0,7);
+                f->SetParameter(1,-0.000828433);
+                if (order > 2) {
+                    f->SetParameter(2,9);
+                    f->SetParameter(3,-0.000828433);
+                }
             }
+            
+            TFitResultPtr fitres;
+            int nloops = 0;
+            do {
+                fitres = h->Fit(f,"SMLR");
+                nloops++;
+                // int npars = fitres->NPar();
+                // for (int p=0; p < npars; p++){
+                //     prevpars[p] = fitres->Parameter(p);
+                // }
+                // f->SetParameters(prevpars);
+            } while (!fitres->IsValid() && nloops < 4);
 
             printf("Chi2  /  ndf: %6.2f / %-3d = %-5.3f\n",fitres->Chi2(),fitres->Ndf(),fitres->Chi2()/fitres->Ndf());
 
@@ -143,12 +167,13 @@ class ExclusionFit {
 
                     //get the FWHM of the peak
                     double fwhm = getFWHM(hsub,r.first,r.second);
+                    double fwhmErr = 2.355/6*TMath::Sqrt(2)*h->GetBinWidth(1);
 
                     //output the results
                     printf("Total Counts: %10.2f +/- %-7.2f\n",sigbkg,dSigbkg);
                     printf("Bkg   Counts: %10.2f +/- %-7.2f\n",bkg,dBkg);
                     printf("Peak  Counts: %10.2f +/- %-7.2f\n",sig,dSig);
-                    printf("Peak   FWHM : %10.2f\n\n",fwhm);
+                    printf("Peak   FWHM : %10.3f +/- %-7.3f\n\n",fwhm,fwhmErr);
                 } 
             }
  
@@ -156,32 +181,41 @@ class ExclusionFit {
             TCanvas *resultDisplay = new TCanvas("Bkg Subtracted","Bkg Subtracted");
             hsub->Draw();
             hbkg->Draw("same");
+            newName = false;
         }
     private:
         std::vector<std::pair<double,double>> regions;
         TH1D *hsub, *hbkg = 0;
         double prevpars[4];
+        int rebinFactor = 1;
         bool rejectSwitch = true;
+        bool isExpo = false;
+        std::string currentHistName = "";
+
+        double interpolate(double x1, double y1, double x2, double y2, double y){
+            double m = (y2-y1)/(x2-x1);
+            double b = (y1*x2-y2*x1)/(x2-x1);
+            return (y-b)/m;
+        }
 
         double getFWHM(TH1D *h, double lo, double hi){
-            TF1 *fhist = ((GH1D*) h)->ConstructTF1();
+            // TF1 *fhist = ((GH1D*) h)->ConstructTF1();
             double hLo = h->GetXaxis()->GetXmin();
             double hHi = h->GetXaxis()->GetXmax();
 
             int lobin = h->FindBin(lo);
             int hibin = h->FindBin(hi);
             h->GetXaxis()->SetRange(lobin,hibin);
-            double xmax = h->GetBinCenter(h->GetMaximumBin());
+            double maxBin = h->GetMaximumBin();
             double halfmax = h->GetMaximum()/2.0;
-            double xlo = xmax;
-            double xhi = xmax;
-            while (fhist->Eval(xlo) > halfmax){
-                xlo -= 0.001;
-            }
-            while (fhist->Eval(xhi) > halfmax){
-                xhi += 0.001;
-            }
+            double loBin = maxBin;
+            double hiBin = maxBin;
+            while (h->GetBinContent(loBin) > halfmax) loBin--;
+            while (h->GetBinContent(hiBin) > halfmax) hiBin++;
             h->GetXaxis()->SetRange(hLo,hHi);
-            return xhi-xlo;
+            std::cout<<loBin<<" "<<hiBin<<std::endl;
+             
+            return interpolate(h->GetBinCenter(hiBin),h->GetBinContent(hiBin),h->GetBinCenter(hiBin-1),h->GetBinContent(hiBin-1),halfmax)- 
+                   interpolate(h->GetBinCenter(loBin),h->GetBinContent(loBin),h->GetBinCenter(loBin+1),h->GetBinContent(loBin+1),halfmax);
         }
 };
