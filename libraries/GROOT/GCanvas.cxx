@@ -1421,7 +1421,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
           size_t underscore = directoryName.find("_")+1;
           grBeta = GValue::Value(Form("BETA_%S",directoryName.substr(underscore,directoryName.find("_",underscore) - underscore)));
         } 
-
+        std::cout<<grBeta<<std::endl;
         fdop->FixParameter(1,grBeta);
         gr->Fit(fdop,"QN0");
         
@@ -1432,7 +1432,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
         
         static int cutcounter = 0;
         GCutG *cut = new GCutG(Form("_cut%i",cutcounter++),2*cutPoints+1);
-        double wU = 2.0;
+        double wU = 2.5;
         for (int p=0; p < cutPoints; p++){
           cut->SetPoint(p,gx,fdop->Eval(gx) - avg_fwhm/wU);
           gx += xstep;
