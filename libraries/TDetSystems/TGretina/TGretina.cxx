@@ -103,17 +103,17 @@ void TGretina::BuildNNAddback(int SortDepth, int EngRange) const {
   //sort so that the first hit has the greatest energy
   //this way we can loop through i,j with i < j and know that 
   //any hit with higher energy cannot be an addback to one with lower energy
-  bool SortByEng = true;
-  if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
-  if (SortByEng){
-    std::sort(temp_hits.begin(), temp_hits.end(),
-        [](const TGretinaHit& a, const TGretinaHit& b) {
-          return a.GetCoreEnergy() > b.GetCoreEnergy();
-        });
-  } 
-  else {
-    std::reverse(temp_hits.begin(),temp_hits.end());
-  }
+  // bool SortByEng = true;
+  // if ((int (GValue::Value("NO_E_SORT")) ) == 1) SortByEng = false;
+  // if (SortByEng){
+  //   std::sort(temp_hits.begin(), temp_hits.end(),
+  //       [](const TGretinaHit& a, const TGretinaHit& b) {
+  //         return a.GetCoreEnergy() > b.GetCoreEnergy();
+  //       });
+  // } 
+  // else {
+  //   std::reverse(temp_hits.begin(),temp_hits.end());
+  // }
 
   //vector used to store hit indices when crystals are pairs
   std::vector<int> paired;
