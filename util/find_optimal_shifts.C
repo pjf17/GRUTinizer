@@ -2,11 +2,8 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include "TGretina.h"
-#include "TVector3.h"
 #include "TMinuit.h"
 
-const double usedBETA = 0.349;
 TGretina *gret = new TGretina();
 
 std::map<int,int> detMapRing = {
@@ -29,16 +26,20 @@ std::map<int,int> invDetMap = {
 
 std::vector<std::pair<int,double>> energies;
 
-void readEnergies(){
-    std::ifstream inFile("energies.dat");
+double readInitFile(std::string filename){
+    std::ifstream inFile(filename);
     std::string line;
+    getline(inFile,line);
+    double beta = std::stod(line); 
     while (std::getline(inFile,line)){
         std::stringstream ss = std::stringstream(line);
         int idx; double eng;
         ss >> idx >> eng;
+        // std::cout<<idx<<" "<<eng<<std::endl;
         energies.push_back(std::make_pair(idx,eng));
     }
     inFile.close();
+    return beta;
 }
 
 double invDoppler(double E, double theta, double beta){
@@ -46,7 +47,7 @@ double invDoppler(double E, double theta, double beta){
     return E / (gamma *(1 - beta*TMath::Cos(theta)));
 }
 
-void labFrame(std::vector<std::pair<int,double>> &eng){
+void labFrame(std::vector<std::pair<int,double>> &eng,double beta){
     TGretina *gret = new TGretina();
     // double x = TMath::Sin(-0.005236);
     // double y = x;
@@ -57,7 +58,7 @@ void labFrame(std::vector<std::pair<int,double>> &eng){
     for (int c=0; c < ncrystals; c++){
         TVector3 crstl_pos = gret->GetCrystalPosition(invDetMap[eng[c].first]);
         // TVector3 crstl_pos = gret->GetCrystalPosition(eng[c].first);
-        eng[c].second = invDoppler(eng[c].second,crstl_pos.Angle(beam),usedBETA);
+        eng[c].second = invDoppler(eng[c].second,crstl_pos.Angle(beam),beta);
     }
     return;
 }
@@ -74,27 +75,6 @@ double dopplerCorrect(int idx, double beta, double ataShift, double btaShift, do
 }
 
 //MINIMIZER FUNCTIONS
-void fChi2(int &npar, double *gin, double &f, double *par, int iflag){
-    double enAvg = 0;
-    int ncrystals = (int) energies.size();
-    std::vector<double> dop_en;
-    //make list and find avg
-    for (int c=0; c < ncrystals; c++){
-        dop_en.push_back(energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]));
-        // dop_en.push_back(energies[c].second*dopplerCorrect(energies[c].first,par[0],par[1],par[2],par[3],par[4],par[5]));
-        enAvg += dop_en.back();
-    }
-    
-    enAvg /= ncrystals;
-
-    //calc chi2
-    double chi2 = 0;
-    for (int c=0; c < ncrystals; c++){
-        chi2 += (enAvg - dop_en[c])*(enAvg - dop_en[c])/11; //need to add actual sigmas
-    }
-    f = chi2;
-}
-
 void fStdev(int &npar, double *gin, double &f, double *par, int iflag){
     double enAvg = 0;
     int ncrystals = (int) energies.size();
@@ -117,17 +97,17 @@ void fStdev(int &npar, double *gin, double &f, double *par, int iflag){
     f = TMath::Sqrt(stdev);
 }
 
-//for simulations you know the exact energy the gamma should be
-void fSim(int &npar, double *gin, double &f, double *par, int iflag){
+//for when you know the value of the gamma ray
+void fKnown(int &npar, double *gin, double &f, double *par, int iflag){
     int ncrystals = (int) energies.size();
     std::vector<double> dop_en;
     double chi2 = 0;
-    double SIM_ENERGY = 1723;
-    //make list and find avg
+    
+    //calc chi2
     for (int c=0; c < ncrystals; c++){
-        double diff = SIM_ENERGY - energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]);
-        // double diff = SIM_ENERGY - energies[c].second*dopplerCorrect(energies[c].first,par[0],par[1],par[2],par[3],par[4],par[5]);
-        chi2 += diff*diff/10; //need to add actual sigmas
+        //par[6] is the known energy
+        double diff = par[6] - energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]);
+        chi2 += diff*diff;
     }
     f = chi2;
 }
@@ -141,21 +121,31 @@ void printFitEnergies(double *par){
     return;
 }
 
-void find_optimal_shifts(){
-    readEnergies();
-    labFrame(energies);
-    // for (auto e : energies) printf("%f\n",e);
+void find_optimal_shifts(std::string filename, bool varyBeta = false, double knownEnergy = -1){
+    double beta = readInitFile(filename);
+    labFrame(energies,beta);
 
     //initialize
     int npars = 6;
-    TMinuit *min = new TMinuit(npars);
-    min->DefineParameter(0,"beta",0.349,0.001,0.3,0.4);
-    min->DefineParameter(1,"ata_shift",0.01,1E-3,-0.5,0.5);
-    min->DefineParameter(2,"bta_shift",0.01,1E-3,-0.5,0.5);
+    TMinuit *min;
+    if (knownEnergy == -1) 
+        min = new TMinuit(npars);
+    else 
+        min = new TMinuit(npars+1);
+
+    min->DefineParameter(0,"beta",beta,varyBeta*0.001,0.3,0.5);
+    min->DefineParameter(1,"ata_shift",0.001,1E-3,-0.5,0.5);
+    min->DefineParameter(2,"bta_shift",0.001,1E-3,-0.5,0.5);
     min->DefineParameter(3,"x_shift",0,0.01,-10.0,10.0);
     min->DefineParameter(4,"y_shift",0,0.01,-10.0,10.0);
-    min->DefineParameter(5,"z_shift",0,0.01,-50.0,50.0);
-    min->SetFCN(fStdev);
+    min->DefineParameter(5,"z_shift",0,0.01,-10.0,10.0);
+    
+    if (knownEnergy == -1)
+        min->SetFCN(fStdev);
+    else {
+        min->DefineParameter(6,"known_energy",knownEnergy,0,0,8000);
+        min->SetFCN(fKnown);
+    }
 
     //do minimization
     double pars[6], parerrs[6];
@@ -165,5 +155,6 @@ void find_optimal_shifts(){
     }
 
     printFitEnergies(pars);
+    energies.clear();
     return;
 }
