@@ -31,6 +31,8 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fNumberOfInteractions = fNumberOfInteractions;
   ((TGretinaHit&)rhs).fSegments       = fSegments;
   ((TGretinaHit&)rhs).fSingles      = fSingles;
+  ((TGretinaHit&)rhs).fDecompChi2  = fDecompChi2;
+  ((TGretinaHit&)rhs).fDecompNormChi2  = fDecompNormChi2;
 }
 
 Float_t  TGretinaHit::GetCoreEnergy() const {
@@ -123,6 +125,8 @@ void TGretinaHit::BuildFrom(TSmartBuffer& buf){
 
   fNumberOfInteractions = raw.num;
   fPad = raw.pad;
+  fDecompChi2 = raw.chisq;
+  fDecompNormChi2 = raw.norm_chisq;
 
   //std::cout<< "pad\t" << fPad << "\tints\t" << fNumberOfInteractions << std::endl; 
   for(int i=0; i<fNumberOfInteractions; i++) {
