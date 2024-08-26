@@ -117,6 +117,51 @@ void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
   return;
 }
 
+double lastPointPenalty(double x){
+  double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
+  if (val < 0) val = 0;
+  return val + 1;
+}
+
+void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  FP = 0; SP = 1;
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < N; i++) scaleFactor += ghit.GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
+
+  for (int fp=0; fp < N; fp++){
+    double E1 = ghit.GetSegmentEng(fp)*scaleFactor;
+    double er = 511.0/E * E1/(E - E1);
+
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp)*scaleFactor;
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,2)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
+      ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
+  return;
+}
+
+double calcEnergyCos(double E, double Edep){
+  return 1 - 511.0/E * Edep/(E - Edep);
+}
+
 bool gates_loaded = false;
 std::map<std::string,std::vector<GCutG*>> gates;
 
@@ -155,7 +200,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
   //---------------------------------------------------------------
   //UNGATED
-
   unsigned short bits = s800->GetTrigger().GetRegistr();
   int trig_bit = -1;
   for(int j=0;j<16;j++) {
@@ -348,12 +392,50 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
 
             if (nInteractions > 1) {
-              int fp, sp;
-              comptonSort(hit,fp,sp);
-              double newxi = hit.GetXi(&track,fp,sp);
-              double new_energy_corrected = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track,fp);
+              int myFP, mySP;
+              comptonSortTest(hit,myFP,mySP);
+              double newxi = hit.GetXi(&track,myFP,mySP);
+              double new_energy_corrected = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track,myFP);
               obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,new_energy_corrected);
               obj.FillHistogram(dirname, "new_prompt_gamma_dop_vs_xi",360,0,TMath::TwoPi(),newxi,2000,0,2000,new_energy_corrected);
+
+              double scaleFactor = 0;
+              for (int ipx=0; ipx < nInteractions; ipx++) scaleFactor += hit.GetSegmentEng(ipx);
+              scaleFactor = core_energy/scaleFactor;
+              obj.FillHistogram(dirname, "new_gam_sngl_vs_firstIPEratio",4096,0,4096, new_energy_corrected,100,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
+              for (int ipx=0; ipx < nInteractions; ipx++){ 
+                obj.FillHistogram(dirname, "new_gam_sngl_vs_IPEratio",4096,0,4096, new_energy_corrected,100,0,1,hit.GetSegmentEng(ipx)/core_energy*scaleFactor);
+              }
+              
+              if (new_energy_corrected > 652 && new_energy_corrected < 670) {
+                 obj.FillHistogram(dirname,"surf_E1_vs_scatterCos_FEP",200,-1,1,TMath::Cos(hit.GetScatterAngle()),200,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
+              }
+              
+              // if (myFP == 0) {
+              //   obj.FillHistogram(dirname, "new!=main_new",4096,0,4096, new_energy_corrected);
+              //   obj.FillHistogram(dirname, "new!=main_main",4096,0,4096, energy_corrected);
+              //   if (abs(new_energy_corrected > 640 && new_energy_corrected < 680)) {
+              //     FILE *printOutFile;
+              //     printOutFile = fopen("Algo_Main_Interactions.dat","a");
+              //     fprintf(printOutFile,"----------------------------------------------\n");
+              //     fprintf(printOutFile,"Ecore: %4.0f  Emain: %4.0f  Ealgo: %4.0f\n",core_energy,energy_corrected,new_energy_corrected);
+              //     fprintf(printOutFile,"\tE\tEdiff\tEdop\tTheta\tlocZ\t\n");
+              //     double eesum = 0;
+              //     for (int idxIp=0; idxIp < nInteractions; idxIp++) {
+              //       double posDop = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track,idxIp);
+              //       double centDiff = std::abs(662-posDop)/10;
+              //       double ie = hit.GetSegmentEng(idxIp);
+              //       fprintf(printOutFile,"\t%5.1f\t%5.3f\t%5.1f\t%4.2f\t%4.1f",ie,centDiff,posDop,hit.GetTheta(idxIp)*TMath::RadToDeg(),hit.GetLocalPosition(idxIp).Z());
+              //       if (idxIp == myFP) fprintf(printOutFile,"  <-- Algo FP\n");
+              //       else fprintf(printOutFile,"\n");
+              //       eesum += ie;
+              //     }
+              //     fprintf(printOutFile,"Esum: %5.1f\n",eesum);
+              //     fprintf(printOutFile,"----------------------------------------------\n");
+              //     fclose(printOutFile);
+              //   }
+              // }
+
             } else {
               obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,energy_corrected);
             }
@@ -518,6 +600,5 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if(numobj!=list->GetSize()){
     list->Sort();
   }
-
   return;
 }

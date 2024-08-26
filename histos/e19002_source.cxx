@@ -31,188 +31,17 @@ std::map<int,int> detMap = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
-//24
-std::vector<std::pair<int,int>> redPairs = {
-  std::make_pair(46,44),
-  std::make_pair(46,48),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(51,47),
-  std::make_pair(56,57),
-  std::make_pair(57,61),
-  std::make_pair(59,58),
-  std::make_pair(60,58),
-  std::make_pair(60,62),
-  std::make_pair(64,62),
-  std::make_pair(64,65),
-  std::make_pair(69,65),
-  std::make_pair(63,67),
-  std::make_pair(66,67),
-  std::make_pair(66,68),
-  std::make_pair(70,68),
-  std::make_pair(78,76),
-  std::make_pair(78,80),
-  std::make_pair(80,81),
-  std::make_pair(45,81),
-  std::make_pair(79,83),
-  std::make_pair(82,83),
-  std::make_pair(44,82)
+std::map<int,int> holeMap = {
+  {5,0}, {6,1}, {7,2}, {8,3}, 
+  {10,4}, {11,5}, {13,6}, {14,7}, 
+  {15,8}, {16,9}, {18,10}, {19,11}
 };
 
-//16
-std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(48,51),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(61,60),
-  std::make_pair(62,63),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(69,68),
-  std::make_pair(70,71),
-  std::make_pair(78,79),
-  std::make_pair(76,77),
-  std::make_pair(80,83),
-  std::make_pair(81,82)
+std::map<int,int> quadType = {
+  {5,1}, {6,1}, {7,1}, {8,1}, 
+  {10,3}, {11,2}, {13,2}, {14,3}, 
+  {15,2}, {16,3}, {18,3}, {19,2}
 };
-
-//18
-std::vector<std::pair<int,int>> bluePairs = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(46,51),
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(57,60),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(62,67),
-  std::make_pair(64,66),
-  std::make_pair(65,68),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(77,78),
-  std::make_pair(78,83),
-  std::make_pair(80,82),
-  std::make_pair(44,81)
-};
-
-//16
-std::vector<std::pair<int,int>> OneQuadPlus = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(48,51),
-  std::make_pair(77,78),
-  std::make_pair(80,83),
-  std::make_pair(81,82),
-};
-
-//24
-std::vector<std::pair<int,int>> OneQuadDefault = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(44,46),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(48,50),
-  std::make_pair(56,57),
-  std::make_pair(58,59),
-  std::make_pair(56,58),
-  std::make_pair(60,61),
-  std::make_pair(62,63),
-  std::make_pair(60,62),
-  std::make_pair(64,65),
-  std::make_pair(66,67),
-  std::make_pair(64,66),
-  std::make_pair(68,69),
-  std::make_pair(70,71),
-  std::make_pair(68,70),
-  std::make_pair(76,78),
-  std::make_pair(78,79),
-  std::make_pair(77,76),
-  std::make_pair(80,82),
-  std::make_pair(81,80),
-  std::make_pair(82,83),
-};
-
-
-//18
-std::vector<std::pair<int,int>> TwoQuadPairs = {
-  std::make_pair(46,48),
-  std::make_pair(46,51),
-  std::make_pair(47,51),
-  std::make_pair(61,57),
-  std::make_pair(58,60),
-  std::make_pair(57,60),
-  std::make_pair(62,64),
-  std::make_pair(63,67),
-  std::make_pair(62,67),
-  std::make_pair(65,69),
-  std::make_pair(66,68),
-  std::make_pair(65,68),
-  std::make_pair(78,80),
-  std::make_pair(78,83),
-  std::make_pair(79,83),
-  std::make_pair(45,81),
-  std::make_pair(44,81),
-  std::make_pair(44,82),
-};
-
-std::map<int,int> SCATTERPAIRS;
-
-void makemap(){
-  int index = 0;
-  for (auto &p : redPairs){
-    int label1 = p.first*100 + p.second;
-    int label2 = p.first + p.second*100;
-    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
-    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
-    index++;
-  }
-  for (auto &p : bluePairs){
-    int label1 = p.first*100 + p.second;
-    int label2 = p.first + p.second*100;
-    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
-    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
-    index++;
-  }
-  for (auto &p : goldPairs){
-    int label1 = p.first*100 + p.second;
-    int label2 = p.first + p.second*100;
-    SCATTERPAIRS.insert(std::pair<int,int>(label1,index));
-    SCATTERPAIRS.insert(std::pair<int,int>(label2,index));
-    index++;
-  }
-}
-
-bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  bool hit = false;
-  
-  for (auto &p : pairs){
-    if ( (cryId1 == p.first && cryId2 == p.second) 
-        || (cryId2 == p.first && cryId1 == p.second) ) {
-        hit = true;
-        break;
-    }
-  }
-  return hit;
-}
 
 double lastPointPenalty(double x){
   double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
@@ -259,6 +88,41 @@ void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
       //   FP = fp;
       //   SP = sp;
       // }
+    }
+  }
+  return;
+}
+
+void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
+  double FOM = 1e10;
+  FP = 0; SP = 1;
+  int N = ghit.NumberOfInteractions();
+  double E = ghit.GetCoreEnergy();
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < N; i++) scaleFactor += ghit.GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
+
+  for (int fp=0; fp < N; fp++){
+    double E1 = ghit.GetSegmentEng(fp)*scaleFactor;
+    double er = 511.0/E * E1/(E - E1);
+
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(sp)*scaleFactor;
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,2)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
+      ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
     }
   }
   return;
@@ -324,7 +188,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }//bank29 and gretina exist
 
   std::string dirname  = "gretina";
-  makemap();
   double timeBank29 = 0;
 
   if (gretina){
@@ -333,6 +196,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
       TGretinaHit &hit = gretina->GetGretinaHit(i);
+      if (hit.GetPad() != 0) continue;
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
       double phi = hit.GetPhi();
@@ -342,66 +206,60 @@ void MakeHistograms(TRuntimeObjects& obj) {
       bool prompt = false; 
       if (gates.count("prompt") > 0) prompt = gates["prompt"][0]->IsInside(timeBank29-timestamp, core_energy);
       if (timeZero == -1 && !std::isnan(timestamp)) timeZero = timestamp;
+      obj.FillHistogram(dirname, "gretina_timestamps_t0",3600,0,7200,(timestamp-timeZero)/TIMESCALE);
 
-      std::string timeflag = "";
+      std::string timeflag = "all";
       double timethresh = 15*60; //seconds
-      if (bank29 && prompt) timeflag = "prompt";
-      else if (bank29) timeflag = "not-prompt";
+      // if (bank29 && prompt) timeflag = "tgated";
+      // else if (bank29) timeflag = "not-tgated";
       
-      if ((timestamp-timeZero)/TIMESCALE < timethresh && (timestamp-timeZero)/TIMESCALE > 10.0) timeflag = "gtTime"; //timestamp is in 10ns convert to seconds
+      // if ((timestamp-timeZero)/TIMESCALE < timethresh) timeflag = "gtTime"; //timestamp is in 10ns convert to seconds
 
-      obj.FillHistogram(dirname, "prompt_gretina_timestamps_t0",3600,0,3600,(timestamp-timeZero)/TIMESCALE);
-
-      if (theta*TMath::RadToDeg() < 5) continue;
 
       if (timeflag != "") {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
-        // obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystal%02d",timeflag.c_str(),detMap[cryID]), 8192,0,8192, core_energy);
-        obj.FillHistogram(dirname, Form("%s_gretina_theta_vs_phi",timeflag.c_str()),720,0,360,phi*TMath::RadToDeg(),360,0,180,theta*TMath::RadToDeg());
+        obj.FillHistogram(dirname, Form("%s_gretina_map",timeflag.c_str()),720,0,360,phi*TMath::RadToDeg(),360,0,180,theta*TMath::RadToDeg());
+        obj.FillHistogram(dirname, "pad_vs_gretina_timestamps_t0",360,0,3600,(timestamp-timeZero)/TIMESCALE,10,0,10,hit.GetPad());
+        obj.FillHistogram(dirname, "cryID_vs_padNum",10,0,10,hit.GetPad(),120,0,120,cryID);
+
+        if (theta*TMath::RadToDeg() > 120) obj.FillHistogram(dirname, Form("%s_IDs>theta_120",timeflag.c_str()), 100, 0, 100, cryID);
+        if (theta*TMath::RadToDeg() <  35) obj.FillHistogram(dirname, Form("%s_IDs<theta_35",timeflag.c_str()), 100, 0, 100, cryID);
 
         if (hit.NumberOfInteractions() > 1){
-          // double ata = 0.0;
-          // double bta = 0.0;
-          // TVector3 direction = TVector3(ata,-bta,TMath::Sqrt(1-ata*ata-bta*bta));
           double nu = hit.GetScatterAngle();
 
           int myFP = -1;
           int mySP = -1;
-          comptonSort(hit,myFP,mySP);
+          comptonSortTest(hit,myFP,mySP);
           double xi = hit.GetXi(nullptr,myFP,mySP);
-          // if (hit.GetScatterAngle() > 1.2*TMath::ACos(1-511/core_energy)) {
-          //   obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-          //   double thAngles[6] = {40,55,73,95,120,149}; 
-          //   for (int th=0; th < 5; th++){
-          //     if (theta*TMath::RadToDeg() >= thAngles[th] && theta*TMath::RadToDeg() < thAngles[th+1]) 
-          //       obj.FillHistogram(dirname, Form("%s_energy_vs_xi_nugated_%3.0f-%3.0f",timeflag.c_str(),thAngles[th],thAngles[th+1]),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-          //   }
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+          if (core_energy > 842 && core_energy < 851) {
+            obj.FillHistogram(dirname, Form("%s_xi_vs_holenumber_E847",timeflag.c_str()),12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),xi);
+            obj.FillHistogram(dirname, Form("%s_xi_vs_crystalIDmap_E847",timeflag.c_str()),48,0,48,detMap[cryID],180,0,TMath::TwoPi(),xi);
+            obj.FillHistogram(dirname, Form("%s_xi_vs_crystalID_E847",timeflag.c_str()),120,0,120,cryID,180,0,TMath::TwoPi(),xi);
+            obj.FillHistogram(dirname, Form("%s_xi_qdtype%d_E847",timeflag.c_str(),quadType[hit.GetHoleNumber()]),360,0,TMath::TwoPi(),xi);
+            int ihn = holeMap[hit.GetHoleNumber()];
+            if (ihn == 1 || ihn == 2 || (5 < ihn && ihn < 10) )
+              obj.FillHistogram(dirname, Form("%s_xi_balanced_E847",timeflag.c_str()),360,0,TMath::TwoPi(),xi);
+          }
+          // if (core_energy > 774 && core_energy < 784) {
+          //   obj.FillHistogram(dirname, Form("%s_xi_vs_holenumber_E779",timeflag.c_str()),12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),xi);
+          //   obj.FillHistogram(dirname, Form("%s_xi_vs_crystalIDmap_E779",timeflag.c_str()),48,0,48,detMap[cryID],180,0,TMath::TwoPi(),xi);
+          //   obj.FillHistogram(dirname, Form("%s_xi_vs_crystalID_E779",timeflag.c_str()),120,0,120,cryID,180,0,TMath::TwoPi(),xi);
+          //   obj.FillHistogram(dirname, Form("%s_xi_qdtype%d_E779",timeflag.c_str(),quadType[hit.GetHoleNumber()]),360,0,TMath::TwoPi(),xi);
+          //   int ihn = holeMap[hit.GetHoleNumber()];
+          //   if (ihn == 1 || ihn == 2 || (5 < ihn && ihn < 10) )
+          //     obj.FillHistogram(dirname, Form("%s_xi_balanced_E779",timeflag.c_str()),360,0,TMath::TwoPi(),xi);
           // }
-          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          if (hit.GetHoleNumber() < 10 || (hit.GetHoleNumber() > 13 && hit.GetHoleNumber() < 17))
+            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_e12501_gated",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+
+          // if (hit.NumberOfInteractions() < 4) obj.FillHistogram(dirname, Form("%s_energy_vs_xi<4intp",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
           
           if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
             obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-
-          if (961 < core_energy && core_energy < 968){
-            obj.FillHistogram(dirname, Form("%s_964_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_964_phi_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_964_theta_vs_phi",timeflag.c_str()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            // if ((55 < cryID && cryID < 72) || cryID < 40)
-            //   obj.FillHistogram(dirname, Form("%s_964_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            // if ((59 < cryID && cryID < 68) || cryID < 40)
-            //   obj.FillHistogram(dirname, Form("%s_964_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-          }
-          if (1108 < core_energy && core_energy < 1116){
-            obj.FillHistogram(dirname, Form("%s_1112_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_1112_phi_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_1112_theta_vs_phi",timeflag.c_str()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            // if ((55 < cryID && cryID < 72) || cryID < 40)
-            //   obj.FillHistogram(dirname, Form("%s_1112_4qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-            // if ((59 < cryID && cryID < 68) || cryID < 40)
-            //   obj.FillHistogram(dirname, Form("%s_1112_2qd90_theta_vs_xi",timeflag.c_str()),360,0,360,xi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-          }
 
           // if (cryID < 40)
           //   obj.FillHistogram(dirname, Form("%s_fwd_Ecore_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);

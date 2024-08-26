@@ -33,6 +33,12 @@ std::map<int,int> detMapRing = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
+std::map<int,int> holeMap = {
+  {5,0}, {6,1}, {7,2}, {8,3}, 
+  {10,4}, {11,5}, {13,6}, {14,7}, 
+  {15,8}, {16,9}, {18,10}, {19,11}
+};
+
 double calcComptonAngle(double E1, double E2){
   double argument = 1 - 511/E2 + 511/(E1 + E2);
   // if (argument < -1){
@@ -226,7 +232,11 @@ void comptonSortTest2(const TGretinaHit &ghit, int &FP, int &SP) {
       double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
       // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,2) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2)*ghit.GetLocalPosition(fp).Z();
 
-      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      // double ffom = std::pow(std::abs(1-x),2.0/3);
+      // double ffom = std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      // double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      double ffom = std::pow(1-x,2);
+      // double ffom = std::pow(std::abs(E1/E - 1/(1+511/E/(1-cosp))),2.0/3);
       ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
       ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
       // if (N > 2) ffom *= ghit.GetLocalPosition(fp).Z();
@@ -365,11 +375,14 @@ std::map<int,int> buildCorrectMap(const TGretinaHit &htime,const TGretinaHit &hm
 bool gates_loaded = false;
 std::map<std::string,std::vector<GCutG*>> gates;
 
+int EVTnumber = -1;
+
 // extern "C" is needed to prevent name mangling.
 // The function signature must be exactly as shown here,
 //   or else bad things will happen.
 extern "C"
 void MakeHistograms(TRuntimeObjects& obj) {
+  EVTnumber++;
 //  InitMap();
   TS800Sim *s800sim = obj.GetDetector<TS800Sim>();
   TGretSim *gretsim = obj.GetDetector<TGretSim>();
@@ -482,7 +495,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     hit.Copy(hitCopy);
     hitCopy.SortSegments();
     std::map<int,int> truePoints = buildCorrectMap(hit,hitCopy);
-    EnergySmear(hit,rand_gen);
+    // EnergySmear(hit,rand_gen);
     EnergySmear(hitCopy,rand_gen);
     
     int nInteractions = hit.NumberOfInteractions();
@@ -525,14 +538,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
         for (int nip=0; nip < nInteractions; nip++) eSum += hit.GetSegmentEng(nip);
         obj.FillHistogram(dirname,"Esum_vs_CoreEnergy",1000,1000,2000,eSum,1000,1000,2000,core_energy);
 
-        //Guess Matrices
-        int algoGoodFP = truePoints[myFP] == 0;
-        int algoGoodSP = truePoints[mySP] == 1;
-        int mainGoodFP = truePoints[0] == 0;
-        int mainGoodSP = truePoints[1] == 1;
-        obj.FillHistogram(dirname, "guess_matrix_algo",2,0,2,algoGoodFP,2,0,2,algoGoodSP);
-        obj.FillHistogram(dirname, "guess_matrix_main",2,0,2,mainGoodFP,2,0,2,mainGoodSP);
-
         // compton and klein nishina quantities
         // > 1 means that the scattering angle cos is > the energy cos
         double trueCompt = calcEnergyRatio(core_energy,hit.GetSegmentEng(0)) + TMath::Cos(hit.GetScatterAngle());
@@ -544,24 +549,44 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double algoKn = calcKN(hitCopy,myFP,mySP);
         double truePosCos = TMath::Cos(hit.GetScatterAngle(0,1));
         double trueEngCos = calcEnergyCos(core_energy,hit.GetSegmentEng(0));
+
+        bool allowedByCompton = hit.GetSegmentEng(0)/core_energy > 1.0/(1+511.0/998/(1-truePosCos)) && hit.GetSegmentEng(0)/core_energy < 1.0/(1+511.0/1834/(1-truePosCos));
+
+        //Guess Matrices
+        int algoGoodFP = truePoints[myFP] == 0;
+        int algoGoodSP = truePoints[mySP] == 1;
+        int mainGoodFP = truePoints[0] == 0;
+        int mainGoodSP = truePoints[1] == 1;
+        obj.FillHistogram(dirname, "guess_matrix_algo",2,0,2,algoGoodFP,2,0,2,algoGoodSP);
+        obj.FillHistogram(dirname, "guess_matrix_main",2,0,2,mainGoodFP,2,0,2,mainGoodSP);
+
+        // bool allowedByCompton = trueEngCos > truePosCos - 0.02 && trueEngCos < truePosCos + 0.02;
+        // bool allowedByCompton = trueEngCos < truePosCos - 0.1;
+        // bool testRegion = trueEngCos < -0.4 && trueEngCos > -0.5 && truePosCos > -0.9 && truePosCos < -0.85;
+
+        // if (hit.GetSegmentEng(0)/core_energy > 0.2 && hit.GetSegmentEng(0)/core_energy < 0.3 && truePosCos > -0.6 && truePosCos < -0.4){
+        // // if (allowedByCompton && testRegion) {
+        //   std::cout<<"Evt # "<<EVTnumber<<" E: "<<simHit.GetEn()<<std::endl;
+        // } 
         
-        if (nInteractions == 2) {
+        if (nInteractions == 2 && allowedByCompton) {
           obj.FillHistogram(dirname, "Algo_Chi2",1000,0,5,std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(myFP)) - TMath::Cos(hitCopy.GetScatterAngle(myFP,mySP)),2));
           double theChi2 = std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(0)) - TMath::Cos(hit.GetScatterAngle(0,1)),2);
           double swapChi2 = std::pow(calcEnergyCos(core_energy,hit.GetSegmentEng(1)) - TMath::Cos(hit.GetScatterAngle(1,0)),2);
           bool doswap = theChi2 > swapChi2;
-          bool bothRight = truePoints[myFP] == 0 && truePoints[mySP] == 1;
+          // bool bothRight = truePoints[myFP] == 0 && truePoints[mySP] == 1;
 
-          if (bothRight && doswap) {
-            obj.FillHistogram(dirname,"AlgoChi2_alpha_vs_compt_FEP",400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
-            obj.FillHistogram(dirname,"AlgoChi2_kn_vs_compt_FEP",400,-1,3,trueCompt,200,0,2,trueKn);
-            obj.FillHistogram(dirname,"AlgoChi2_scatCos_vs_engCos_FEP",300,-5,1,trueEngCos,200,-1,1,truePosCos);
-          }
+          // if (bothRight && doswap) {
+          //   obj.FillHistogram(dirname,"AlgoChi2_alpha_vs_compt_FEP",400,-1,3,trueCompt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+          //   obj.FillHistogram(dirname,"AlgoChi2_kn_vs_compt_FEP",400,-1,3,trueCompt,200,0,2,trueKn);
+          //   obj.FillHistogram(dirname,"AlgoChi2_engCos_vs_scatCos_FEP",200,-1,1,truePosCos,300,-5,1,trueEngCos);
+          // }
           
           int theFP = 1;
           int theSP = 1;
           if (doswap) {theFP = 0; theSP = 0;}
-          obj.FillHistogram(dirname, "guess_matrix_min_chi2",2,0,2,theFP,2,0,2,theSP);
+          obj.FillHistogram(dirname, "guess_matrix_2int_min_chi2",2,0,2,theFP,2,0,2,theSP);
+          obj.FillHistogram(dirname, "guess_matrix_2int_algo",2,0,2,algoGoodFP,2,0,2,algoGoodSP);
         }
 
         // alpha vs compt
@@ -574,12 +599,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname,"surf_ALGO_kn_vs_compt_FEP",400,-1,3,algoCompt,200,0,2,algoKn);
         // e1Compt
         obj.FillHistogram(dirname,"surf_TRUE_E1compt_vs_compt_FEP",400,-1,3,trueCompt,400,-2,2,trueE1Compt);
-        obj.FillHistogram(dirname,"surf_TRUE_kn_vs_E1compt_FEP",400,-2,2,trueE1Compt,200,0,2,trueKn);
-        obj.FillHistogram(dirname,"surf_TRUE_alpha_vs_E1compt_FEP",400,-2,2,trueE1Compt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
+        obj.FillHistogram(dirname,"surf_TRUE_kn_vs_E1compt_FEP",400,-1,1,trueE1Compt,200,0,2,trueKn);
+        obj.FillHistogram(dirname,"surf_TRUE_alpha_vs_E1compt_FEP",400,-1,1,trueE1Compt,200,0,20,hit.GetAlpha()*TMath::RadToDeg());
         //eratio vs scatCos
-        obj.FillHistogram(dirname,"surf_TRUE_scatCos_vs_engCos_FEP",300,-5,1,trueEngCos,200,-1,1,truePosCos);
+        obj.FillHistogram(dirname,"surf_TRUE_engCos_vs_scatCos_FEP",400,-1,1,truePosCos,400,-1,1,trueEngCos);
         obj.FillHistogram(dirname,"surf_TRUE_E1_vs_engCos_FEP",300,-5,1,trueEngCos,200,0,1,hit.GetSegmentEng(0)/core_energy);
-        obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP",400,-1,1,truePosCos,200,0,1,hit.GetSegmentEng(0)/core_energy);
+        obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP",400,-1,1,truePosCos,400,0,1,hit.GetSegmentEng(0)/core_energy);
         //theta & phi vs compt
         obj.FillHistogram(dirname,"surf_TRUE_theta_vs_compt_FEP",400,-1,3,trueCompt,360,0,180,theta*TMath::RadToDeg());
         obj.FillHistogram(dirname,"surf_TRUE_phi_vs_compt_FEP",400,-1,3,trueCompt,720,0,360,phi*TMath::RadToDeg());
@@ -587,11 +612,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
         //e1 & e2 vs compt
         obj.FillHistogram(dirname,"surf_TRUE_E1_vs_compt_FEP",400,-1,3,trueCompt,500,0,1,hit.GetSegmentEng(0)/core_energy);
         obj.FillHistogram(dirname,"surf_TRUE_E2_vs_compt_FEP",400,-1,3,trueCompt,500,0,1,hit.GetSegmentEng(1)/core_energy);
-
-        // if (comptonAllowed(hit))
-        //   obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP_ALLOWED",400,-1,1,TMath::Cos(hit.GetScatterAngle(0,1)),200,0,1,hit.GetSegmentEng(0)/core_energy);
-        // else
-        //   obj.FillHistogram(dirname,"surf_TRUE_E1_vs_scatterCos_FEP_!ALLOWED",400,-1,1,TMath::Cos(hit.GetScatterAngle(0,1)),200,0,1,hit.GetSegmentEng(0)/core_energy);
 
         //INTERACTION POINT ANALYSIS
         if (nInteractions < 5){
@@ -638,6 +658,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
         // obj.FillHistogram(dirname, "gam_dop_main_fep",1500,0,1500, main_energy);
         obj.FillHistogram(dirname, "gam_dop_algo_fep_vs_xi",360,0,TMath::TwoPi(),algo_xi,1500,0,1500,algo_energy);
         obj.FillHistogram(dirname, "True_xi_vs_Algo_xi",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
+        obj.FillHistogram(dirname, "True_xi_vs_hole_number",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
+        // if (hit.GetHoleNumber() < 10 || (hit.GetHoleNumber() > 13 && hit.GetHoleNumber() < 17)){
+        //   obj.FillHistogram(dirname, "True_xi_vs_Algo_xi_e12501_quads",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
+        // }
       }
     }
 

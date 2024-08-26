@@ -156,20 +156,24 @@ void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
   FP = 0; SP = 1;
   int N = ghit.NumberOfInteractions();
   double E = ghit.GetCoreEnergy();
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < N; i++) scaleFactor += ghit.GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
 
   for (int fp=0; fp < N; fp++){
-    double E1 = ghit.GetSegmentEng(fp);
+    double E1 = ghit.GetSegmentEng(fp)*scaleFactor;
     double er = 511.0/E * E1/(E - E1);
 
     for (int sp=0; sp < N; sp++){
       if (fp == sp) continue;
       
       double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
-      double E2 = ghit.GetSegmentEng(sp);
+      double E2 = ghit.GetSegmentEng(sp)*scaleFactor;
       double x = er + cosp;
       double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
       double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
-      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,2)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
       ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
 
       if (ffom < FOM) {
@@ -413,6 +417,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
 
+                if (myFP != 0) {
+                  obj.FillHistogram(dirname, "new!=main_new",4096,0,4096, new_energy);
+                  obj.FillHistogram(dirname, "new!=main_main",4096,0,4096, energy_corrected);
+                }
+
+                double scaleFactor = 0;
+                for (int ipx=0; ipx < nInteractions; ipx++) scaleFactor += hit.GetSegmentEng(ipx);
+                scaleFactor = core_energy/scaleFactor;
+                obj.FillHistogram(dirname, "new_gam_sngl_vs_firstIPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
+                for (int ipx=0; ipx < nInteractions; ipx++){ 
+                  obj.FillHistogram(dirname, "new_gam_sngl_vs_IPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(ipx)/core_energy*scaleFactor);
+                }
+
                 if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
                   obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi_theta_gate",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
               } else {
@@ -520,11 +537,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 passedIP.clear();
               }
               */
-              if (nInteractions > 1 && nInteractions < 5){
-                obj.FillHistogram(dirname, Form("gam_dop_sgl_IP%d_prompt_vs_xi",nInteractions),180,0,TMath::Pi(),xi, 1500,0,3000, energy_corrected);
-                if (xi < TMath::PiOver2()) obj.FillHistogram(dirname, Form("gam_dop_sgl_IP==%d_xi<90",nInteractions),1500,0,3000, energy_corrected);
-                else obj.FillHistogram(dirname, Form("gam_dop_sgl_IP==%d_xi>=90",nInteractions),1500,0,3000, energy_corrected);
-              }
 
               if (nInteractions > 1){
                 double plXi = xi;
