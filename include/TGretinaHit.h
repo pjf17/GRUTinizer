@@ -82,7 +82,7 @@ public:
   Float_t  GetTFit()               const { return fWalkCorrection - fTOffset; }
   Float_t  GetTOffset()            const { return fTOffset; }
   Float_t  GetDecompChi2()         const { return fDecompChi2; }
-  Float_t  GetDecompChi2Norm()     const { return fDecompNormChi2; }
+  Float_t  GetDecompNormChi2()     const { return fDecompNormChi2; }
 
   Int_t    GetRingNumber() const;
   Int_t    GetCrystalId()          const { return fCrystalId;      }
@@ -214,8 +214,8 @@ private:
   Int_t           fCoreCharge[4];
   Int_t   fPad;
   Int_t   fNumberOfInteractions; 
-  Int_t   fDecompChi2; 
-  Int_t   fDecompNormChi2; 
+  Float_t   fDecompChi2; 
+  Float_t   fDecompNormChi2; 
   
   mutable Float_t fCoreEnergy;
   Float_t         fWalkCorrection;   //also called t0.
