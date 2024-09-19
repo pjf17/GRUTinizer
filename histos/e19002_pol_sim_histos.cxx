@@ -337,6 +337,37 @@ void comptonSortGate(const TGretinaHit &ghit, std::vector<int> mypassed, int &FP
   return;
 }
 
+bool segmentationCheck(const TGretinaHit &ghit) {
+  bool segmentation = false;
+  // int nInt = ghit.NumberOfInteractions();
+  double zSeg[6] = {8,22,38,56,76,90};
+
+  for (int i=0 ; i < 2; i++){
+    double x = ghit.GetLocalPosition(i).X();
+    double y = ghit.GetLocalPosition(i).Y();
+
+    //phi segmentation check
+    bool iseg = false;
+    double width = 1.0;
+    int crystalType = (1-ghit.GetCrystalId()%2); //a or b type
+    for (int j=-1; j < 2; j++) {
+      double angle = j*TMath::Pi()/3 + crystalType*TMath::Pi()/6;
+      iseg = iseg || std::abs(y - std::tan(angle)*x) < width/2/std::cos(angle);
+    }
+
+    //Z segmentation check
+    double z = ghit.GetLocalPosition(i).Z();
+    for (int j=0; j < 6; j++) iseg = iseg || abs(zSeg[j]-z) < width;
+
+    if (iseg) {
+      segmentation = true;
+      break;
+    }
+  }
+
+  return segmentation;
+}
+
 double calcE1Compt(const TGretinaHit &ghit, int fp, int sp){
   double E = ghit.GetCoreEnergy();
   double E1 = ghit.GetSegmentEng(fp);
@@ -533,10 +564,19 @@ void MakeHistograms(TRuntimeObjects& obj) {
         int myFP = -1;
         int mySP = -1;
         comptonSortTest2(hitCopy,myFP,mySP);
+        bool segmentation = segmentationCheck(hit);
+
+        // obj.FillHistogram(dirname,Form("gretina_map_FEP_hn%d_cry%d",holeMap[hit.GetHoleNumber()],cryID),360,0,360,phi*TMath::RadToDeg());
+        // obj.FillHistogram(dirname,Form("gretina_map_FEP_hn%d",holeMap[hit.GetHoleNumber()]),360,0,360,phi*TMath::RadToDeg());
+
         obj.FillHistogram(dirname,"gretina_map_FEP_nInt>1",900,0,360,phi*TMath::RadToDeg(),450,0,180,theta*TMath::RadToDeg());
-        double eSum = 0;
-        for (int nip=0; nip < nInteractions; nip++) eSum += hit.GetSegmentEng(nip);
-        obj.FillHistogram(dirname,"Esum_vs_CoreEnergy",1000,1000,2000,eSum,1000,1000,2000,core_energy);
+        if (segmentation) 
+          obj.FillHistogram(dirname,"gretina_map_FEP_nInt>1_seg",900,0,360,phi*TMath::RadToDeg(),450,0,180,theta*TMath::RadToDeg());
+        else 
+          obj.FillHistogram(dirname,"gretina_map_FEP_nInt>1_!seg",900,0,360,phi*TMath::RadToDeg(),450,0,180,theta*TMath::RadToDeg());
+        // double eSum = 0;
+        // for (int nip=0; nip < nInteractions; nip++) eSum += hit.GetSegmentEng(nip);
+        // obj.FillHistogram(dirname,"Esum_vs_CoreEnergy",1000,1000,2000,eSum,1000,1000,2000,core_energy);
 
         // compton and klein nishina quantities
         // > 1 means that the scattering angle cos is > the energy cos
@@ -658,7 +698,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
         // obj.FillHistogram(dirname, "gam_dop_main_fep",1500,0,1500, main_energy);
         obj.FillHistogram(dirname, "gam_dop_algo_fep_vs_xi",360,0,TMath::TwoPi(),algo_xi,1500,0,1500,algo_energy);
         obj.FillHistogram(dirname, "True_xi_vs_Algo_xi",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
-        obj.FillHistogram(dirname, "True_xi_vs_hole_number",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
+        obj.FillHistogram(dirname, "algo_xi_vs_hole_number",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
+        obj.FillHistogram(dirname, "algo_xi_vs_crystalID",48,0,48,detMapRing[cryID],90,0,180,algo_xi*TMath::RadToDeg());
+        // if (segmentation)
+        //   obj.FillHistogram(dirname, "True_xi_vs_hole_number_seg",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
+        // else 
+        //   obj.FillHistogram(dirname, "True_xi_vs_hole_number_!seg",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
         // if (hit.GetHoleNumber() < 10 || (hit.GetHoleNumber() > 13 && hit.GetHoleNumber() < 17)){
         //   obj.FillHistogram(dirname, "True_xi_vs_Algo_xi_e12501_quads",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
         // }

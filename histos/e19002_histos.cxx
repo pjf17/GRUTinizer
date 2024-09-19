@@ -416,24 +416,26 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
+                obj.FillHistogram(dirname, "new_gam_sngl_vs_chi2norm",50,0,50,hit.GetDecompNormChi2(),4096,0,4096, new_energy);
 
                 if (myFP != 0) {
                   obj.FillHistogram(dirname, "new!=main_new",4096,0,4096, new_energy);
                   obj.FillHistogram(dirname, "new!=main_main",4096,0,4096, energy_corrected);
                 }
 
-                double scaleFactor = 0;
-                for (int ipx=0; ipx < nInteractions; ipx++) scaleFactor += hit.GetSegmentEng(ipx);
-                scaleFactor = core_energy/scaleFactor;
-                obj.FillHistogram(dirname, "new_gam_sngl_vs_firstIPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
-                for (int ipx=0; ipx < nInteractions; ipx++){ 
-                  obj.FillHistogram(dirname, "new_gam_sngl_vs_IPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(ipx)/core_energy*scaleFactor);
-                }
+                // double scaleFactor = 0;
+                // for (int ipx=0; ipx < nInteractions; ipx++) scaleFactor += hit.GetSegmentEng(ipx);
+                // scaleFactor = core_energy/scaleFactor;
+                // obj.FillHistogram(dirname, "new_gam_sngl_vs_firstIPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
+                // for (int ipx=0; ipx < nInteractions; ipx++){ 
+                //   obj.FillHistogram(dirname, "new_gam_sngl_vs_IPEratio",4096,0,4096, energy_corrected,100,0,1,hit.GetSegmentEng(ipx)/core_energy*scaleFactor);
+                // }
 
                 if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
                   obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi_theta_gate",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
               } else {
                 obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, energy_corrected);
+                obj.FillHistogram(dirname, "new_gam_sngl_vs_chi2norm",50,0,50,hit.GetDecompNormChi2(),4096,0,4096, energy_corrected);
               }
 
               /*
