@@ -5,6 +5,7 @@
 #include "TMinuit.h"
 
 TGretina *gret = new TGretina();
+std::vector<std::pair<int,double>> energies;
 
 std::map<int,int> detMapRing = {
   {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
@@ -23,8 +24,6 @@ std::map<int,int> invDetMap = {
   {32,46}, {33,62}, {34,70}, {35,78}, {36,48}, {37,56}, {38,64}, {39,80},
   {40,49}, {41,57}, {42,65}, {43,81}, {44,45}, {45,61}, {46,69}, {47,77}
 };
-
-std::vector<std::pair<int,double>> energies;
 
 double readInitFile(std::string filename){
     std::ifstream inFile(filename);
@@ -112,18 +111,56 @@ void fKnown(int &npar, double *gin, double &f, double *par, int iflag){
     f = chi2;
 }
 
-void printFitEnergies(double *par){
+void printFitenergies(std::string filename, double *par){
+    FILE *fp; 
+    filename = filename.substr(0,filename.find("."));
+    filename = filename + "-eng.txt"; 
+    fp = fopen(filename.c_str(),"w");
     int ncrystals = (int) energies.size();
     for (int c=0; c < ncrystals; c++){
-        printf("%f\n",energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]));
+        fprintf(fp,"%f\n",energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]));
         // printf("%f\n",energies[c].second*dopplerCorrect(energies[c].first,par[0],par[1],par[2],par[3],par[4],par[5]));
     }
+    fclose(fp);
     return;
 }
 
+void outputValFile(std::string filename, double *par) {
+    FILE *fp; 
+    filename = filename.substr(0,filename.find("."));
+    filename = filename + "-out.val"; 
+    fp = fopen(filename.c_str(),"w");
+    std::vector<std::string> variable_names = {"BETA","ATA_SHIFT","BTA_SHIFT","TARGET_X_OFFSET","TARGET_Y_OFFSET","TARGET_Z_OFFSET"};
+    for (int i=0; i < 6; i++) fprintf(fp,"%s {\n  Value: %f\n}\n\n",variable_names[i].c_str(),par[i]);
+    fclose(fp);
+    return;
+}
+
+void drawBeforeAfter(double oldbeta, double *par) {
+   std::vector<double> x; 
+   std::vector<double> enBefore; 
+   std::vector<double> enAfter; 
+   int ncrystals = (int) energies.size();
+   for (int c=0; c < ncrystals; c++){
+    x.push_back(c);
+    enBefore.push_back(energies[c].second*dopplerCorrect(invDetMap[energies[c].first],oldbeta,0,0,0,0,0));
+    enAfter.push_back(energies[c].second*dopplerCorrect(invDetMap[energies[c].first],par[0],par[1],par[2],par[3],par[4],par[5]));
+   }
+
+   TGraph *grBefore = new TGraph((int) enBefore.size(), &x[0], &enBefore[0]);
+   TGraph *grAfter =  new TGraph((int) enAfter.size(), &x[0], &enAfter[0]);
+
+   TCanvas *canv = new TCanvas();
+   canv->SetGrid();
+   grAfter->SetMarkerColor(kRed);
+   grAfter->SetLineColor(kRed);
+   grBefore->Draw("AL*");
+   grAfter->Draw("L*same");
+}
+
 void find_optimal_shifts(std::string filename, bool varyBeta = false, double knownEnergy = -1){
-    double beta = readInitFile(filename);
-    labFrame(energies,beta);
+    double oldbeta = readInitFile(filename);
+    labFrame(energies,oldbeta);
 
     //initialize
     int npars = 6;
@@ -133,7 +170,7 @@ void find_optimal_shifts(std::string filename, bool varyBeta = false, double kno
     else 
         min = new TMinuit(npars+1);
 
-    min->DefineParameter(0,"beta",beta,varyBeta*0.001,0.3,0.5);
+    min->DefineParameter(0,"beta",oldbeta,varyBeta*0.001,0.3,0.5);
     min->DefineParameter(1,"ata_shift",0.001,1E-3,-0.5,0.5);
     min->DefineParameter(2,"bta_shift",0.001,1E-3,-0.5,0.5);
     min->DefineParameter(3,"x_shift",0,0.01,-10.0,10.0);
@@ -154,7 +191,9 @@ void find_optimal_shifts(std::string filename, bool varyBeta = false, double kno
         min->GetParameter(p,pars[p],parerrs[p]);
     }
 
-    printFitEnergies(pars);
+    printFitenergies(filename,pars);
+    outputValFile(filename,pars);
+    drawBeforeAfter(oldbeta,pars);
     energies.clear();
     return;
 }
