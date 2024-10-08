@@ -956,7 +956,7 @@ GPeak *PhotoPeakFit(TH1 *hist,double xlow, double xhigh,Option_t *opt) {
   if(xlow>xhigh)
     std::swap(xlow,xhigh);
 
-  //std::cout << "here." << std::endl;
+  // std::cout << "here." << std::endl;
 
   GPeak *mypeak= new GPeak((xlow+xhigh)/2.0,xlow,xhigh);
   std::string options = opt;
