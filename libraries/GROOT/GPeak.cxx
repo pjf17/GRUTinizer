@@ -271,6 +271,7 @@ Bool_t GPeak::Fit(TH1 *fithist,Option_t *opt) {
   bool noprint =  options.Contains("no-print");
   if(noprint) {
     options.ReplaceAll("no-print","");
+    verbose = false;
   }
 
   if(fithist->GetSumw2()->fN!=fithist->GetNbinsX()+2)
@@ -283,7 +284,7 @@ Bool_t GPeak::Fit(TH1 *fithist,Option_t *opt) {
 
   
   
-  if(!fitres.Get()->IsValid()) {
+  if(!fitres.Get()->IsValid() && !noprint) {
     printf(RED  "fit has failed, trying refit... " RESET_COLOR);
     //SetParameter(3,0.1);
     //SetParameter(4,0.01);
@@ -358,10 +359,10 @@ Bool_t GPeak::Fit(TH1 *fithist,Option_t *opt) {
     std::swap(xlow,xhigh);
   fSum = fithist->Integral(fithist->GetXaxis()->FindBin(xlow),
                            fithist->GetXaxis()->FindBin(xhigh));// * fithist->GetBinWidth(1);
-  printf("sum between markers: %02f\n",fSum);
+  if (!noprint) printf("sum between markers: %02f\n",fSum);
   fDSum = TMath::Sqrt(fSum);
   fSum -= bgArea;
-  printf("sum after subtraction: %02f\n",fSum);
+  if (!noprint) printf("sum after subtraction: %02f\n",fSum);
 
 
   if(!verbose) {
