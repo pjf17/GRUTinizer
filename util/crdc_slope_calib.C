@@ -13,7 +13,7 @@ GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   
   std::string inHistName = Form("%s/crdc%d X_Y",histdir.c_str(),crdc);
   GH2D *hist2d = (GH2D*) f->Get(inHistName.c_str());
-  fprintf("%p\n",&hist2d);
+  // printf("%p\n",&hist2d);
   if (!hist2d){
     std::cout<<"error reading hist in "<<filename<<std::endl;
     return NULL;
@@ -34,7 +34,7 @@ GH1D *GetYHist(std::string filename, std::string histdir, int crdc){
   return hy;
 }
 
-double GetMean(GH1D *hy, double low, double high){
+double GetMean(GH1D *hy/* double low, double high*/){
   if (!hy) {
     return sqrt(-1);
   }
@@ -44,9 +44,9 @@ double GetMean(GH1D *hy, double low, double high){
 
   double mean = hy->GetMean();
 
-  TF1 *fitfunc = new TF1(fitname.c_str(),"gaus",low,high);
   if (hy->GetEntries() > 200){
-    hy->Fit(fitfunc,"QR0","",low, high);
+    TF1 *fitfunc = new TF1(fitname.c_str(),"gaus",mean*0.5,mean*1.5);
+    hy->Fit(fitfunc,"QR0","",mean*0.5,mean*1.5);
     const Int_t kNotDraw = 1<<9;
     hy->GetFunction(fitname.c_str())->ResetBit(kNotDraw);
     hy->Write("",TObject::kOverwrite);
@@ -74,19 +74,19 @@ void GetNewSlopes(std::vector<std::string> &allfiles, std::string histdir, std::
   
     for (int i=0; i < 2; i++){
       //get mean and check if its nan
-      double mean = GetMean(GetYHist(filename,histdir,i+1),-500,500);
+      double mean = GetMean(GetYHist(filename,histdir,i+1));
       // double mean = GetYHist(filename,i+1)->GetMean();
       if (std::isnan(mean)){
         std::cout<<"Error in crdc "<<i+1<< "mean\n";
         return;
       }
-      //get initial slope
-      std::string gSlope = Form("CRDC%d_Y_SLOPE",i+1);
-      double old_slope = GValue::Value(gSlope.c_str());
-      if (std::isnan(old_slope)){
-	      std::cout<<"No old slope for crdc"<<i+1<<", setting to 1"<<std::endl;
-        old_slope = 1.0;
-      }
+      // get initial slope
+      // std::string gSlope = Form("CRDC%d_Y_SLOPE",i+1);
+      // double old_slope = GValue::Value(gSlope.c_str());
+      // if (std::isnan(old_slope)){
+	    //   std::cout<<"No old slope for crdc"<<i+1<<", setting to 1"<<std::endl;
+      //   old_slope = 1.0;
+      // }
 
       //get offset
       std::string gOffset = Form("CRDC%d_Y_OFFSET",i+1);
@@ -97,11 +97,11 @@ void GetNewSlopes(std::vector<std::string> &allfiles, std::string histdir, std::
       }
 
       //undo old calibration
-      double uncal_mean = (mean - offset)/old_slope;
+      // double uncal_mean = (mean - offset)/old_slope;
       
       //find new slope such that the new mean is zero
-      double new_slope = -(offset/uncal_mean);
-      out_valfile << "CRDC" << i+1 << "_Y_SLOPE {\nvalue: " << new_slope << "\n}\n\n";
+      double new_slope = -(offset/mean);
+      out_valfile << "CRDC" << i+1 << "_Y_SLOPE {\n  value: " << new_slope << "\n}\n\n";
     }
   
     out_valfile.close();
@@ -135,7 +135,7 @@ void CheckYDists(std::vector<std::string> allfiles, std::string histdir){
 
         for (int i=0; i < 2; i++){
             //get mean and check if its nan
-            double mean = GetMean(GetYHist(filename,histdir,i+1),-60,60);
+            double mean = GetMean(GetYHist(filename,histdir,i+1)/*,-60,60*/);
             // double mean = GetYHist(filename,i+1)->GetMean();
             if (std::isnan(mean)){
                 std::cout<<"Error with hist"<<runNum<<std::endl;
@@ -167,7 +167,7 @@ bool ReadFiles(std::string filelist, std::vector<std::string> &allfiles){
   return true;
 }
 
-void crdc_slope_calib(std::string mode, std::string histdir="ungated", std::string val_file_dir = "", std::string filelist="list_o_hists.txt"){
+void crdc_slope_calib(std::string mode, std::string val_file_dir = "", std::string histdir="ungated", std::string filelist="list_o_hists.txt"){
   std::vector<std::string> files;
   if (!ReadFiles(filelist, files)) return;
   
