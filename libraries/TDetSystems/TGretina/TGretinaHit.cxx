@@ -12,6 +12,11 @@
 #include "TGretina.h"
 #include "TS800.h"
 
+double lastPointPenalty(double x){
+  double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
+  if (val < 0) val = 0;
+  return val + 1;
+}
 
 TGretinaHit::TGretinaHit(){ Clear(); }
 
@@ -534,20 +539,6 @@ void TGretinaHit::ScaleIntEng(){
   }
 }
 
-void TGretinaHit::SimTracking(const double realTheta){
-  double mindiff = std::abs(GetIntPosition(0).Theta() - realTheta);
-  int minIndex = 0;
-  for (int i=1; i < fNumberOfInteractions; i++){
-    double diff = std::abs(GetIntPosition(i).Theta()  - realTheta);
-    if (diff < mindiff){
-      mindiff = diff;
-      minIndex = 1;
-    }
-  }
-  if (minIndex != 0) std::swap(fSegments[0],fSegments[minIndex]);
-  return;
-}
-
 double TGretinaHit::GetAlpha(int p1, int p2) const {
   if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
     return GetIntPosition(p1).Angle(GetIntPosition(p2));
@@ -567,16 +558,56 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
   if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
     if (!beam) beam = new TVector3(0,0,1);
 
-    TVector3 interaction1 = GetIntPosition(p1);
-    TVector3 comptonPlaneNorm = interaction1.Cross(GetIntPosition(p2));
+    //calculate the phase of the crystal wrt the reaction plane
+    TVector3 pos = TGretina::CrystalToGlobal(fCrystalId,0,0,0);
+    TVector3 ref = (TVector3(0,0,1)).Cross(pos);
+    TVector3 xax = TGretina::CrystalToGlobal(fCrystalId,1,0,0) - pos;
+    TVector3 yax = TGretina::CrystalToGlobal(fCrystalId,0,1,0) - pos;
+    double phase = ref.Angle(xax);
+    if (ref.Angle(yax) > TMath::PiOver2()) phase = TMath::TwoPi() - phase;
+
+    //get interaction points and rotate
+    TVector3 interaction1 = GetIntPosition(p1); //interaction1.Rotate(phase,pos);
+    TVector3 interaction2 = GetIntPosition(p2); //interaction2.Rotate(phase,pos);
+
+    // interaction1 = interaction1 + pos;
+    // interaction2 = interaction2 + pos;
+
+    //calculate xi
+    TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
     TVector3 reactionPlaneNorm = beam->Cross(interaction1);
-    TVector3 basisNorm = interaction1.Cross(reactionPlaneNorm);
+    TVector3 basisNorm = reactionPlaneNorm.Cross(interaction1);
 
     double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
     if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+    // xi -= phase;
+    // if (fCrystalId%2) xi -= 120*TMath::DegToRad();
+    // while (xi < 0) xi += TMath::TwoPi();
 
     return xi;
   }
+  // if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+
+  //   TVector3 tr = TGretina::CrystalToGlobal(fCrystalId,0,0,0);
+  //   TVector3 vX = TGretina::CrystalToGlobal(fCrystalId,1,0,0)-tr;
+  //   TVector3 vY = TGretina::CrystalToGlobal(fCrystalId,0,1,0)-tr;
+  //   TVector3 vZ = TGretina::CrystalToGlobal(fCrystalId,0,0,1)-tr;
+  //   double mtxData[9] = {vX.Unit().X(),vX.Unit().Y(),vX.Unit().Z(),vY.Unit().X(),vY.Unit().Y(),vY.Unit().Z(),vZ.Unit().X(),vZ.Unit().Y(),vZ.Unit().Z()};
+  //   TMatrixT <double> mtx = TMatrixT<double> (3,3,mtxData,"F");
+  //   mtx.Invert();
+
+  //   TVector3 b = mtx*TVector3(0,0,1);
+  //   TVector3 origin = mtx*tr;
+
+  //   TVector3 diff = GetLocalPosition(p2) - GetLocalPosition(p1);
+  //   TVector3 gamma = GetLocalPosition(p1) + origin;
+  //   TVector3 comptonPlaneNorm = gamma.Cross(diff);
+  //   TVector3 reactionPlaneNorm = b.Cross(gamma);
+  //   // TVector3 xax = TVector3(1,0,0);
+  //   double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
+
+  //   return xi;
+  // }
   else return -1;
 }
 
@@ -599,51 +630,55 @@ double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
   else return -10;
 }
 
-void TGretinaHit::ComptonSort(double cut){
+void TGretinaHit::ComptonSort(){
   if (fNumberOfInteractions < 2) return;
+  
+  double FOM = 1e10;
+  int FP = 0; 
+  int SP = 1;
   double E = GetCoreEnergy();
-  double x = 511.0/E * GetSegmentEng(0)/(E - GetSegmentEng(0));
-  // if (x > 2) {
-  //   std::swap(fSegments[0],fSegments[1]);
-  //   if (fNumberOfInteractions > 2) std::swap(fSegments[1],fSegments[fNumberOfInteractions-1]);
-  // }
+  
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < fNumberOfInteractions; i++) scaleFactor += GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
 
-  double y = TMath::Cos(GetScatterAngle());
-  if (x > 2) {
-    if (fNumberOfInteractions == 2) std::swap(fSegments[0],fSegments[1]);
-    else{
-      int p0 = 0;
-      int p1 = 1;
-      double fom = 0;
-      double FOM = 1000;
-      // double x,y;
-      for (int i=0; i < fNumberOfInteractions; i++){
-        x = 511.0/E * GetSegmentEng(i)/(E - GetSegmentEng(i));
-        if (x > 2) continue; //skip unphysical first interaction energies
-        for (int j=0; j < fNumberOfInteractions; j++){
-          if (i == j) continue;
-          y = TMath::Cos(GetScatterAngle(i,j));
-          fom = std::pow(x+y-1,2);
-          if (fom < FOM){
-            FOM = fom;
-            p0 = i;
-            p1 = j;
-          }
-        }
-      }
+  //find the best first two interaction points that satisfy the minimization function
+  for (int fp=0; fp < fNumberOfInteractions; fp++){
+    double E1 = fSegments[fp].fEng*scaleFactor;
+    double er = 511.0/E * E1/(E - E1);
 
-      interaction_point ip0 = fSegments[p0];
-      interaction_point ip1 = fSegments[p1];
-      if (p1 > p0){
-        fSegments.erase(fSegments.begin() + p1);
-        fSegments.erase(fSegments.begin() + p0);
-      } else {
-        fSegments.erase(fSegments.begin() + p0);
-        fSegments.erase(fSegments.begin() + p1);
+    for (int sp=0; sp < fNumberOfInteractions; sp++){
+      if (fp == sp) continue;
+      
+      double cosp = TMath::Cos(GetScatterAngle(fp,sp));
+      double E2 = fSegments[sp].fEng*scaleFactor;
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(GetScatterAngle(fp,sp)),2) );
+      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*GetLocalPosition(fp).Z()*GetAlpha(fp,sp)*kn;
+      ffom *= std::pow(E/E2,2) * GetLocalPosition(sp).Z();
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
       }
-      fSegments.insert(fSegments.begin(),ip1);
-      fSegments.insert(fSegments.begin(),ip0);
     }
   }
+
+  //place the interaction points
+  interaction_point ipFP = fSegments[FP];
+  interaction_point ipSP = fSegments[SP];
+  if (SP > FP){
+    fSegments.erase(fSegments.begin() + SP);
+    fSegments.erase(fSegments.begin() + FP);
+  } else {
+    fSegments.erase(fSegments.begin() + FP);
+    fSegments.erase(fSegments.begin() + SP);
+  }
+  fSegments.insert(fSegments.begin(),ipSP);
+  fSegments.insert(fSegments.begin(),ipFP);
+
   return;
 }

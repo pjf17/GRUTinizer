@@ -185,8 +185,7 @@ public:
   void ScaleIntEng();
   void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
   void ReverseSegments() { std::reverse(fSegments.begin(),fSegments.end());}
-  void ComptonSort(double cut=0.0);
-  void SimTracking(const double realTheta);
+  void ComptonSort();
 
 private:
   void SortHits();

@@ -246,7 +246,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         
         TGretinaHit hitCopy;
         hit.Copy(hitCopy);
-        hitCopy.ComptonSort(CUT);
+        // hitCopy.ComptonSort(CUT);
         
         double energy_corrected = energy_corrected = hitCopy.GetDopplerYta(s800sim->AdjustedBeta(GValue::Value("BETA")), yta, &track);
         
