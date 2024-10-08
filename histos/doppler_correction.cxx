@@ -20,13 +20,22 @@
 #include "TChannel.h"
 #include "GValue.h"
 
+std::map<int,int> detMap12 = {
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22}, {83,23},
+  {50,24}, {58,25}, {66,26}, {82,27}, {44,28}, {60,29}, {68,30}, {76,31},
+  {46,32}, {62,33}, {70,34}, {78,35}, {48,36}, {56,37}, {64,38}, {80,39},
+  {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
+};
+
 std::map<int,int> detMap = {
-  {24, 0}, {25, 1}, {26, 2}, {27, 3}, {28, 4}, {29, 5}, {30, 6}, {31, 7},
-  {32, 8}, {33, 9}, {34,10}, {35,11}, {36,12}, {37,13}, {38,14}, {39,15},
-  {44,16}, {45,17}, {46,18}, {47,19}, {48,20}, {49,21}, {50,22}, {51,23},
-  {56,24}, {57,25}, {58,26}, {59,27}, {60,28}, {61,29}, {62,30}, {63,31},
-  {64,32}, {65,33}, {66,34}, {67,35}, {68,36}, {69,37}, {70,38}, {71,39},
-  {76,40}, {77,41}, {78,42}, {79,43}, {80,44}, {81,45}, {82,46}, {83,47}
+  {26, 0}, {30, 1}, {34, 2}, {38, 3}, {25, 4}, {29, 5}, {33, 6}, {37, 7},
+  {27, 8}, {31, 9}, {35,10}, {39,11}, {24,12}, {28,13}, {32,14}, {36,15},
+  {47,16}, {63,17}, {71,18}, {79,19}, {51,20}, {59,21}, {67,22},
+  {50,23}, {58,24}, {66,25}, {44,26}, {60,27}, {68,28}, {76,29},
+  {46,30}, {62,31}, {70,32}, {78,33}, {48,34}, {56,35}, {64,36},
+  {49,37}, {57,38}, {65,39}, {45,40}, {61,41}, {69,42}
 };
 
 std::map<int,int> detMapRing = {
@@ -197,10 +206,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //BETA CORRECTION
           for (int g=0; g < nGretina; g++){
             TGretinaHit &hit = gretina->GetGretinaHit(g);
+            hit.ComptonSort();
             int cryID = hit.GetCrystalId();
             int ringnum = hit.GetRingNumber();
             
-            if (!isnan(GValue::Value("BETA_SCAN_STEP"))){
+            if (!isnan(GValue::Value("BETA_SCAN_STEP")) && isnan(BETA)){
               // beta scan parameters
               double betaMin = GValue::Value("BETA_SCAN_MIN");
               double betaMax = GValue::Value("BETA_SCAN_MAX");
@@ -215,21 +225,32 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
               //loop to find optimal beta
               for (int i=0; i < nBetaBins; i++){
-                double energy = hit.GetDopplerYta(s800->AdjustedBeta(beta),s800->GetYta(),&track); 
+                double energy = hit.GetDopplerYta(beta,s800->GetYta(),&track); 
                 if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy)){
                   obj.FillHistogram(dirname,"Energy_vs_beta",nBetaBins,betaMin,betaMax,beta,4000,0,4000,energy);
-                  obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),nEbins,scanElo,scanEhi,energy,100,0,3,hit.GetTheta());
+                  obj.FillHistogram(dirname,Form("Theta_vs_Energy_beta%f",beta),nEbins,scanElo,scanEhi,energy,360,0.5,2.1,hit.GetTheta());
                   obj.FillHistogram(dirname,Form("summary_beta%f",beta),48,0,48,detMapRing[cryID],nEbins,scanElo,scanEhi,energy);
                 }
                 beta += betaStep;
               }
             } else {
+              //histogram parameters
+              double scanElo = GValue::Value("BETA_SCAN_ELO");
+              double scanEhi = GValue::Value("BETA_SCAN_EHI");
+              int nEbins = int (scanEhi - scanElo); 
+
               //finer doppler corrections after finding a good beta
               double energy_b = hit.GetDoppler(BETA);
               double energy_bt = hit.GetDoppler(BETA,&track);
               double energy_bty = hit.GetDopplerYta(BETA,s800->GetYta(),&track); 
               double energy_btyd = hit.GetDopplerYta(s800->AdjustedBeta(BETA),s800->GetYta(),&track); 
               if (prompt_timing_gate->IsInside(timeBank29-hit.GetTime(),energy_btyd)){
+                // spectra comp
+                obj.FillHistogram(dirname,"Energy_b",4000,0,4000,energy_b);
+                obj.FillHistogram(dirname,"Energy_bt",4000,0,4000,energy_bt);
+                obj.FillHistogram(dirname,"Energy_bty",4000,0,4000,energy_bty);
+                obj.FillHistogram(dirname,"Energy_btyd",4000,0,4000,energy_btyd);
+
                 //PHI CORRELATION
                 // double phiTa = s800->Azita();//TMath::ATan(TMath::Sin(ata)/(TMath::Sin(bta)*-1.0));
                 // if (phiTa < 0) phiTa += TMath::TwoPi();
@@ -239,16 +260,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 obj.FillHistogram(dirname,"Phi_vs_Energy",4000,0,4000,energy_b,360,0,360,phi);
                 obj.FillHistogram(dirname,"Phi_vs_Energy_corrected",4000,0,4000,energy_bt,360,0,360,phi);
               
-                // //YTA CORRELATION
-                // obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringnum,cryID),700,600,1300,energy_b,200,-20,20,yta);
-                // obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),700,600,1300,energy_bty,200,-20,20,yta);
+                //YTA CORRELATION
+                obj.FillHistogram(dirname,Form("Yta_vs_Energy_r%02d_c%d",ringnum,cryID),nEbins,scanElo,scanEhi,energy_bt,200,-20,20,yta);
+                obj.FillHistogram(dirname,Form("Yta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),nEbins,scanElo,scanEhi,energy_bty,200,-20,20,yta);
 
-                // //DTA CORRELATION
-                // obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringnum,cryID),700,600,1300,energy_b,50,-0.06,-0.02,dta);
-                // obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),700,600,1300,energy_btyd,50,-0.06,-0.02,dta);
+                //DTA CORRELATION
+                obj.FillHistogram(dirname,Form("Dta_vs_Energy_r%02d_c%d",ringnum,cryID),nEbins,scanElo,scanEhi,energy_bty,200,-0.1,0.1,dta);
+                obj.FillHistogram(dirname,Form("Dta_vs_Energy_corrected_r%02d_c%d",ringnum,cryID),nEbins,scanElo,scanEhi,energy_btyd,200,-0.1,0.1,dta);
 
                 //SUMMARY SPECTRUM
-                obj.FillHistogram(dirname,"Doppler_summary",48,0,48,detMapRing[cryID],2000,0,2000,energy_btyd);
+                obj.FillHistogram(dirname,"Doppler_summary_bt",48,0,48,detMapRing[cryID],2000,0,2000,energy_bt);
+                obj.FillHistogram(dirname,"Doppler_summary_bty",48,0,48,detMapRing[cryID],2000,0,2000,energy_bty);
+                obj.FillHistogram(dirname,"Doppler_summary_btyd",48,0,48,detMapRing[cryID],2000,0,2000,energy_btyd);
 
                 //Spectrum
                 obj.FillHistogram(dirname,"gamma_singles_corrected",4000,0,4000,energy_btyd);
