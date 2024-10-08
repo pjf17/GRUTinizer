@@ -67,6 +67,7 @@ class MultiPlotter{
         void Fit(TF1 *f, double xlo, double xhi);
         void FitPearson(double xlo, double xhi, double h, double c, double w);
         void FitGaus(double xlo, double xhi, Option_t *opt="");
+        void FitPeak(double xlo, double xhi, Option_t *opt="");
         void FitExclusion(double exlo, double exhi, double rlo, double rhi);
         
         void Draw(std::string key);

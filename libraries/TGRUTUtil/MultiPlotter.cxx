@@ -11,6 +11,7 @@
 #include "TF1.h"
 #include "TCanvas.h"
 #include "GGaus.h"
+#include "GPeak.h"
 #include "GRootCommands.h"
 #include "TMath.h"
 #include "TFitResult.h"
@@ -267,6 +268,19 @@ void MultiPlotter::FitGaus(double xlo, double xhi, Option_t *opt){
     printf("%-30s %6s %4s %3s %7s %5s\n","name","cntrd","fwhm","err","area","err");
     while (it != end){
         GGaus *fitR = GausFit(it->second,xlo,xhi,sOpt.c_str());
+        printf("%-30s %6.2f %4.2f %3.2f %7.1f %5.1f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetFWHM(),fitR->GetFWHMErr(),fitR->GetArea(),fitR->GetAreaErr());
+        it++;
+    }
+}
+
+void MultiPlotter::FitPeak(double xlo, double xhi, Option_t *opt){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    std::string sOpt = opt;
+    sOpt.append("no-print");
+    printf("%-30s %6s %4s %3s %7s %5s\n","name","cntrd","fwhm","err","area","err");
+    while (it != end){
+        GPeak *fitR = PhotoPeakFit(it->second,xlo,xhi,sOpt.c_str());
         printf("%-30s %6.2f %4.2f %3.2f %7.1f %5.1f\n",it->second->GetName(),fitR->GetCentroid(),fitR->GetFWHM(),fitR->GetFWHMErr(),fitR->GetArea(),fitR->GetAreaErr());
         it++;
     }
