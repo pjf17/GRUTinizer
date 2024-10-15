@@ -605,6 +605,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
                   if (!tgate2) continue;
                   
                   obj.FillHistogram(dirname, "gamma_gamma", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                  obj.FillHistogram(dirname, "gamma_gamma_coarse", 2048,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
+                  if (nnSize == 3) obj.FillHistogram(dirname, "gamma_gamma_mlt3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
                 }
               }
               

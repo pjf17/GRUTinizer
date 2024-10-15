@@ -560,6 +560,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       // obj.FillHistogram(dirname, "FEP_spec_time_sorted_vs_theta",1000,0,TMath::Pi(),theta,4000,1100,1500,time_energy);
       // obj.FillHistogram(dirname, "FEP_spec_main_sorted_vs_theta",1000,0,TMath::Pi(),theta,4000,1100,1500,main_energy);
       obj.FillHistogram(dirname,"FEP_nInteractions",16,0,16,nInteractions);
+      obj.FillHistogram(dirname,"FEP_segment_vs_crystal",48,0,48,detMapRing[cryID],36,0,36,hit.GetSegmentId());
       if (nInteractions > 1){
         int myFP = -1;
         int mySP = -1;
@@ -699,7 +700,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, "gam_dop_algo_fep_vs_xi",360,0,TMath::TwoPi(),algo_xi,1500,0,1500,algo_energy);
         obj.FillHistogram(dirname, "True_xi_vs_Algo_xi",360,0,TMath::TwoPi(),algo_xi,360,0,TMath::TwoPi(),xi);
         obj.FillHistogram(dirname, "algo_xi_vs_hole_number",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
-        obj.FillHistogram(dirname, "algo_xi_vs_crystalID",48,0,48,detMapRing[cryID],90,0,180,algo_xi*TMath::RadToDeg());
+        obj.FillHistogram(dirname, "algo_xi_vs_crystalID",48,0,48,detMapRing[cryID],180,0,360,algo_xi*TMath::RadToDeg());
         // if (segmentation)
         //   obj.FillHistogram(dirname, "True_xi_vs_hole_number_seg",12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),algo_xi);
         // else 
