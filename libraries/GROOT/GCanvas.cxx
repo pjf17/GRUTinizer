@@ -1025,6 +1025,8 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
       }
       if(gHist) {
         GH1D *proj=0;
+        GH1D *proj_bg=0; //if there's background, overlay the background
+        GH1D *proj_sig=0; //and signal
         int binlow = fMarkers.at(fMarkers.size()-1)->binx;
         int binhigh = fMarkers.at(fMarkers.size()-2)->binx;
         if(binlow > binhigh)  std::swap(binlow, binhigh);
@@ -1035,11 +1037,20 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
           double scale = -1*(double(binhigh)-double(binlow))/(double(bg_binhigh)-double(bg_binlow));
           //proj = gHist->Project(binlow,binhigh,bg_binlow,bg_binhigh,scale,"keep+");
           proj = gHist->Project(binlow,binhigh,bg_binlow,bg_binhigh,scale);
+          proj_bg = gHist->Project(bg_binlow,bg_binhigh); proj_bg->Scale(-1.0*scale); proj_bg->SetLineColor(kBlue);
+          proj_sig = gHist->Project(binlow,binhigh); proj_sig->SetLineColor(kRed);
         } else {
           //proj = gHist->Project(binlow,binhigh,"keep+");
           proj = gHist->Project(binlow,binhigh);
         }
-        if(proj){
+        if(proj && proj_sig && proj_bg){
+          proj->Draw("");
+          new GCanvas();
+          proj_sig->Rebin(2); proj_sig->Draw("");
+          proj_bg->Rebin(2); proj_bg->Draw("same");
+          edited=true;
+        }
+        else if(proj){
           proj->Draw("");
           edited=true;
         }
