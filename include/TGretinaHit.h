@@ -104,6 +104,8 @@ public:
   double GetX() const { return GetPosition().X(); }
   double GetY() const { return GetPosition().Y(); }
   double GetZ() const { return GetPosition().Z(); }
+
+  int GetABDepth() const { return fAB; }
   
   double GetPhi(int point = 0) const {
     double phi = GetIntPosition(point).Phi();
@@ -178,6 +180,7 @@ public:
   void NNAdd(const TGretinaHit& other);
   void NNSwap(int index);
   void SetCoreEnergy(float temp) const { fCoreEnergy = temp; }
+  void SetABDepth(int ab) const { fAB = ab; }
 
   void TrimSegments(int type); // 0: drop multiple ident int pnts.  1: make into wedge "data"
   bool IsClean() const { return !fPad; }
@@ -217,6 +220,7 @@ private:
   Float_t   fDecompNormChi2; 
   
   mutable Float_t fCoreEnergy;
+  mutable Int_t fAB; //index 0 = n0, 1 = n1, 2 = n2, 3 = ng
   Float_t         fWalkCorrection;   //also called t0.
   Float_t         fTOffset; //  t0 = toffset + tFit
 

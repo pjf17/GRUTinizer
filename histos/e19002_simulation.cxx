@@ -331,6 +331,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
     }
 
+    /*
     //NNADDBACK
     //loop over multiplicity
     for (int n=0; n<4; n++){
@@ -452,7 +453,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         if (n == 3) multiplicity = Form("g");
         obj.FillHistogram(dirname, Form("gamma_n%s",multiplicity), 1600,0,1600, gEnergy);
       }
-    }
+    }*/
   }
 
   if(numobj!=list->GetSize()){

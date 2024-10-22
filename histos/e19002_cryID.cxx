@@ -187,9 +187,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
   int numobj = list->GetSize();
   
   if (gretina){
-    int nHits = gretina->NNAddbackSize(1);
+    int nHits = gretina->NNAddbackSize();
     for (int i=0; i < nHits; i++){
-      TGretinaHit hit = gretina->GetNNAddbackHit(1,i);
+      TGretinaHit hit = gretina->GetNNAddbackHit(i);
       double phi = hit.GetPhiDeg();
       double theta = 180 - hit.GetThetaDeg();
       int cryID = hit.GetCrystalId();

@@ -567,49 +567,50 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if (total_core_energy > 0) obj.FillHistogram(dirname,"total_core_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_core_energy);
 
           //NNADDBACK
-          //loop over multiplicity
-          for (int n=0; n<4; n++){
-            //loop over hits for each multiplicity spectrum
-            int nnSize = gretina->NNAddbackSize(n);
-            for (int i=0; i < nnSize; i++){
-              //get hit and hit data 
-              TGretinaHit nnhit = gretina->GetNNAddbackHit(n,i);
-              // nnhit.ComptonSort();
-              // int cryID = nnhit.GetCrystalId();
-              // int ringNum = nnhit.GetRingNumber();
-              double nnEnergy_corrected = nnhit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
-              double nnCore_energy = nnhit.GetCoreEnergy();
-              // double theta = nnhit.GetThetaDeg();
-              // double phi = nnhit.GetPhiDeg();
-              int nInteractions = nnhit.NumberOfInteractions();
-              
-              //make sure hits are prompt
-              bool tgate = false;
-              if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
-              if (!tgate) continue;
-              
-              char *multiplicity = Form("%d",n);
-              if (n == 3) multiplicity = Form("g");
-              obj.FillHistogram(dirname, Form("gamma_corrected_n%s_prompt",multiplicity), 8192,0,8192, nnEnergy_corrected);
-              
-              if (n < 3) {
-                obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
-                // GAMMA GAMMA CORRELATION
-                for (int j=0; j < nnSize; j++){
-                  if (i==j) continue;
-                  TGretinaHit nnhit2 = gretina->GetNNAddbackHit(n,j);
-                  double nnEnergy_corrected2 = nnhit2.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            
+          int nnSize = gretina->NNAddbackSize();
+          for (int i=0; i < nnSize; i++){
+            //get hit and hit data 
+            TGretinaHit nnhit = gretina->GetNNAddbackHit(i);
+            // nnhit.ComptonSort();
+            // int cryID = nnhit.GetCrystalId();
+            // int ringNum = nnhit.GetRingNumber();
+            double nnEnergy_corrected = nnhit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double nnCore_energy = nnhit.GetCoreEnergy();
+            // double theta = nnhit.GetThetaDeg();
+            // double phi = nnhit.GetPhiDeg();
+            int nInteractions = nnhit.NumberOfInteractions();
+            
+            //make sure hits are prompt
+            bool tgate = false;
+            if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
+            if (!tgate) continue;
+            
+            obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",nnhit.GetABDepth()), 8192,0,8192, nnEnergy_corrected);
+            
+            if (nnhit.GetABDepth() < 3) {
+              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+              // GAMMA GAMMA CORRELATION
+              for (int j=0; j < nnSize; j++){
+                if (i==j) continue;
+                TGretinaHit nnhit2 = gretina->GetNNAddbackHit(j);
+                if (nnhit.GetABDepth() > 2) continue;
+                double nnEnergy_corrected2 = nnhit2.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
 
-                  bool tgate2 = false;
-                  if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
-                  if (!tgate2) continue;
-                  
-                  obj.FillHistogram(dirname, "gamma_gamma", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
-                  obj.FillHistogram(dirname, "gamma_gamma_coarse", 2048,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
-                  if (nnSize == 3) obj.FillHistogram(dirname, "gamma_gamma_mlt3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                bool tgate2 = false;
+                if (gates["prompt"].size() > 0) tgate2 = gates["prompt"][0]->IsInside(timeBank29-nnhit2.GetTime(), nnhit2.GetCoreEnergy());
+                if (!tgate2) continue;
+                
+                obj.FillHistogram(dirname, "gamma_gamma", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                obj.FillHistogram(dirname, "gamma_gamma_coarse", 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
+                if (nnSize == 4) obj.FillHistogram(dirname, "gamma_gamma_mlt4", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                if (nnSize > 1 && nnSize < 4) {
+                  obj.FillHistogram(dirname, Form("gamma_gamma_mlt%d",nnSize), 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                  obj.FillHistogram(dirname, "gamma_gamma_mlt2&3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                  obj.FillHistogram(dirname, "gamma_gamma_mlt2&3_coarse", 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
+                  // obj.FillHistogram(dirname, Form("gamma_gamma_mlt%d",nnSize), 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
                 }
               }
-              
             }
           }
         } 

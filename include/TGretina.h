@@ -23,7 +23,7 @@ public:
 
   virtual size_t Size() const { return gretina_hits.size(); }
   virtual Int_t AddbackSize(int EngRange=-1) { BuildAddback(EngRange); return addback_hits.size(); }
-  virtual Int_t NNAddbackSize(int multiplicity,int SortDepth=5, int EngRange=-1) { BuildNNAddback(SortDepth,EngRange); return nn_hits[multiplicity].size(); }
+  virtual Int_t NNAddbackSize(int SortDepth=6, int EngRange=-1) { BuildNNAddback(SortDepth,EngRange); return nn_hits.size(); }
   void ResetAddback() { addback_hits.clear();}
 
   virtual void InsertHit(const TDetectorHit& hit);
@@ -32,7 +32,7 @@ public:
   const TGretinaHit& GetGretinaHit(int i) const { return gretina_hits.at(i); }
         TGretinaHit& GetGretinaHit(int i)       { return gretina_hits.at(i); }
   const TGretinaHit& GetAddbackHit(int i) const { return addback_hits.at(i); }
-  const TGretinaHit& GetNNAddbackHit(int multiplicity, int i) const { return nn_hits[multiplicity][i]; }
+  const TGretinaHit& GetNNAddbackHit(int i) const { return nn_hits[i]; }
 
 
   void PrintHit(int i){ gretina_hits.at(i).Print(); }
@@ -90,7 +90,7 @@ public:
 
 private:
   void BuildAddback(int EngRange=-1) const;
-  void BuildNNAddback(int SortDepth=5, int EngRange=-1) const;
+  void BuildNNAddback(int SortDepth=6, int EngRange=-1) const;
 #ifndef __CINT__ 
   static std::function<bool(const TGretinaHit&,const TGretinaHit&)> fAddbackCondition;  
 #endif
@@ -98,8 +98,7 @@ private:
 
   std::vector<TGretinaHit> gretina_hits;
   mutable std::vector<TGretinaHit> addback_hits; //!
-  mutable std::vector<std::vector<TGretinaHit>> nn_hits;
-  //index 0 = n0, 1 = n1, 2 = n2, 3 = ng
+  mutable std::vector<TGretinaHit> nn_hits;
 
   static Float_t crmat[32][4][4][4];
   static Float_t m_segpos[2][36][3];

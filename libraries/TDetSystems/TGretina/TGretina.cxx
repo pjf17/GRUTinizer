@@ -92,7 +92,6 @@ void TGretina::BuildNNAddback(int SortDepth, int EngRange) const {
   }
 
   std::vector<TGretinaHit> temp_hits = gretina_hits;
-  std::vector<TGretinaHit> n0_hits, n1_hits, n2_hits, ng_hits;
 
   if(EngRange>=0 && EngRange<4){
     for(auto& hit : temp_hits) {
@@ -163,55 +162,51 @@ void TGretina::BuildNNAddback(int SortDepth, int EngRange) const {
         }
       }
     }
+    
     //Reverse sort paired vector required when removing hits later
     std::sort(paired.rbegin(), paired.rend());
     //Vector can contain multiple version of same hit, removes duplicate values
     paired.erase(unique(paired.begin(), paired.end()), paired.end());
-    //n0
-    if (paired.size() == 0){
-      n0_hits.push_back(current_hit);
-    }
-    //n1
-    else if (paired.size() == 1) {
+    if (paired.size() == 0) { //n0 events
+      nn_hits.push_back(current_hit);
+      nn_hits.back().SetABDepth(0);
+    } else if (paired.size() == 1) { //n1 Events
       current_hit.NNAdd(temp_hits[paired.at(0)]);
-      n1_hits.push_back(current_hit);
+      nn_hits.push_back(current_hit);
+      nn_hits.back().SetABDepth(1);
       //Erase hit after adding otherwise event can make a new addback event
       temp_hits.erase(temp_hits.begin() + paired.at(0));
     }
-    //n2
-    else if (paired.size() == 2) {
-      if(IsNeighbor(current_hit,temp_hits[paired.at(0)]) && IsNeighbor(current_hit,temp_hits[paired.at(1)]) && IsNeighbor(temp_hits[paired.at(0)],temp_hits[paired.at(1)]) ) {     
+    else if (paired.size() == 2) { //n2 Or Ng
+      if(IsNeighbor(current_hit,temp_hits[paired.at(0)]) && IsNeighbor(current_hit,temp_hits[paired.at(1)]) && IsNeighbor(temp_hits[paired.at(0)],temp_hits[paired.at(1)]) ) { //n2
         current_hit.NNAdd(temp_hits[paired.at(1)]);
         current_hit.NNAdd(temp_hits[paired.at(0)]);
-        
-        n2_hits.push_back(current_hit);
+        nn_hits.push_back(current_hit);
+        nn_hits.back().SetABDepth(2);
         //Erase hit after adding otherwise event can make a new addback event
         temp_hits.erase(temp_hits.begin() + paired.at(0));
         temp_hits.erase(temp_hits.begin() + paired.at(1));
       } else { //Also ng
-        ng_hits.push_back(current_hit);
-        for(int p = 0; p < (int)paired.size(); p++) {
-          ng_hits.push_back(temp_hits[paired.at(p)]);
+          nn_hits.push_back(current_hit);
+          nn_hits.back().SetABDepth(3);
+          for(int p = 0; p < (int)paired.size(); p++) {
+          nn_hits.push_back(temp_hits[paired.at(p)]);
+          nn_hits.back().SetABDepth(3);
           //Erase hit after adding otherwise event can make a new addback event
           temp_hits.erase(temp_hits.begin() + paired.at(p));
         }
       }
-    }
-    //ng
-    else {
-      ng_hits.push_back(current_hit);
+    } else { //ng
+      nn_hits.push_back(current_hit);
+      nn_hits.back().SetABDepth(3);
       for(int p = 0; p < (int)paired.size(); p++) {
-        ng_hits.push_back(temp_hits[paired.at(p)]);
+        nn_hits.push_back(temp_hits[paired.at(p)]);
+        nn_hits.back().SetABDepth(3);
         //Erase hit after adding otherwise event can make a new addback event
         temp_hits.erase(temp_hits.begin() + paired.at(p));
       }
     }
   }
-
-  nn_hits.push_back(n0_hits);
-  nn_hits.push_back(n1_hits);
-  nn_hits.push_back(n2_hits);
-  nn_hits.push_back(ng_hits);
 
   return;
 }

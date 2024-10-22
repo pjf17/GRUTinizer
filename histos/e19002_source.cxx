@@ -277,6 +277,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             // obj.FillHistogram(dirname, Form("%s_Local_YvsX_CRYID%d_E%3.0f",timeflag.c_str(),cryID,(egateHi+egateLo)/2),100,-50,50,hit.GetLocalPosition(myFP).X(),100,-50,50,hit.GetLocalPosition(myFP).Y());
             obj.FillHistogram(dirname, Form("%s_xi_vs_crystalIDmap_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),48,0,48,detMap[cryID],36,0,360,xi*TMath::RadToDeg());
             obj.FillHistogram(dirname, Form("%s_segmentID_vs_crystalID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),48,0,48,detMap[cryID],36,0,36,hit.GetSegmentId());
+            obj.FillHistogram(dirname, Form("%s_xi_vs_segmentID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),36,0,36,hit.GetSegmentId(),180,0,TMath::TwoPi(),xi);
             // obj.FillHistogram(dirname, Form("%s_xi_vs_crystalID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),120,0,120,cryID,72,0,TMath::TwoPi(),xi);
             // obj.FillHistogram(dirname, Form("%s_xi_qdtype%d_E%3.0f",timeflag.c_str(),quadType[hit.GetHoleNumber()],(egateHi+egateLo)/2),360,0,TMath::TwoPi(),xi);
             // int ihn = holeMap[hit.GetHoleNumber()];
