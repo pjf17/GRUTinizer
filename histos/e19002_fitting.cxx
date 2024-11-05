@@ -31,162 +31,6 @@ std::map<int,int> detMap = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
-//24
-std::vector<std::pair<int,int>> redPairs = {
-  std::make_pair(46,44),
-  std::make_pair(46,48),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(51,47),
-  std::make_pair(56,57),
-  std::make_pair(57,61),
-  std::make_pair(59,58),
-  std::make_pair(60,58),
-  std::make_pair(60,62),
-  std::make_pair(64,62),
-  std::make_pair(64,65),
-  std::make_pair(69,65),
-  std::make_pair(63,67),
-  std::make_pair(66,67),
-  std::make_pair(66,68),
-  std::make_pair(70,68),
-  std::make_pair(78,76),
-  std::make_pair(78,80),
-  std::make_pair(80,81),
-  std::make_pair(45,81),
-  std::make_pair(79,83),
-  std::make_pair(82,83),
-  std::make_pair(44,82)
-};
-
-//16
-std::vector<std::pair<int,int>> goldPairs = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(48,51),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(61,60),
-  std::make_pair(62,63),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(69,68),
-  std::make_pair(70,71),
-  std::make_pair(78,79),
-  std::make_pair(76,77),
-  std::make_pair(80,83),
-  std::make_pair(81,82)
-};
-
-//18
-std::vector<std::pair<int,int>> bluePairs = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(46,51),
-  std::make_pair(48,50),
-  std::make_pair(56,58),
-  std::make_pair(57,60),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(62,67),
-  std::make_pair(64,66),
-  std::make_pair(65,68),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(77,78),
-  std::make_pair(78,83),
-  std::make_pair(80,82),
-  std::make_pair(44,81)
-};
-
-//16
-std::vector<std::pair<int,int>> OneQuadPlus = {
-  std::make_pair(44,47),
-  std::make_pair(45,46),
-  std::make_pair(60,63),
-  std::make_pair(61,62),
-  std::make_pair(68,71),
-  std::make_pair(76,79),
-  std::make_pair(69,70),
-  std::make_pair(49,50),
-  std::make_pair(56,59),
-  std::make_pair(57,58),
-  std::make_pair(64,67),
-  std::make_pair(65,66),
-  std::make_pair(48,51),
-  std::make_pair(77,78),
-  std::make_pair(80,83),
-  std::make_pair(81,82),
-};
-
-//24
-std::vector<std::pair<int,int>> OneQuadDefault = {
-  std::make_pair(44,45),
-  std::make_pair(46,47),
-  std::make_pair(44,46),
-  std::make_pair(48,49),
-  std::make_pair(50,51),
-  std::make_pair(48,50),
-  std::make_pair(56,57),
-  std::make_pair(58,59),
-  std::make_pair(56,58),
-  std::make_pair(60,61),
-  std::make_pair(62,63),
-  std::make_pair(60,62),
-  std::make_pair(64,65),
-  std::make_pair(66,67),
-  std::make_pair(64,66),
-  std::make_pair(68,69),
-  std::make_pair(70,71),
-  std::make_pair(68,70),
-  std::make_pair(76,78),
-  std::make_pair(78,79),
-  std::make_pair(77,76),
-  std::make_pair(80,82),
-  std::make_pair(81,80),
-  std::make_pair(82,83),
-};
-
-
-//18
-std::vector<std::pair<int,int>> TwoQuadPairs = {
-  std::make_pair(46,48),
-  std::make_pair(46,51),
-  std::make_pair(47,51),
-  std::make_pair(61,57),
-  std::make_pair(58,60),
-  std::make_pair(57,60),
-  std::make_pair(62,64),
-  std::make_pair(63,67),
-  std::make_pair(62,67),
-  std::make_pair(65,69),
-  std::make_pair(66,68),
-  std::make_pair(65,68),
-  std::make_pair(78,80),
-  std::make_pair(78,83),
-  std::make_pair(79,83),
-  std::make_pair(45,81),
-  std::make_pair(44,81),
-  std::make_pair(44,82),
-};
-
-bool PairHit(const TGretinaHit& abhit, std::vector<std::pair<int, int>> &pairs) {
-  int cryId1 = abhit.GetCrystalId();
-  int cryId2 = abhit.GetNeighbor().GetCrystalId();
-  bool hit = false;
-  
-  for (auto &p : pairs){
-    if ( (cryId1 == p.first && cryId2 == p.second) 
-        || (cryId2 == p.first && cryId1 == p.second) ) {
-        hit = true;
-        break;
-    }
-  }
-  return hit;
-}
-
 bool efficiencyCorrection(TRandom3 *rand, const TGretinaHit &hit1, int nNeighborHits=-1){
   double thresh_param1 = GValue::Value(Form("DET%i_THRESH1",detMap[hit1.GetCrystalId()]));
   double thresh_param2 = GValue::Value(Form("DET%i_THRESH2",detMap[hit1.GetCrystalId()]));
@@ -243,7 +87,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   if (!gretina){
     return;
   }
-  if (!s800sim || !s800sim->Size()){
+  if ((!s800sim || !s800sim->Size())){
     stopped = true;
   }
 
@@ -279,7 +123,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
   } else {
     obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   }
-  double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+  // double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+  // double SIGMA = 0.85*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+  // double SIGMA = 0.87*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+  double SIGMA = 0.89*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
   if(SIGMA > 3.8) {
     SIGMA = 3.8;
   }
@@ -317,50 +164,50 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
     }
     hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
+    // hit.ComptonSort();
 
-    double energy_track_yta_dta;
-    double energy_track;
+    double dop_corrected;
 
-    if (!stopped){
-      energy_track = hit.GetDoppler(beta, &track);
-      energy_track_yta_dta = hit.GetDopplerYta(s800sim->AdjustedBeta(beta), yta, &track);
+    if (!stopped || !std::isnan(beta)){
+      dop_corrected = hit.GetDoppler(beta); 
     } 
     else{
-      energy_track = energy_track_yta_dta = hit.GetCoreEnergy();
+      dop_corrected = hit.GetCoreEnergy();
     }
 
-    //efficiency correction
-    if (efficiencyCorrection(rand_gen,hit)){
-      obj.FillHistogram(dirname,"HitPhi_v_HitTheta",180,0,180,180-theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
-      // obj.FillHistogram(dirname,Form("HitPhi_v_HitTheta_Smeared_c%d",detMap[cryID]),180,0,180,180-theta_smear*TMath::RadToDeg(),360,0,360,phi_smear*TMath::RadToDeg());
-      obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
+    obj.FillHistogram(dirname,"HitPhi_v_HitTheta",180,0,180,180-theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
+    // obj.FillHistogram(dirname,Form("HitPhi_v_HitTheta_Smeared_c%d",detMap[cryID]),180,0,180,180-theta_smear*TMath::RadToDeg(),360,0,360,phi_smear*TMath::RadToDeg());
+    obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
 
-      obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",4000,0,4000,energy_track_yta_dta,100,0,3,hit.GetTheta());
+    obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",4000,0,4000,dop_corrected,100,0,3,hit.GetTheta());
 
-      // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
-      
-      //fitting hists
-      obj.FillHistogram(dirname,"gretina_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
-      if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D",10000,0,10000,energy_track_yta_dta);
-      if (gates && crystal_xy && crystal_zy && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
-        obj.FillHistogram(dirname,"gretina_B&T&Y&D_inside",10000,0,10000,energy_track_yta_dta);
-      else obj.FillHistogram(dirname,"gretina_B&T&Y&D_outside",10000,0,10000,energy_track_yta_dta);
+    // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
+    
+    //fitting hists
+    obj.FillHistogram(dirname,"dopEn",10000,0,10000,dop_corrected);
+    obj.FillHistogram(dirname,"dopEn_vs_theta",180,0,TMath::Pi(),theta,10000,0,10000,dop_corrected);
+    if (detMap[cryID] < 4) obj.FillHistogram(dirname,"dopEn_fwd",10000,0,10000,dop_corrected);
+    if (detMap[cryID] > 43) obj.FillHistogram(dirname,"dopEn_bkwd",10000,0,10000,dop_corrected);
+    // if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_B&T&Y&D",10000,0,10000,dop_corrected);
+    // if (gates && crystal_xy && crystal_zy && crystal_xy->IsInside(smear_x,smear_y) && crystal_zy->IsInside(smear_z,smear_y)) 
+    //   obj.FillHistogram(dirname,"dopEn_inside",10000,0,10000,energy_track_yta_dta);
+    // else obj.FillHistogram(dirname,"dopEn_outside",10000,0,10000,energy_track_yta_dta);
 
-      //SUMMARY SPECTRUM
-      obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,energy_track_yta_dta);    
-      
-      if (isFEP){ //full energy peak event
-        obj.FillHistogram(dirname,"gretina_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);     
-        if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D_fep",10000,0,10000,energy_track_yta_dta);     
-      } else {
-        obj.FillHistogram(dirname,"gretina_B&T&Y&D_bg",10000,0,10000,energy_track_yta_dta);
-        if (cryID > 40) obj.FillHistogram(dirname,"gretina_90qds_B&T&Y&D_bg",10000,0,10000,energy_track_yta_dta);
-      }
+    //SUMMARY SPECTRUM
+    obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,dop_corrected);    
+    
+    if (isFEP){ //full energy peak event
+      obj.FillHistogram(dirname,"dopEn_fep",10000,0,10000,dop_corrected);     
+      if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_fep",10000,0,10000,dop_corrected);     
+    } else {
+      obj.FillHistogram(dirname,"dopEn_bg",10000,0,10000,dop_corrected);
+      if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_bg",10000,0,10000,dop_corrected);
     }
   }
 
   //NNADDBACK
   //loop over multiplicity
+  /*
   dirname = "addback";
   int nnSize = gretina->NNAddbackSize();
   for (int i=0; i < nnSize; i++){
@@ -460,7 +307,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         }
       }
     }
-  }
+  }*/
 
   if(numobj!=list->GetSize()){
     list->Sort();

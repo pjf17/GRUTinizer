@@ -13,19 +13,19 @@
 #include "TMath.h"
 
 // const std::string INPUT_HIST = "ab_prompt_red_pair";
-const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_singles_prompt_90qds";
+const std::string INPUT_HIST = "inCl45_Ar46_gated/gam_dop_sgl_prompt";
 // const std::string INPUT_HIST = "inBeam_Fe64_gated/gamma_corrected_n1_prompt";
 // const std::string MODE = "addback/gretina_n1";
-const std::string MODE = "gretsim/gretina_90qds";
+const std::string MODE = "gretsim/dopEn";
 
-const int REBIN_FACTOR = 1; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
+const int REBIN_FACTOR = 2; //What binning do you want to use on your histograms for the fit (8000 and 10000 must be divisible by this number)
 
 double getEff(double energy) {
   return (4.532*pow(energy+100.,-0.621)*10.75/8.)*(1+TMath::TanH((energy-185.1)/82.5))/2; //This is for GRETINA with 11 quads and one disabled detector. If you want accurate efficiency corrections you will need to find your own, but it's not important to the actual fitting
 }
 
 int getEnergy(const std::string &name) {
-  return std::stoi(name.substr(4,4));
+  return std::stoi(name.substr(name.find("t")+1,name.find(".")-name.find("t")-1));
 }
 
 void bkgSubtractedCounts(double energy, GH1D *fep, GH1D *data, TF1 *f, TFitResultPtr r, double &counts, double &counts_err){
@@ -91,17 +91,25 @@ TF1 *constructBackground(std::string param_list) {
     
     bg = new TF1("Single_Exp","([0]*TMath::Exp([1]*x))*(1+TMath::TanH((x-[2])/[3]))/2",0,10000);
     
-    bg->SetParameter(0,t->GetV1()[0]);
-    bg->SetParameter(1,t->GetV1()[1]);
     bg->FixParameter(2,t->GetV1()[2]);
     bg->FixParameter(3,t->GetV1()[3]);
 
-    if(t->GetV1()[4]) {
-      bg->FixParameter(0,t->GetV1()[0]);
-      bg->FixParameter(1,t->GetV1()[1]);
-      bg->FixParameter(2,t->GetV1()[2]);
-      bg->FixParameter(3,t->GetV1()[3]);
+    for (int i=0 ; i < 2; i++) {
+      if (t->GetV1()[4] == i+1 || t->GetV1()[4] > 10) 
+        bg->FixParameter(i,t->GetV1()[i]);
+      else 
+        bg->SetParameter(i,t->GetV1()[i]);
     }
+
+    // bg->SetParameter(0,t->GetV1()[0]);
+    // bg->SetParameter(1,t->GetV1()[1]);
+
+    // if(t->GetV1()[4]) {
+    //   bg->FixParameter(0,t->GetV1()[0]);
+    //   bg->FixParameter(1,t->GetV1()[1]);
+    //   bg->FixParameter(2,t->GetV1()[2]);
+    //   bg->FixParameter(3,t->GetV1()[3]);
+    // }
   }
   
   else if(t->GetSelectedRows() == 7) {
@@ -111,7 +119,7 @@ TF1 *constructBackground(std::string param_list) {
     bg->SetParameter(0,t->GetV1()[0]);
     bg->SetParameter(1,t->GetV1()[1]);
     bg->SetParameter(2,t->GetV1()[2]);
-    bg->FixParameter(3,t->GetV1()[3]);
+    bg->SetParameter(3,t->GetV1()[3]);
     bg->FixParameter(4,t->GetV1()[4]);
     bg->FixParameter(5,t->GetV1()[5]);
 
@@ -151,7 +159,9 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   // fullSum.AddRegion(2009,2019); 
   // fullSum.AddRegion(2300,2325); 
   // fullSum.AddRegion(2490,2540); 
-  // fullSum.AddRegion(2724,2731); 
+  
+  // fullSum.AddRegion(3230,3260); 
+  // fullSum.AddRegion(3845,3865); 
   fullSum.AddRegion(fit_low_x,fit_high_x);
   fullSum.FitInRegions();
   for (unsigned int i=0;i<fit_funcs.size();i++){
@@ -163,7 +173,7 @@ TFitResultPtr fitAllPeaks(GH1D* data_hist, TF1Sum &fullSum, const std::vector<TF
   int count = 0;
   TFitResultPtr r;
   while (1) {
-    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",600,fit_high_x);
+    r = data_hist->Fit(fullSum.GetFunc(),"LMES","",60,fit_high_x);
     r->Print();
     std::cout << "Fit with r->Status() = " << r->Status()  << " r->IsValid() = " <<  r->IsValid() << std::endl;
     count++;
@@ -274,23 +284,23 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
 
   for(unsigned int i=0;i<energies.size();i++) {
 
-    TFile* f = new TFile(Form("hist%04d.root",energies.at(i)),"read");
+    TFile* f = new TFile(Form("hist%d.root",energies.at(i)),"read");
     if(!f->IsZombie()) {
       if(peaks[energies.at(i)] && comps[energies.at(i)]) {
-        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D",MODE.c_str())));
+        fit_hists.push_back((GH1D*)f->Get(Form("%s",MODE.c_str())));
       }
       else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-        fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())));
+        fit_hists.push_back((GH1D*)f->Get(Form("%s_fep",MODE.c_str())));
       }
       else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-	      fit_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())));
+	      fit_hists.push_back((GH1D*)f->Get(Form("%s_bg",MODE.c_str())));
       }
-      fep_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())))->Clone()));
-      com_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())))->Clone()));
+      fep_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_fep",MODE.c_str())))->Clone()));
+      com_hists.push_back((GH1D*)(((TH1*)f->Get(Form("%s_bg",MODE.c_str())))->Clone()));
       
       fit_hists.back()->Sumw2();
 
-      TFile* fw = new TFile(Form("wider/hist%04d.root",energies.at(i)),"read");
+      TFile* fw = new TFile(Form("wider/hist%d.root",energies.at(i)),"read");
       if(!fw->IsZombie()) {
         // if (energies.at(i) < 900) {
         //   NARROW_SCALE = 0.7;
@@ -304,17 +314,17 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
         TH1* hw_fep;
         TH1* hw_com;
         if(peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s",MODE.c_str()));
         }
         else if(peaks[energies.at(i)] && !comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_fep",MODE.c_str()));
         }
         else if(!peaks[energies.at(i)] && comps[energies.at(i)]) {
-          hw = (GH1D*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str()));
+          hw = (GH1D*)fw->Get(Form("%s_bg",MODE.c_str()));
         }
 
-        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_fep",MODE.c_str())))->Clone());
-        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_B&T&Y&D_bg",MODE.c_str())))->Clone());
+        hw_fep = (GH1D*)(((TH1*)fw->Get(Form("%s_fep",MODE.c_str())))->Clone());
+        hw_com = (GH1D*)(((TH1*)fw->Get(Form("%s_bg",MODE.c_str())))->Clone());
         hw->Sumw2();
 
         hw->Scale(WIDE_SCALE);
@@ -331,9 +341,9 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
       }
 
       //Do not change this naming convention. It will break the next loop.
-      fit_hists.back()->SetName(Form("hist%04i",energies.at(i)));
-      fep_hists.back()->SetName(Form("fep_hist%04i",energies.at(i)));
-      com_hists.back()->SetName(Form("com_hist%04i",energies.at(i)));
+      fit_hists.back()->SetName(Form("hist%i",energies.at(i)));
+      fep_hists.back()->SetName(Form("fep_hist%i",energies.at(i)));
+      com_hists.back()->SetName(Form("com_hist%i",energies.at(i)));
 
       fit_hists.back()->GetXaxis()->SetLimits(fit_hists.back()->GetXaxis()->GetXmin()+shifts[energies.at(i)],
 				              fit_hists.back()->GetXaxis()->GetXmax()+shifts[energies.at(i)]);
@@ -369,7 +379,7 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     }
     */
     
-    fit_funcs.back()->SetName(Form("func%04d",getEnergy(fit_hists.at(i)->GetName()))); 
+    fit_funcs.back()->SetName(Form("func%d",getEnergy(fit_hists.at(i)->GetName()))); 
   }
 
   TNtuple* bg_tpl = new TNtuple("bg_input","bg_input","energy:parameter:include");
@@ -401,9 +411,9 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   std::vector<GH1D*> bg_hists;
   for(unsigned int i=0;i<bg_energies.size();i++) {
 
-    TFile* f = new TFile(Form("bg_hists/hist%04d.root",bg_energies.at(i)),"read");
+    TFile* f = new TFile(Form("bg_hists/hist%d.root",bg_energies.at(i)),"read");
     if(!f->IsZombie()) {
-      bg_hists.push_back((GH1D*)f->Get(Form("%s_B&T&Y&D",MODE.c_str())));
+      bg_hists.push_back((GH1D*)f->Get(Form("%s",MODE.c_str())));
       bg_hists.back()->Sumw2();
       bg_hists.back()->Scale(bg_params[bg_energies.at(i)]);
     }
@@ -421,10 +431,11 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     bg_hists.at(0)->Rebin(REBIN_FACTOR);
     fit_funcs.push_back(bg_hists.at(0)->ConstructTF1());
     //fit_funcs.back()->SetParameter(0,0.01);
-    fit_funcs.back()->SetParameter(0,bg_tpl->GetV2()[bg_tpl->GetSelectedRows()-1]);
-    if((bool)bg_tpl->GetV1()[bg_tpl->GetSelectedRows()-1]) {
-      fit_funcs.back()->FixParameter(0,bg_tpl->GetV2()[bg_tpl->GetSelectedRows()-1]);
-    }
+    fit_funcs.back()->SetParameter(0,0.002);
+    // fit_funcs.back()->SetParameter(0,bg_tpl->GetV2()[bg_tpl->GetSelectedRows()-1]);
+    // if((bool)bg_tpl->GetV1()[bg_tpl->GetSelectedRows()-1]) {
+    //   fit_funcs.back()->FixParameter(0,bg_tpl->GetV2()[bg_tpl->GetSelectedRows()-1]);
+    // }
     //else {
     //fit_funcs.back()->SetParLimits(0,0,1);
     //}
@@ -493,9 +504,12 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
   }
   
   bg->SetNpx(50000/REBIN_FACTOR);
-  TH1* hbg = bg->GetHistogram();
+  TH1D* hbg = (TH1D*) bg->GetHistogram();
+  hbg->Rebin((hbg->GetNbinsX()/10000)/REBIN_FACTOR);
   hbg->SetName("Exp_Bkg");
   hbg->SetTitle("Exp_Bkg");
+  // TH1D* hbg = new TH1D("Exp_Bkg","Exp_Bkg",10000,0,10000);
+  // for (int idx=0; idx < 100000; idx++) hbg->Fill(bg->GetRandom());
   
   //TH1* hr = (TH1*)data_hist.Clone();
   //hr->Sumw2();
@@ -575,19 +589,19 @@ void fitGretinaPeaks(std::string data_file_name, std::string output_fn, std::str
     
     fit_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     fit_hists.at(i)->SetName(Form("Peak%02i",i));
-    fit_hists.at(i)->SetTitle(Form("hist%04i",energies.at(i)));
+    fit_hists.at(i)->SetTitle(Form("hist%i",energies.at(i)));
     fit_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     fit_hists.at(i)->Write();
 
     fep_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     fep_hists.at(i)->SetName(Form("FEP%02i",i));
-    fep_hists.at(i)->SetTitle(Form("FEP_hist%04i",energies.at(i)));
+    fep_hists.at(i)->SetTitle(Form("FEP_hist%i",energies.at(i)));
     fep_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     fep_hists.at(i)->Write();
 
     com_hists.at(i)->Scale(fSum.GetFunc()->GetParameter(i));
     com_hists.at(i)->SetName(Form("COM%02i",i));
-    com_hists.at(i)->SetTitle(Form("COM_hist%04i",energies.at(i)));
+    com_hists.at(i)->SetTitle(Form("COM_hist%i",energies.at(i)));
     com_hists.at(i)->GetXaxis()->SetLimits(0,10000);
     com_hists.at(i)->Write();
     

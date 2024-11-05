@@ -360,6 +360,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double BETA = GValue::Value("BETA");
         for (int i=0; i < gSize; i++){
           TGretinaHit &hit = gretina->GetGretinaHit(i);
+          hit.ComptonSort();
           double theta = hit.GetTheta();
           double phi = hit.GetPhi();
           double core_energy = hit.GetCoreEnergy();
@@ -392,25 +393,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
 
             if (nInteractions > 1) {
-              int myFP, mySP;
-              comptonSortTest(hit,myFP,mySP);
-              double newxi = hit.GetXi(&track,myFP,mySP);
-              double new_energy_corrected = hit.GetDopplerYta(GValue::Value("BETA"), s800->GetYta(), &track,myFP);
-              obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,new_energy_corrected);
-              obj.FillHistogram(dirname, "new_prompt_gamma_dop_vs_xi",360,0,TMath::TwoPi(),newxi,2000,0,2000,new_energy_corrected);
-
-              double scaleFactor = 0;
-              for (int ipx=0; ipx < nInteractions; ipx++) scaleFactor += hit.GetSegmentEng(ipx);
-              scaleFactor = core_energy/scaleFactor;
-              obj.FillHistogram(dirname, "new_gam_sngl_vs_firstIPEratio",4096,0,4096, new_energy_corrected,100,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
-              for (int ipx=0; ipx < nInteractions; ipx++){ 
-                obj.FillHistogram(dirname, "new_gam_sngl_vs_IPEratio",4096,0,4096, new_energy_corrected,100,0,1,hit.GetSegmentEng(ipx)/core_energy*scaleFactor);
-              }
               
-              if (new_energy_corrected > 652 && new_energy_corrected < 670) {
-                 obj.FillHistogram(dirname,"surf_E1_vs_scatterCos_FEP",200,-1,1,TMath::Cos(hit.GetScatterAngle()),200,0,1,hit.GetSegmentEng(myFP)/core_energy*scaleFactor);
-              }
-              
+              obj.FillHistogram(dirname, "prompt_gamma_dop_vs_xi",360,0,TMath::TwoPi(),xi,8192,0,8192,energy_corrected);
+              obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("prompt_gamma_dop_vs_xi_%d",cryID),360,0,TMath::TwoPi(),xi,4096,0,4096, energy_corrected);
               // if (myFP == 0) {
               //   obj.FillHistogram(dirname, "new!=main_new",4096,0,4096, new_energy_corrected);
               //   obj.FillHistogram(dirname, "new!=main_main",4096,0,4096, energy_corrected);
@@ -436,9 +421,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
               //   }
               // }
 
-            } else {
-              obj.FillHistogram(dirname, "new_prompt_gamma_dop",8192,0,8192,energy_corrected);
-            }
+            } 
             /*
             if (!isnan(GValue::Value("BETA_SCAN_STEP"))){
               // beta scan parameters
