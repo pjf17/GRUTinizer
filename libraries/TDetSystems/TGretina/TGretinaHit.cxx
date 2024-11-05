@@ -38,6 +38,7 @@ void TGretinaHit::Copy(TObject &rhs) const {
   ((TGretinaHit&)rhs).fSingles      = fSingles;
   ((TGretinaHit&)rhs).fDecompChi2  = fDecompChi2;
   ((TGretinaHit&)rhs).fDecompNormChi2  = fDecompNormChi2;
+  ((TGretinaHit&)rhs).fAB  = fAB;
 }
 
 Float_t  TGretinaHit::GetCoreEnergy() const {
