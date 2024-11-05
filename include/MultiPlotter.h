@@ -8,6 +8,7 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TF1.h"
+#include "THStack.h"
 
 class MultiPlotter{
     private:
@@ -43,6 +44,7 @@ class MultiPlotter{
                  }
                  
         void Clear();
+        THStack *CreateStack();
         void Erase(std::string key);
         void List();
 

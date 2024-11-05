@@ -119,6 +119,20 @@ void MultiPlotter::Clear(){
     mCustomColors = false;
 }
 
+THStack *MultiPlotter::CreateStack(){
+    THStack *out = new THStack("hs","");
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    int nloops = 0;
+    while (it != end){
+        if (!mCustomColors) it->second->SetFillColor(mColors[nloops%12]);
+        out->Add(it->second);
+        it++;
+        nloops++;
+    }
+    return out;
+}
+
 void MultiPlotter::List(){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
