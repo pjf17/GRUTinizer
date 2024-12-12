@@ -560,16 +560,20 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     if (!beam) beam = new TVector3(0,0,1);
 
     //calculate the phase of the crystal wrt the reaction plane
+    /*
     TVector3 pos = TGretina::CrystalToGlobal(fCrystalId,0,0,0);
     TVector3 ref = (TVector3(0,0,1)).Cross(pos);
     TVector3 xax = TGretina::CrystalToGlobal(fCrystalId,1,0,0) - pos;
     TVector3 yax = TGretina::CrystalToGlobal(fCrystalId,0,1,0) - pos;
     double phase = ref.Angle(xax);
     if (ref.Angle(yax) > TMath::PiOver2()) phase = TMath::TwoPi() - phase;
+    */
 
     //get interaction points and rotate
-    TVector3 interaction1 = GetIntPosition(p1); //interaction1.Rotate(phase,pos);
-    TVector3 interaction2 = GetIntPosition(p2); //interaction2.Rotate(phase,pos);
+    TVector3 interaction1 = GetIntPosition(p1); 
+    TVector3 interaction2 = GetIntPosition(p2);
+
+    // if (beam->Angle(interaction1)*TMath::RadToDeg() < 5 || beam->Angle(interaction1)*TMath::RadToDeg() > 175) return -10; 
 
     // interaction1 = interaction1 + pos;
     // interaction2 = interaction2 + pos;
@@ -580,7 +584,7 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     TVector3 basisNorm = reactionPlaneNorm.Cross(interaction1);
 
     double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
-    if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+    // if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
     // xi -= phase;
     // if (fCrystalId%2) xi -= 120*TMath::DegToRad();
     // while (xi < 0) xi += TMath::TwoPi();
@@ -609,7 +613,7 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
 
   //   return xi;
   // }
-  else return -1;
+  else return -10;
 }
 
 double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
@@ -625,8 +629,9 @@ double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
     TMatrixT <double> mtx = TMatrixT<double> (3,3,mtxData,"F");
     mtx.Invert();
     r2 = mtx*r2; //x' = A(inv)x
-
-    return r2.Phi()+TMath::Pi();
+    double xi = (TMath::Pi() - r2.Phi()) + TMath::Pi();
+    if (xi > TMath::TwoPi()) xi = xi - TMath::TwoPi();
+    return xi;
   }
   else return -10;
 }
@@ -656,8 +661,9 @@ void TGretinaHit::ComptonSort(){
       double E2 = fSegments[sp].fEng*scaleFactor;
       double x = er + cosp;
       double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(GetScatterAngle(fp,sp)),2) );
+      // double xi = GetXi(fp,sp);
       double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
-      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*GetLocalPosition(fp).Z()*GetAlpha(fp,sp)*kn;
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*GetLocalPosition(fp).Z()*GetAlpha(fp,sp)*kn*TMath::Sin(GetTheta(fp));
       ffom *= std::pow(E/E2,2) * GetLocalPosition(sp).Z();
 
       if (ffom < FOM) {
