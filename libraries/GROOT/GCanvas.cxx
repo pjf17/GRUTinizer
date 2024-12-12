@@ -42,6 +42,7 @@
 #include "TRuntimeObjects.h"
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <string>
 
@@ -49,6 +50,8 @@
 
 #include "TBuffer.h"
 #include "TGRUTint.h"
+
+#include "GPolAnalyzer.h"
 
 #ifndef kArrowKeyPress
 #define kArrowKeyPress 25
@@ -763,6 +766,89 @@ bool GCanvas::ProcessNonHistKeyboardPress(Event_t* event, UInt_t* keysym) {
     case kKey_F9:
       this->SetCrosshair(!this->HasCrosshair());
       edited = true;
+    case kKey_F4:
+    {
+      if (fMarkers.size() != 2) break;
+      //get the histograms on the canvas
+      std::vector<TH1 *> hh;
+      TIter iter(this->GetListOfPrimitives());
+      TPad *pad;
+      while(TObject *obj = iter.Next()) {
+        if(obj->InheritsFrom(TPad::Class())) {
+          pad = (TPad*)obj;
+          TIter iter2(pad->GetListOfPrimitives());
+          while(TObject *obj2=iter2.Next()) {
+            if(obj2->InheritsFrom(TH1::Class())) {
+              hh.push_back( (TH1*)obj2 );
+            }
+          }
+        }
+      }
+      if (hh.size() == 0 || hh.size() > 2) {std::cout<<"Cannot find two histograms\n"; break; }
+      if (hh.size() == 2 && fBackgroundMarkers.size() != 2) break;
+
+      //get binning and group mode options
+      std::string htitle = std::string(hh.back()->GetTitle());
+      GetContextMenu()->Action(hh.back(),hh.back()->Class()->GetMethodAny("SetTitle"));
+      std::stringstream ss(hh.back()->GetTitle());
+
+      int binning = 1;
+      TString polOpt = "crys";
+      if (htitle.compare(hh.back()->GetTitle()) != 0) ss>>binning>>polOpt;
+
+      hh.back()->SetTitle(htitle.c_str());
+      //identify which histogram is source and which is inbeam if there are two hists
+      int beamIdx = 0;
+      int sorcIdx = 0;
+      if (hh.size() == 2){
+        for (int i=0 ; i < 2; i++){
+          TString hname = TString(hh[i]->GetName());
+          if (hname.Contains("dop")) {
+            beamIdx = i;
+            sorcIdx = 1-i;
+            break;
+          }
+          else if (hname.Contains("core")) {
+            sorcIdx = i;
+            beamIdx = 1-i;
+            break;
+          }
+        }
+      }
+
+      //input data and get the xiratio
+      int binlow = fMarkers.at(fMarkers.size()-1)->binx;
+      int binhigh = fMarkers.at(fMarkers.size()-2)->binx;
+      if(binlow > binhigh)  std::swap(binlow, binhigh);
+      
+      GPolAnalyzer gpa; 
+      if (hh.size() == 2) 
+        gpa = GPolAnalyzer(hh[sorcIdx],hh[beamIdx],fBackgroundMarkers.at(0)->binx,fBackgroundMarkers.at(1)->binx,fMarkers.at(fMarkers.size()-1)->binx,fMarkers.at(fMarkers.size()-2)->binx);
+      else
+        gpa = GPolAnalyzer(hh[0],fMarkers.at(fMarkers.size()-1)->binx,fMarkers.at(fMarkers.size()-2)->binx);
+      GH1D *hratio, *hbeam, *hsource;
+      gpa.GetXiRatio(hratio,hsource,hbeam,binning,polOpt);
+
+      if (hh.size() == 2) {
+        this->cd(1);
+        hsource->Draw();
+        hbeam->Draw("same");
+        this->cd(2);
+        hratio->Draw();
+      } 
+      else {
+        pad->Clear();
+        pad->Divide(1,2);
+        pad->cd(1);
+        hsource->Draw();
+        hbeam->Draw("same");
+        pad->cd(2);
+        hratio->Draw();
+      }
+    }
+
+    edited = true;
+    break;  
   }
 
   return edited;
@@ -1582,7 +1668,7 @@ bool GCanvas::Process2DKeyboardPress(Event_t *event,UInt_t *keysym) {
 
                  }
                  edited = true;
-                 break;
+                 break;               
 
     case kKey_x: 
       gHist = NULL;

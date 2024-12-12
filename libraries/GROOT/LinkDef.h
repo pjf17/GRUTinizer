@@ -55,6 +55,7 @@
 #pragma link C++ class GDoubleGaus+;
 #pragma link C++ class GModifiedGaus+;
 
+#pragma link C++ class GPolAnalyzer+;
 #pragma link C++ class GValue-;
 #pragma link C++ class std::map<std::string,GValue*>+;
 #pragma link C++ class std::pair<std::string,GValue*>+;
