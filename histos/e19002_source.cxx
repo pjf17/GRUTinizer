@@ -256,8 +256,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // comptonSortTest(hit,myFP,mySP);
           // double xi = hit.GetXi(nullptr,myFP,mySP);
           double xi = hit.GetXi(nullptr);
-          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
-          obj.FillHistogram("polarization", Form("%s_energy_vs_xi_%d",timeflag.c_str(),cryID),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
+          obj.FillHistogram("polarization", Form("%s_energy_vs_xi_%d",timeflag.c_str(),cryID),180,0,TMath::Pi(),xi,4096,0,4096,core_energy);
           double egateLo = 842; //774;      
           double egateHi = 851; //784;      
           if (egateLo < core_energy && core_energy < egateHi) {

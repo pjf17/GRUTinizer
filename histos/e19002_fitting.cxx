@@ -164,7 +164,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       }
     }
     hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
-    // hit.ComptonSort();
+    hit.ComptonSort();
 
     double dop_corrected;
 
@@ -180,6 +180,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
 
     obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",4000,0,4000,dop_corrected,100,0,3,hit.GetTheta());
+    if (hit.NumberOfInteractions() > 1 && isFEP) obj.FillHistogram(dirname,"Fep_dopEn_vs_xi",360,0,TMath::TwoPi(),hit.GetXi(),4000,0,4000,dop_corrected);
 
     // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
     

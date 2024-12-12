@@ -10,7 +10,7 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TMath.h>
-#include <TRandom.h>
+#include <TRandom3.h>
 #include <TObject.h>
 #include <TLine.h>
 
@@ -186,6 +186,12 @@ void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
   return;
 }
 
+TVector3 *randomBeam(TRandom3 *rand){
+  double theta = TMath::ACos(2*rand->Uniform()-1);
+  double phi = rand->Uniform()*TMath::TwoPi();
+  return new TVector3(TMath::Sin(theta)*TMath::Cos(phi),TMath::Sin(theta)*TMath::Sin(phi),TMath::Cos(theta));
+}
+
 bool gates_loaded = false;
 bool messageGiven = false;
 std::map<std::string,std::vector<GCutG*>> gates;
@@ -222,6 +228,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
           2500,0,10000, hit.GetCoreEnergy());
     }//loop over gretina hits
   }//bank29 and gretina exist
+
+  static TRandom3 *rand_gen = new TRandom3(249783);
 
   //---------------------------------------------------------------
   //UNGATED
@@ -379,8 +387,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double total_core_energy = 0;
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
+            TGretinaHit hitMain;
+            hit.Copy(hitMain);
             hit.ComptonSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy = hit.GetDoppler(outgoingBeta);
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
@@ -434,9 +445,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // int myFP, mySP;
                 // comptonSortTest(hit,myFP,mySP);
                 double myxi = hit.GetXi(&track);
-                // double new_energy = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(),&track,myFP);
-                obj.FillHistogram(dirname, "gam_sngl_vs_xi",360,0,TMath::TwoPi(),myxi,4096,0,4096, energy_corrected);
-                obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),360,0,TMath::TwoPi(),myxi,4096,0,4096, energy_corrected);
+                obj.FillHistogram(dirname, "gam_sngl_vs_xi",180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                for (int ri=0; ri<400; ri++) {
+                  double randXi = hit.GetXi(randomBeam(rand_gen));
+                  obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                  obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                }
+                obj.FillHistogram(dirname, "gam_dop_sngl_int>2",4096,0,4096, energy_corrected);
+
+                obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                
                 // if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 // obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
 

@@ -220,6 +220,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
     int gSize = gretina->Size();
     for (int i=0; i < gSize; i++){
       TGretinaHit &hit = gretina->GetGretinaHit(i);
+      TGretinaHit hitMain;
+      hit.Copy(hitMain);
+      hit.ComptonSort();
       if (hit.GetPad() != 0) continue;
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
@@ -256,7 +259,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
           int mySP = 1;
           // comptonSortTest(hit,myFP,mySP);
           double xi = hit.GetXi(nullptr,myFP,mySP);
-          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),360,0,TMath::TwoPi(),xi,2048,0,2048,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,4096,0,4096,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi_main",timeflag.c_str()),180,0,TMath::Pi(),hitMain.GetXi(),4096,0,4096,core_energy);
+          obj.FillHistogram("polarization", Form("%s_energy_vs_xi_%d",timeflag.c_str(),cryID),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
           double egateLo = 774; //842;       
           double egateHi = 784; //851;       
           if (egateLo < core_energy && core_energy < egateHi) {
