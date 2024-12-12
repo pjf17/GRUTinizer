@@ -16,6 +16,7 @@
 #include "TMath.h"
 #include "TFitResult.h"
 #include "THStack.h"
+#include "TAxis.h"
 
 #include "MultiPlotter.h"
 
@@ -171,9 +172,28 @@ void MultiPlotter::SetRange(double xlo, double xhi){
     mXhi = xhi;
 }
 
+void MultiPlotter::SetLegendEntry(std::string key, std::string label, std::string opt){
+    if (mUseDefaultLegend) {
+        double ylo = 0.99 - mNHistos*0.06;
+        double xlo = 0.72;
+        if (ylo < 0.3) {
+            ylo = 0.01;
+            xlo = 0.9;
+        }
+        mLeg = new TLegend(xlo,ylo,0.99,0.99); 
+    }
+    mUseDefaultLegend = false;
+    mLeg->AddEntry(mHistos[key],label.c_str(),opt.c_str());
+}
+
 void MultiPlotter::ResetRange(){
     mXlo = -123;
     mXhi = -123;
+}
+
+void MultiPlotter::SetHistFill(double alpha){
+    mFillAlpha = alpha;
+    mDrawFill = true;
 }
 
 void MultiPlotter::IterateLineStyle(){
@@ -191,13 +211,18 @@ void MultiPlotter::Norm(std::string mode){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
 
+    if (!it->second->GetSumw2()) it->second->Sumw2();
+
     double norm = 0.0;
     if (mode == "area") norm = it->second->Integral();
     else if (mode == "height") norm = it->second->GetMaximum();
+    else if (mode == "unit") {norm = it->second->GetNbinsX(); it->second->Scale(norm/it->second->Integral());}
     it++;
     while (it != end){ 
-        if (mode == "area") it->second->Scale(norm/it->second->Integral());
-        else if (mode == "height") it->second->Scale(norm/it->second->GetMaximum());
+        double scaleFactor = 0.0;
+        if (mode == "area" || mode == "unit") scaleFactor = it->second->Integral();
+        else if (mode == "height") scaleFactor = it->second->GetMaximum();
+        it->second->Scale(norm/scaleFactor);
         it++;
     }
 
@@ -300,11 +325,17 @@ void MultiPlotter::FitPeak(double xlo, double xhi, Option_t *opt){
     }
 }
 
-void MultiPlotter::Draw(std::string key){
-    if (Exists(key)) mHistos[key]->Draw("hist");
-}
+// void MultiPlotter::Draw(std::string opt, std::string key){
+//     if (Exists(key)) mHistos[key]->Draw("hist");
+// }
 
-void MultiPlotter::Draw(int ndraw, int noffset){
+void MultiPlotter::Draw(std::string opt, std::string key){
+    if (key.compare("") != 0 && Exists(key)) {
+        mHistos[key]->Draw(opt.c_str());
+        return;
+    }
+    int ndraw=100000; 
+    int noffset=0;
     doSetLineWidth();
     if (mYMax == 0.0) SortMax();
     std::map<std::string, TH1*>::iterator max = mHistos.find(mMaxKey);
@@ -316,8 +347,10 @@ void MultiPlotter::Draw(int ndraw, int noffset){
         ylo = 0.01;
         xlo = 0.9;
     }
-    TLegend *leg = new TLegend(xlo,ylo,0.99,0.99);
+    if (mUseDefaultLegend) mLeg = new TLegend(xlo,ylo,0.99,0.99);
     gStyle->SetOptStat(0);
+
+    IsDivisibleByPi();
 
     //draw all histos
     std::map<std::string, TH1*>::iterator it = max;
@@ -330,32 +363,35 @@ void MultiPlotter::Draw(int ndraw, int noffset){
         }
         
         if (!mCustomColors) it->second->SetLineColor(mColors[nloops%12]);
-        leg->AddEntry(it->second,it->second->GetName(),"l");
+        if (!mCustomColors && mDrawFill) it->second->SetFillColorAlpha(mColors[nloops%12],mFillAlpha);
+        if (mUseDefaultLegend) mLeg->AddEntry(it->second,it->second->GetName(),"l");
 
         if (mXhi != mXlo) it->second->GetXaxis()->SetRangeUser(mXlo,mXhi);
         if (mYhi != mYlo) it->second->GetYaxis()->SetRangeUser(mYlo,mYhi);
         
         if (nloops == 0){
-            it->second->Draw("hist");
+            it->second->Draw(opt.c_str());
             it = mHistos.begin();
             for (int j=0; j < noffset; j++) it++;
             nloops++;
         }
         else{
-            it->second->Draw("hist same");
+            std::string tempOpt = opt + "same";
+            it->second->Draw(tempOpt.c_str());
             it++;
             nloops++;
         }
     }
 
-    leg->Draw("same");
+    mLeg->Draw("same");
 }
 
-void MultiPlotter::Rebin(int bg){
+void MultiPlotter::Rebin(int bg, bool bwScale){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
     while (it != end){
         it->second->Rebin(bg);
+        if (bwScale) it->second->Scale(1.0/bg);
         it++;
     }
     mYMax = 0.0;
@@ -390,7 +426,9 @@ void MultiPlotter::RatioToHist(std::string key){
     return;
 }
 
+//============================================================================================
 //PRIVATE FUNCTIONS
+//============================================================================================
 
 void MultiPlotter::SortMax(){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
@@ -456,4 +494,45 @@ bool MultiPlotter::Exists(std::string key){
         std::cout<<"Error, histogram not found in list"<<std::endl;
     }
     return does_exist;
+}
+
+bool MultiPlotter::IsDivisibleByPi(){
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    double fraction = (it->second->GetXaxis()->GetXmax()-it->second->GetXaxis()->GetXmin())/TMath::Pi();
+    if ( fraction - std::floor(fraction) > 0.0001) return false;
+
+    //pick the correct number of pi units 
+    int nPi = (int) std::floor(fraction);
+    if (fraction - std::floor(fraction) > std::ceil(fraction) - fraction) 
+        nPi = (int) std::floor(fraction);
+
+    //do we want divisions of pi/2
+    int ndivisions = nPi*2 + nPi*4*100;
+    
+    // loop over and set all labels to be in units of pi
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    while (it != end){
+        TAxis *a = it->second->GetXaxis();
+        a->SetNdivisions(-1*ndivisions);
+        a->SetLabelOffset(0.02);
+        int nlabel = 2*nPi+1;
+        for (int l=2; l <= nlabel; l++){
+            int num = l-1;
+            int denom = 2;
+            if (num%2 == 0) {
+                num = num/2;
+                denom = 0;
+            }
+            if (num == 1) {
+                if (denom != 0) 
+                    a->ChangeLabel(l,-1,-1,-1,-1,-1,Form("#frac{#pi}{%d}",denom));
+                else 
+                    a->ChangeLabel(l,-1,-1,-1,-1,-1,"#pi");
+            }
+            else if (denom == 0) a->ChangeLabel(l,-1,-1,-1,-1,-1,Form("%d#pi",num));
+            else a->ChangeLabel(l,-1,-1,-1,-1,-1,Form("#frac{%d#pi}{%d}",num,denom));
+        }
+        it++;
+    }
+    return true;
 }

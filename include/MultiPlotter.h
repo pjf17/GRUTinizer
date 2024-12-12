@@ -9,12 +9,15 @@
 #include "TH1.h"
 #include "TF1.h"
 #include "THStack.h"
+#include "TLegend.h"
 
 class MultiPlotter{
     private:
         //variables
         int mNHistos = 0;
         std::map<std::string, TH1*> mHistos;
+        TLegend *mLeg = 0;
+        bool mUseDefaultLegend = true;
 
         double mYMax = 0.0;
         std::string mMaxKey = "";
@@ -22,6 +25,8 @@ class MultiPlotter{
         //drawing settings
         int mColors[12] = {kBlack,kRed,kBlue,kGreen,kCyan,kOrange,kViolet,kGray,kYellow+3,kCyan+3,kBlue-3,kRed+3};
         bool mCustomColors = false;
+        bool mDrawFill = false;
+        double mFillAlpha;
         int mLineWidth = 1;
         double mXlo = -123;
         double mXhi = -123;
@@ -33,6 +38,7 @@ class MultiPlotter{
         bool ParseInput(char *input, std::vector<int> &nums);
         void doSetLineWidth();
         bool Exists(std::string key);
+        bool IsDivisibleByPi();
 
     public:
         void Add(TH1* pHist);
@@ -51,12 +57,14 @@ class MultiPlotter{
         TH1 *GetClone(std::string key);
         TH1 *Get(std::string key);
         
-        void Rebin(int bg=2);
+        void Rebin(int bw=2, bool bwScale=false);
         void Scroll(std::string control=" ");
         void SetLineWidth(int w);
         void SetLineColor(std::string key, int c);
+        void SetHistFill(double alpha=0.5);
         void SetRange(double xlo, double xhi);
         void SetYrange(double ylo, double yhi);
+        void SetLegendEntry(std::string key, std::string label, std::string opt="l");
         void ResetRange();
         void IterateLineStyle();
 
@@ -72,8 +80,8 @@ class MultiPlotter{
         void FitPeak(double xlo, double xhi, Option_t *opt="");
         void FitExclusion(double exlo, double exhi, double rlo, double rhi);
         
-        void Draw(std::string key);
-        void Draw(int ndraw=100000, int noffset=0);
+        void Draw(std::string opt="hist",std::string key="");
+        // void Draw(int ndraw=100000, int noffset=0);
 
     protected:
         ClassDef(MultiPlotter,3);
