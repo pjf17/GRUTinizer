@@ -2,6 +2,7 @@
 #include "TH1D.h"
 #include "TList.h"
 #include "TKey.h"
+#include "TGretina.h"
 #include <vector>
 #include <string>
 
@@ -65,15 +66,34 @@ GH1D *makeProjection(TFile *f, std::string dir, std::string name, bool axis, dou
     }
 }
 
-void xiRatio(TFile *fsource, TFile *fdata, double EsrcLo, double EsrcHi, double EdatLo, double EdatHi) {
+void groupCrystals(std::vector<std::pair<int,std::string>> &crstl, std::string mode){
+    int N = crstl.size();
+    if (mode.find("quad") != std::string::npos) {
+        for (int i=0; i < N; i++){
+            crstl[i].first = crstl[i].first/4 - 1; 
+        }
+        std::sort(crstl.begin(),crstl.end());
+    }
+    if (mode.find("ring") != std::string::npos) {
+        TGretina *gret = new TGretina();
+        for (int i=0; i < N; i++){
+            crstl[i].first = gret->GetRingNumber(crstl[i].first);
+        }
+        std::sort(crstl.begin(),crstl.end());
+    }
+    return;
+}
+
+void xiRatio(TFile *fsource, TFile *fdata, double EsrcLo, double EsrcHi, double EdatLo, double EdatHi, std::string grouping="crys", int binning = 1) {
     std::vector<std::string> dirsource = findPolDirectory(fsource);
     std::vector<std::string> dirdata = findPolDirectory(fdata);
 
-    if (!(dirsource.size() == 1 && dirdata.size() > 0)) return;
+    // if (!(dirsource.size() == 1 && dirdata.size() > 0)) return;
     int dataidx = 0;
     if (dirdata.size() > 1) {
         std::cout<<"Multiple polarization channels, pick one\n";
-        for (int i=0 ; i < dirdata.size(); i++) printf("%d %s\n",i,dirdata[i].c_str());
+        for (int i=0 ; i < dirdata.size(); i++) printf("%d -> %s\n",i,dirdata[i].c_str());
+        std::cout<<"index: ";
         std::cin >> dataidx;
     }
     std::vector<std::pair<int,std::string>> srcCrystals;
@@ -86,41 +106,79 @@ void xiRatio(TFile *fsource, TFile *fdata, double EsrcLo, double EsrcHi, double 
     double Esrc[2] = {EsrcLo,EsrcHi};
     double Edat[2] = {EdatLo,EdatHi};
 
-    // GH1D *drawSrc = makeProjection(fsource,dirsource[0],srcCrystals[0].second,0,Esrc);
-    // GH1D *drawDat = makeProjection(fdata,dirdata[dataidx],datCrystals[0].second,0,Edat);
-    // drawSrc->Sumw2(); drawDat->Sumw2();
-    GH1D *stemp;
-    GH1D *dtemp;
     GH1D *hnorm;
+    GH1D *hsrc;
+    GH1D *hdat;
     bool firstReset = true;
     int N = srcCrystals.size();  
     int groupID = -1; 
-    int nGroups = -1;
-    TGretina *gret = new TGretina();
+    int nGroups = 0;
+
+    //split them into the chosen groups
+    groupCrystals(srcCrystals,grouping);
+    groupCrystals(datCrystals,grouping);
+
+    GH1D *stemp;
+    GH1D *dtemp;
     for (int i=0; i < N; i++){
         if (srcCrystals[i].first != datCrystals[i].first) break;
-        int currentID = srcCrystals[i].first/4-1;
-        if (currentID != groupID){
+        if (srcCrystals[i].first != groupID){
             nGroups++;
             if (i != 0) { 
-                dtemp->Divide(stemp);
-                if (firstReset) {hnorm = (GH1D*) dtemp->Clone("norm"); firstReset = false;}
-                else hnorm->Add(dtemp);
+                if (firstReset) {
+                    hsrc = (GH1D*) stemp->Clone("source");
+                    hdat = (GH1D*) dtemp->Clone("data");
+                    dtemp->Divide(stemp);
+                    hnorm = (GH1D*) dtemp->Clone("norm"); 
+                    firstReset = false;
+                }
+                else {
+                    hsrc->Add(stemp);
+                    hdat->Add(dtemp);
+                    dtemp->Divide(stemp);
+                    hnorm->Add(dtemp);
+                } 
             }
             stemp = makeProjection(fsource,dirsource[0],srcCrystals[i].second,0,Esrc); stemp->Sumw2();
             dtemp = makeProjection(fdata,dirdata[dataidx],datCrystals[i].second,0,Edat); dtemp->Sumw2();
-            groupID = currentID;
+            groupID = srcCrystals[i].first;
         }
         else {
             stemp->Add(makeProjection(fsource,dirsource[0],srcCrystals[i].second,0,Esrc));
             dtemp->Add(makeProjection(fdata,dirdata[dataidx],datCrystals[i].second,0,Edat));
         }  
     }
-    hnorm->Scale(1.0/nGroups);
+    dtemp->Divide(stemp);
+    hnorm->Add(dtemp);
+    hnorm->Scale(1.0/nGroups/binning);
+
+    TF1 *fitfunc = new TF1("pol","[0]*(1-[1]*TMath::Cos(2*x))",0,TMath::TwoPi());
+    hnorm->Fit(fitfunc,"Q");
+    double A0 = fitfunc->GetParameter(1);
+    double A0_err = fitfunc->GetParError(1);
+    printf("%5.3f +/- %5.3f -> %4.2f\n",A0,A0_err,A0/A0_err);
+
+    if (binning != 1){
+        hnorm->Rebin(binning);
+        hsrc->Rebin(binning);
+        hdat->Rebin(binning);
+    }
+    hnorm->Fit(fitfunc);
     hnorm->Draw();
+
+    new GCanvas();
+    double scaling = hsrc->GetEntries()/hdat->GetEntries() * 4.0/5;
+    hdat->SetLineColor(kRed);
+    hdat->Scale(scaling);
+    double ymax = std::max(hdat->GetMaximum(),hsrc->GetMaximum());
+    double ymin = std::min(hdat->GetMaximum(),hsrc->GetMaximum());
+
+    hsrc->GetYaxis()->SetRangeUser(ymin*0.8,ymax*1.1);
+    if (binning != 1) {hsrc->Draw(); hdat->Draw("same");}
+    else {hsrc->Draw("hist"); hdat->Draw("samehist");}
 }
 
-void xiRatio(TFile *fsource, TFile *fdata, int binning=-1){
+void xiRatio(TFile *fsource, TFile *fdata, std::string hname="", std::string fileout="", int binning=-1){
 
     std::vector<std::string> dirsource = findPolDirectory(fsource);
     std::vector<std::string> dirdata = findPolDirectory(fdata);
@@ -129,7 +187,8 @@ void xiRatio(TFile *fsource, TFile *fdata, int binning=-1){
         int dataidx = 0;
         if (dirdata.size() > 1) {
             std::cout<<"Multiple polarization channels, pick one\n";
-            for (int i=0 ; i < dirdata.size(); i++) printf("%d %s\n",i,dirdata[i].c_str());
+            for (int i=0 ; i < dirdata.size(); i++) printf("%d -> %s\n",i,dirdata[i].c_str());
+            std::cout<<"index: ";
             std::cin >> dataidx;
         }
         std::vector<std::pair<int,std::string>> srcCrystals;
@@ -148,28 +207,12 @@ void xiRatio(TFile *fsource, TFile *fdata, int binning=-1){
             drawSrc->Add(makeProjection(fsource,dirsource[0],srcCrystals[i].second,1));
             drawDat->Add(makeProjection(fdata,dirdata[dataidx],datCrystals[i].second,1));
         }
+        GCanvas *canv = new GCanvas();
+        canv->Divide(1,2);
+        canv->cd(1);
         drawDat->Draw();
-        new GCanvas();
+        canv->cd(2);
         drawSrc->Draw();
-
-        // std::cout<<"Select Energy Gates for the data\n";
-        // double Edat[2];
-        // std::cin>>Edat[0];std::cin>>Edat[1];
-        // if (Edat[0] > Edat[1]) std::swap(Edat[0],Edat[1]);
-        
-        // std::cout<<"Select Energy Gates for the source\n";
-        // double Esrc[2];
-        // std::cin>>Esrc[0];std::cin>>Esrc[1];
-        // if (Esrc[0] > Esrc[1]) std::swap(Esrc[0],Esrc[1]);
-        
-        // drawSrc = makeProjection(fsource,dirsource[0],srcCrystals[0].second,0,Esrc);
-        // drawDat = makeProjection(fdata,dirdata[dataidx],datCrystals[0].second,0,Edat);
-        // for (int i=1; i < N; i++){
-        //     if (srcCrystals[i].first != datCrystals[i].first) break;
-        //     drawSrc->Add(makeProjection(fsource,dirsource[0],srcCrystals[i].second,0,Esrc));
-        //     drawDat->Add(makeProjection(fdata,dirdata[dataidx],datCrystals[i].second,0,Edat));
-        // }
-        // drawSrc->Draw();
     }
 
     else {
@@ -188,6 +231,12 @@ void xiRatio(TFile *fsource, TFile *fdata, int binning=-1){
         }
 
         div->Divide(hSource);
+        // TF1 *ffit = new TF1("mypolfit","([0] + [1]*x)*(1-[2]*TMath::Cos(2*x))",0,TMath::Pi());
+        // div->Fit(ffit);
+        // TFile *fout = new TFile(fileout.c_str(),"RECREATE");
+        // fout->cd();
+        // div->SetNameTitle(hname.c_str(),hname.c_str());
+        // div->Write();
         div->Draw();
     }
 }
