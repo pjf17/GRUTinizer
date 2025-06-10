@@ -223,9 +223,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
     for(unsigned int i=0;i<gretina->Size();i++) {
       //Time-energy cut
       TGretinaHit &hit = gretina->GetGretinaHit(i);
-      obj.FillHistogram("Bank29","Gretina_dop_t0_Bank29_time",
+      obj.FillHistogram("diag","Gretina_dop_t0_Bank29_time",
           600,-600,600,bank29->Timestamp()-hit.GetTime(),
           2500,0,10000, hit.GetCoreEnergy());
+
+      obj.FillHistogram("diag","PadNum",20,0,20,hit.GetPad());
     }//loop over gretina hits
   }//bank29 and gretina exist
 
@@ -387,12 +389,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double total_core_energy = 0;
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
+            
+            //skip if padnum is not 0
+            if (hit.GetPad() > 0) continue;
+
             TGretinaHit hitMain;
             hit.Copy(hitMain);
             hit.ComptonSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
-            double energy = hit.GetDoppler(outgoingBeta);
+            // double energy = hit.GetDoppler(outgoingBeta);
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
             double phi = hit.GetPhi();
@@ -404,57 +410,62 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-hit.GetTime(), core_energy);
             else std::cout<<"NO PROMPT GATE LOADED\n";
 
+            obj.FillHistogram(dirname,"core_energy_vs_time",1600,-400,400,timeBank29-hit.GetTime(),2500,0,10000,core_energy);
+
             if (tgate){
               nPromptGamma++;
               total_corrected_energy += energy_corrected;
               total_core_energy += core_energy;
 
+              // //phi correction
+              // double phiCorr = (s800->Azita() + hit.GetPhi())*TMath::RadToDeg();
+              // if (phiCorr > 360) phiCorr -= 360;
+              // obj.FillHistogram(dirname, "phi_correction_before",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta));
+              // obj.FillHistogram(dirname, "phi_correction_after",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta,&track));
+
               obj.FillHistogram(dirname, "gretina_theta_vs_phi",360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-              // obj.FillHistogram(dirname, Form("gretina_theta_vs_phi_rn%02d",hit.GetRingNumber()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
-              
               //summary spectra
               obj.FillHistogram(dirname, "summary_gam_dop_sgl_prompt",48,0,48,detMapRing[cryID],4096,0,4096, energy_corrected);
               obj.FillHistogram(dirname, "summary_core_energy_prompt",48,0,48,detMapRing[cryID],4096,0,4096, core_energy);
-              // if ( !((1002 < energy_corrected && energy_corrected < 1034) || (1064 < energy_corrected && energy_corrected < 1094) ||
-              //      (712 < energy_corrected && energy_corrected < 764)) )
               
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt",8192,0,8192, energy_corrected);
-              obj.FillHistogram(dirname, "gam_core_sgl_prompt",8192,0,8192, core_energy);
-              double parperp = hit.GetXi(&track);
-              if (parperp == -1) parperp = TMath::Pi()/2;
-              if (parperp > TMath::Pi()) parperp = parperp - TMath::Pi();
-              if (parperp > TMath::Pi()/2) parperp = TMath::Pi() - parperp;
-
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_parperp",90,0,90,parperp*TMath::RadToDeg(),8192,0,8192, energy_corrected);
-              if (cryID > 40) {
-                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_90degqds",8192,0,8192, energy_corrected);
-                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_90degqds_parperp",90,0,90,parperp*TMath::RadToDeg(),8192,0,8192, energy_corrected);
-              }
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_nInteraction",10,0,10,nInteractions,1024,0,4096, energy_corrected);
-              // obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
-
-              // for (int j=0; j < gSize; j++) {
-              //   if (i==j) continue;
-              //   TGretinaHit &hit2 = gretina->GetGretinaHit(j);
-              //   if ( !gates["prompt"][0]->IsInside(timeBank29-hit2.GetTime(), hit2.GetCoreEnergy()) ) continue;
-              //   double energy_corrected2 = hit2.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
-              //   obj.FillHistogram(dirname, "gamma_gamma",2048,0,4096,energy_corrected2,2048,0,4096,energy_corrected);
+              // double beta_lo = 0.335;
+              // double beta_hi = 0.346;
+              // double beta_step = 0.001;
+              // int bet_bins = (int) (beta_hi-beta_lo)/(beta_step);
+              // while (beta_lo < beta_hi) {
+              //   if (hit.GetRingNumber() == 4) obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_b%5.4f_fwd",beta_lo),8192,0,8192,hit.GetDopplerYta(beta_lo, s800->GetYta(), &track));
+              //   if (hit.GetRingNumber() == 15) obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_b%5.4f_bkwd",beta_lo),8192,0,8192,hit.GetDopplerYta(beta_lo, s800->GetYta(), &track));
+              //   beta_lo += beta_step;
               // }
 
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta",85,35*TMath::DegToRad(),120*TMath::DegToRad(),theta,1000,1000,2000,energy_corrected);
+              obj.FillHistogram(dirname, "gam_core_sgl_prompt_vs_theta",85,35*TMath::DegToRad(),120*TMath::DegToRad(),theta,1000,1000,2000,core_energy);
+
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt",10000,0,10000, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main",8192,0,8192, energy_corrected_main);
+              obj.FillHistogram(dirname, "gam_core_sgl_prompt",8192,0,8192, core_energy);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_nInteraction",10,0,10,nInteractions,1024,0,4096, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_vs_ringnum",6,4,16,hit.GetRingNumber(),10000,0,10000, energy_corrected);
+
+              /*
               if (nInteractions > 1){
                 // int myFP, mySP;
                 // comptonSortTest(hit,myFP,mySP);
-                double myxi = hit.GetXi(&track);
-                obj.FillHistogram(dirname, "gam_sngl_vs_xi",180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
-                for (int ri=0; ri<400; ri++) {
-                  double randXi = hit.GetXi(randomBeam(rand_gen));
-                  obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
-                  obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
-                }
-                obj.FillHistogram(dirname, "gam_dop_sngl_int>2",4096,0,4096, energy_corrected);
+                bool goodXi;
+                double myxi = hit.GetXi(60,120,60,120,goodXi,&track);
+                obj.FillHistogram(dirname, "xi_gate",2,0,2,(int) goodXi);
+                if (goodXi){
+                  obj.FillHistogram(dirname, "gam_sngl_vs_xi",180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                  for (int ri=0; ri<200; ri++) {
+                    double randXi = hit.GetXi(0,180,60,120,goodXi,randomBeam(rand_gen));
+                    if (!goodXi) continue;
+                    obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                    obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                  }
+                  obj.FillHistogram(dirname, "gam_dop_sngl_int>1",4096,0,4096, energy_corrected);
 
-                obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
-                
+                  obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                }
                 // if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 // obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
 
@@ -474,6 +485,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
                 //   obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi_theta_gate",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
               } 
+              */
               // else {
               //   obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, energy_corrected);
               // }
@@ -588,20 +600,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
               // }
             } 
           }
-
+          
           //count multiplicity
           obj.FillHistogram(dirname, "gamma_multi_vs_prompt_gamma_multi", 20,0,20,nPromptGamma,20,0,20,gSize);
           if (total_corrected_energy > 0) obj.FillHistogram(dirname,"total_corrected_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_corrected_energy);
           if (total_core_energy > 0) obj.FillHistogram(dirname,"total_core_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_core_energy);
 
           //NNADDBACK
-            
+          
           int nnSize = gretina->NNAddbackSize();
-          std::vector<int> goodNN;
-          for (int i=0; i < nnSize; i++) if (gretina->GetNNAddbackHit(i).GetABDepth() < 2) goodNN.push_back(i);
-          for (auto i : goodNN){
+          std::vector<TGretinaHit> goodNNGretHit;
+          for (int i=0; i < nnSize; i++) if (gretina->GetNNAddbackHit(i).GetABDepth() < 3) goodNNGretHit.push_back(gretina->GetNNAddbackHit(i));
+          int nGood = goodNNGretHit.size();
+          for (int i=0; i < nGood; i++){
             //get hit and hit data 
-            TGretinaHit nnhit = gretina->GetNNAddbackHit(i);
+            TGretinaHit nnhit = goodNNGretHit[i];
             // nnhit.ComptonSort();
             // int cryID = nnhit.GetCrystalId();
             // int ringNum = nnhit.GetRingNumber();
@@ -616,23 +629,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (gates["prompt"].size() > 0) tgate = gates["prompt"][0]->IsInside(timeBank29-nnhit.GetTime(), nnCore_energy);
             if (!tgate) continue;
             
+            obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 10000,0,10000, nnEnergy_corrected);
             obj.FillHistogram(dirname, Form("gamma_corrected_n%d_prompt",nnhit.GetABDepth()), 8192,0,8192, nnEnergy_corrected);
-            if (goodNN.size() < 5) obj.FillHistogram(dirname, Form("gamma_corrected_m%d_prompt",goodNN.size()), 8192,0,8192, nnEnergy_corrected);
+            if (nGood < 5) obj.FillHistogram(dirname, Form("gamma_corrected_m%d_prompt",nGood), 8192,0,8192, nnEnergy_corrected);
             
-            double parperp = nnhit.GetXi(&track);
-            if (parperp == -1) parperp = TMath::Pi()/2;
-            if (parperp > TMath::Pi()) parperp = parperp - TMath::Pi();
-            if (parperp > TMath::Pi()/2) parperp = TMath::Pi() - parperp;
-            obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_parperp",90,0,90,parperp*TMath::RadToDeg(), 8192,0,8192, nnEnergy_corrected);
-            if (nnhit.GetCrystalId() > 40) {
-              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_90degqds", 8192,0,8192, nnEnergy_corrected);
-              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_90degqds_vs_parperp",90,0,90,parperp*TMath::RadToDeg(), 8192,0,8192, nnEnergy_corrected);
-            }
+            // double parperp = nnhit.GetXi(&track);
+            // if (parperp == -1) parperp = TMath::Pi()/2;
+            // if (parperp > TMath::Pi()) parperp = parperp - TMath::Pi();
+            // if (parperp > TMath::Pi()/2) parperp = TMath::Pi() - parperp;
+            // obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_vs_parperp",90,0,90,parperp*TMath::RadToDeg(), 8192,0,8192, nnEnergy_corrected);
+            // if (nnhit.GetCrystalId() > 40) {
+            //   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_90degqds", 8192,0,8192, nnEnergy_corrected);
+            //   obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_90degqds_vs_parperp",90,0,90,parperp*TMath::RadToDeg(), 8192,0,8192, nnEnergy_corrected);
+            // }
             
             // GAMMA GAMMA CORRELATION
-            for (auto j : goodNN){
+            for (int j=0; j < nGood; j++){
               if (i==j) continue;
-              TGretinaHit nnhit2 = gretina->GetNNAddbackHit(j);
+              TGretinaHit nnhit2 = goodNNGretHit[j];
               double nnEnergy_corrected2 = nnhit2.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
 
               bool tgate2 = false;
@@ -640,15 +654,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
               if (!tgate2) continue;
               
               obj.FillHistogram(dirname, "gamma_gamma", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+              double plotE1 = nnEnergy_corrected;
+              double plotE2 = nnEnergy_corrected2;
+              if (plotE1 > plotE2) std::swap(plotE1,plotE2);
+              if (j > i) obj.FillHistogram(dirname, "gamma_gamma_nonsym", 2048,0,8192, plotE1, 2048,0,8192, plotE2);
               obj.FillHistogram(dirname, "gamma_gamma_coarse", 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
-              if (goodNN.size() == 4) obj.FillHistogram(dirname, "gamma_gamma_mlt4", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
-              if (goodNN.size() > 1 && goodNN.size() < 4) {
-                obj.FillHistogram(dirname, Form("gamma_gamma_mlt%d",goodNN.size()), 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
-                obj.FillHistogram(dirname, "gamma_gamma_mlt2&3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
-                obj.FillHistogram(dirname, "gamma_gamma_mlt2&3_coarse", 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
+              obj.FillHistogram(dirname, "gamma_gamma_fine", 2048,0,4096, nnEnergy_corrected2, 2048,0,4096, nnEnergy_corrected);
+              if (nGood > 1 && nGood < 5) {
+                if (nnhit.GetABDepth() < 2 && nnhit2.GetABDepth() < 2) {
+                  obj.FillHistogram(dirname, "gamma_gamma_n0n1", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                  if (nGood < 4) 
+                    obj.FillHistogram(dirname, "gamma_gamma_n0n1_mlt2&3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                  else 
+                    obj.FillHistogram(dirname, "gamma_gamma_n0n1_mlt4", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                }
+                // obj.FillHistogram(dirname, Form("gamma_gamma_mlt%d",nGood), 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                // obj.FillHistogram(dirname, "gamma_gamma_mlt2&3", 2048,0,8192, nnEnergy_corrected2, 2048,0,8192, nnEnergy_corrected);
+                // obj.FillHistogram(dirname, "gamma_gamma_mlt2&3_coarse", 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
                 // obj.FillHistogram(dirname, Form("gamma_gamma_mlt%d",nnSize), 1024,0,8192, nnEnergy_corrected2, 1024,0,8192, nnEnergy_corrected);
               }
             }
+            
           }
         } 
       }

@@ -67,6 +67,30 @@ std::map<int,int> quadType = {
   {15,2}, {16,3}, {18,3}, {19,2}
 };
 
+int thetaGate(double angle){
+  //attmpet 1
+  // if (angle <	0.919) return 0;
+  // else if (0.919 < angle && angle < 1.055) return 1;
+  // else if (1.055 < angle && angle < 1.189) return 2;
+  // else if (1.189 < angle && angle <	1.31)  return 3;
+  // else if (1.31	< angle && angle < 1.446)  return 4;
+  // else if (1.446 < angle && angle < 1.576) return 5;
+  // else if (1.576 < angle && angle < 1.726) return 6;
+  // else if (1.726 < angle && angle < 3) return 7;
+  //attempt 2
+  // if (0.701 <= angle && angle < 0.933) return 0;
+  // else if (0.933 <= angle && angle < 1.094) return 1;
+  // else if (1.094 <= angle && angle < 1.275) return 2;
+  // else if (1.275 <= angle && angle <	1.597)  return 3;
+  // else if (1.597	<= angle && angle < 2.02)  return 4;
+  if (0.701 <= angle && angle < 0.933) return 0;
+  else if (0.933 <= angle && angle < 1.094) return 1;
+  else if (1.094 <= angle && angle < 1.275) return 2;
+  else if (1.275 <= angle && angle <	1.485)  return 3;
+  else if (1.485 <= angle && angle <	1.73)  return 4;
+  else if (1.73	<= angle && angle < 2.02)  return 5;
+}
+
 double lastPointPenalty(double x){
   double val = TMath::TanH((x/100-1.1)/0.5)*exp(-3*(x/100-1.1)+1);
   if (val < 0) val = 0;
@@ -228,6 +252,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       double timestamp = hit.GetTime();
       double decompNormChi2 = hit.GetDecompNormChi2();
       hit.ComptonSort();
+      double dop_energy = hit.GetDoppler(0.3346);
 
       bool prompt = false; 
       if (gates.count("prompt") > 0) prompt = gates["prompt"][0]->IsInside(timeBank29-timestamp, core_energy);
@@ -244,6 +269,18 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
       if (timeflag != "") {
         obj.FillHistogram(dirname, Form("%s_core_energy",timeflag.c_str()), 8192,0,8192, core_energy);
+        bool bin75 = hit.GetTheta()*TMath::RadToDeg() > 65 && hit.GetTheta()*TMath::RadToDeg() < 85;
+        bool bin100 = hit.GetTheta()*TMath::RadToDeg() > 90 && hit.GetTheta()*TMath::RadToDeg() < 115;
+        if (bin75) {
+          obj.FillHistogram(dirname, Form("%s_core_energy_bin75",timeflag.c_str()),10000,0,10000, core_energy);
+          obj.FillHistogram(dirname, Form("%s_theta_bin75",timeflag.c_str()),180,0,180, hit.GetTheta()*TMath::RadToDeg());
+        }
+        if (bin100) {
+          obj.FillHistogram(dirname, Form("%s_core_energy_bin100",timeflag.c_str()),10000,0,10000, core_energy);
+          obj.FillHistogram(dirname, Form("%s_theta_bin100",timeflag.c_str()),180,0,180, hit.GetTheta()*TMath::RadToDeg());
+        }
+
+        obj.FillHistogram(dirname, Form("%s_core_energy_%d",timeflag.c_str(),thetaGate(hit.GetTheta())), 8192,0,8192, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_theta",timeflag.c_str()), 180, 0, 180, theta*TMath::RadToDeg(), 4000,0,4000, core_energy);
         obj.FillHistogram(dirname, Form("%s_core_energy_vs_crystalID",timeflag.c_str()), 48, 0, 48, detMap[cryID], 8192,0,8192, core_energy);
         // obj.FillHistogram(dirname, Form("%s_core_energy_vs_chi2",timeflag.c_str()), 8192,0,8192, core_energy);
@@ -251,49 +288,33 @@ void MakeHistograms(TRuntimeObjects& obj) {
         obj.FillHistogram(dirname, "pad_vs_gretina_timestamps_t0",360,0,3600,(timestamp-timeZero)/TIMESCALE,10,0,10,hit.GetPad());
 
         if (hit.NumberOfInteractions() > 1){
+          int nXiPlotEbins = 4096;
+          double XiPlotLo = 0;
+          double XiPlotHi = 4096;
+          obj.FillHistogram(dirname, Form("%s_core_energy_nInt>1",timeflag.c_str()), nXiPlotEbins,XiPlotLo,XiPlotHi,core_energy);
           // int myFP = 0;
           // int mySP = 1;
           // comptonSortTest(hit,myFP,mySP);
           // double xi = hit.GetXi(nullptr,myFP,mySP);
+          // bool goodXi;
           double xi = hit.GetXi(nullptr);
-          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
-          obj.FillHistogram("polarization", Form("%s_energy_vs_xi_%d",timeflag.c_str(),cryID),180,0,TMath::Pi(),xi,4096,0,4096,core_energy);
-          double egateLo = 842; //774;      
-          double egateHi = 851; //784;      
-          if (egateLo < core_energy && core_energy < egateHi) {
-            obj.FillHistogram(dirname, Form("%s_gretina_map_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),720,0,360,hit.GetPhi()*TMath::RadToDeg(),360,0,180,hit.GetTheta()*TMath::RadToDeg());
-            // obj.FillHistogram(dirname, Form("%s_gretina_map_CRYS%d_E%3.0f",timeflag.c_str(),detMap[cryID],(egateHi+egateLo)/2),720,0,360,hit.GetPhi(myFP)*TMath::RadToDeg(),360,0,180,hit.GetTheta(myFP)*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_chi2norm_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),500,0,50,decompNormChi2);
-            obj.FillHistogram(dirname, Form("%s_xi_vs_chi2norm_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),200,0,50,decompNormChi2,90,0,TMath::TwoPi(),xi);
-            obj.FillHistogram(dirname, Form("%s_xi_vs_holenumber_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),12,0,12,holeMap[hit.GetHoleNumber()],180,0,TMath::TwoPi(),xi);
-            obj.FillHistogram(dirname, Form("%s_chi2norm_vs_holenumber_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),12,0,12,holeMap[hit.GetHoleNumber()],200,0,50,decompNormChi2);
-            obj.FillHistogram(dirname, Form("%s_phi_vs_holenumber_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),12,0,12,holeMap[hit.GetHoleNumber()],360,0,TMath::TwoPi(),hit.GetPhi());
-            // obj.FillHistogram(dirname, Form("%s_chi2norm_HN%d_E%3.0f",timeflag.c_str(),holeMap[hit.GetHoleNumber()],(egateHi+egateLo)/2),500,0,50,decompNormChi2);
-            // obj.FillHistogram(dirname, Form("%s_phi_HN%d_E%3.0f",timeflag.c_str(),holeMap[hit.GetHoleNumber()],(egateHi+egateLo)/2),360,0,360,hit.GetPhi(myFP)*TMath::RadToDeg());
-            // obj.FillHistogram(dirname, Form("%s_phi_HN%d_ID%d_E%3.0f",timeflag.c_str(),holeMap[hit.GetHoleNumber()],cryID,(egateHi+egateLo)/2),360,0,360,hit.GetPhi(myFP)*TMath::RadToDeg());
-
-            // obj.FillHistogram(dirname, Form("%s_Local_YvsX_tp%d_E%3.0f",timeflag.c_str(),cryID%2,(egateHi+egateLo)/2),50,-50,50,hit.GetLocalPosition(myFP).X(),50,-50,50,hit.GetLocalPosition(myFP).Y());
-            // obj.FillHistogram(dirname, Form("%s_Local_YvsX_cryid%d_E%3.0f",timeflag.c_str(),cryID,(egateHi+egateLo)/2),50,-50,50,hit.GetLocalPosition(myFP).X(),50,-50,50,hit.GetLocalPosition(myFP).Y());
-            // if (detMap[cryID] < 16) obj.FillHistogram(dirname, Form("%s_xi_type%d_fwd_E%3.0f",timeflag.c_str(),cryID%2,(egateHi+egateLo)/2),180,0,TMath::TwoPi(),xi);
-            // obj.FillHistogram(dirname, Form("%s_Local_YvsX_CRYID%d_E%3.0f",timeflag.c_str(),cryID,(egateHi+egateLo)/2),100,-50,50,hit.GetLocalPosition(myFP).X(),100,-50,50,hit.GetLocalPosition(myFP).Y());
-            obj.FillHistogram(dirname, Form("%s_xi_vs_crystalIDmap_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),48,0,48,detMap[cryID],36,0,360,xi*TMath::RadToDeg());
-            obj.FillHistogram(dirname, Form("%s_segmentID_vs_crystalID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),48,0,48,detMap[cryID],36,0,36,hit.GetSegmentId());
-            obj.FillHistogram(dirname, Form("%s_xi_vs_segmentID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),36,0,36,hit.GetSegmentId(),180,0,TMath::TwoPi(),xi);
-            // obj.FillHistogram(dirname, Form("%s_xi_vs_crystalID_E%3.0f",timeflag.c_str(),(egateHi+egateLo)/2),120,0,120,cryID,72,0,TMath::TwoPi(),xi);
-            // obj.FillHistogram(dirname, Form("%s_xi_qdtype%d_E%3.0f",timeflag.c_str(),quadType[hit.GetHoleNumber()],(egateHi+egateLo)/2),360,0,TMath::TwoPi(),xi);
-            // int ihn = holeMap[hit.GetHoleNumber()];
-            // if (ihn == 1 || ihn == 2 || (5 < ihn && ihn < 10) )
-            //   obj.FillHistogram(dirname, Form("%s_xi_balanced_E847",timeflag.c_str()),360,0,TMath::TwoPi(),xi);
+          if (xi > TMath::Pi()/2) xi = TMath::Pi() - xi;
+          bool perp = xi*TMath::RadToDeg() > 60;
+          bool para = xi*TMath::RadToDeg() < 30;
+          if (perp) {
+            obj.FillHistogram(dirname, Form("%s_core_energy_perp",timeflag.c_str()),8192,0,8192,core_energy);
+            if (hit.NumberOfInteractions() < 5) 
+              obj.FillHistogram(dirname, Form("%s_core_energy_perp_%d",timeflag.c_str(),hit.NumberOfInteractions()),8192,0,8192,core_energy);
           }
-          // if (hit.NumberOfInteractions() < 4) obj.FillHistogram(dirname, Form("%s_energy_vs_xi<4intp",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
+          if (para) {
+            obj.FillHistogram(dirname, Form("%s_core_energy_para",timeflag.c_str()),8192,0,8192,core_energy);
+            if (hit.NumberOfInteractions() < 5) 
+              obj.FillHistogram(dirname, Form("%s_core_energy_para_%d",timeflag.c_str(),hit.NumberOfInteractions()),8192,0,8192,core_energy);
+          }
           
-          if (theta*TMath::RadToDeg() >= 55 && theta*TMath::RadToDeg() <= 100)
-            obj.FillHistogram(dirname, Form("%s_energy_vs_xi_theta_gate",timeflag.c_str()),360,0,TMath::TwoPi(),xi,1024,0,2048,core_energy);
-
-          // if (cryID < 40)
-          //   obj.FillHistogram(dirname, Form("%s_fwd_Ecore_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
-          // else 
-          //   obj.FillHistogram(dirname, Form("%s_90deg_Ecore_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_vs_xi",timeflag.c_str()),180,0,TMath::Pi(),xi,2048,0,2048,core_energy);
+          obj.FillHistogram(dirname, Form("%s_energy_xi_bin_%d",timeflag.c_str(),(int) (xi/TMath::Pi()*5)),2048,0,2048,core_energy);
+          obj.FillHistogram("polarization", Form("%s_energy_vs_xi_%d",timeflag.c_str(),cryID),180,0,TMath::Pi(),xi,nXiPlotEbins,XiPlotLo,XiPlotHi,core_energy);
         }
       }
     }

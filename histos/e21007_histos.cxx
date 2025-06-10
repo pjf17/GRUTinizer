@@ -242,7 +242,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   }
   if (badevent) return;
 
-  TRandom3 *rand_gen = new TRandom3(923423);
+  static TRandom3 *rand_gen = new TRandom3(923423);
 
   //MAKE RAW TOF HISTS
   double raw_obj = s800->GetRawOBJ_MESY();
@@ -440,15 +440,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // int myFP, mySP;
                 // comptonSortTest(hit,myFP,mySP);
                 double myxi = hit.GetXi(&track);
-                std::vector<double> randomXi;
-                int Nrand = 400;
-                for (int ri=0; ri<Nrand; ri++) randomXi.push_back(hit.GetXi(randomBeam(rand_gen)));
-                // double randXi = TMath::Pi() - hit.GetXi(randomBeam(rand_gen));
                 
-                // double new_energy = hit.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(),&track,myFP);
                 obj.FillHistogram(dirname, "gam_sngl_vs_xi",180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                for (int ri=0; ri<400; ri++) {
+                  double randXi = hit.GetXi(randomBeam(rand_gen));
+                  obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                  obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                }
                 // for (int ri=0; ri < 1000; ri++) obj.FillHistogram(dirname, "gam_sngl_vs_xi_rand",180,0,TMath::Pi(),hit.GetXi(randomBeam(rand_gen)),4096,0,4096, energy_corrected);
-                obj.FillHistogram(dirname, "gam_sngl_vs_xi_main",180,0,TMath::Pi(),hitMain.GetXi(&track),4096,0,4096, energy_corrected_main);
                 // if (myxi > TMath::PiOver2())
                 //   obj.FillHistogram(dirname, "gam_sngl_xi>90",4096,0,4096, energy_corrected);
                 // else 
@@ -460,7 +459,6 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 //   obj.FillHistogram(dirname, "gam_sngl_xi_rand<90",4096,0,4096, energy_corrected);
 
                 obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
-                for (int ri=0; ri < Nrand; ri++) obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randomXi[ri],4096,0,4096, energy_corrected);
                 // if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 // obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
 

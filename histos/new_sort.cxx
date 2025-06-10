@@ -393,9 +393,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
             obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
 
             if (nInteractions > 1) {
-              
-              obj.FillHistogram(dirname, "prompt_gamma_dop_vs_xi",360,0,TMath::TwoPi(),xi,8192,0,8192,energy_corrected);
-              obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("prompt_gamma_dop_vs_xi_%d",cryID),360,0,TMath::TwoPi(),xi,4096,0,4096, energy_corrected);
+              if (xi > TMath::Pi()/2) xi = TMath::Pi() - xi;
+              bool perp = xi*TMath::RadToDeg() > 65;
+              bool para = xi*TMath::RadToDeg() < 25;
+              obj.FillHistogram(dirname, "prompt_gamma_dop_nint>1",10000,0,10000,energy_corrected);
+              obj.FillHistogram(dirname, "prompt_gamma_dop_vs_xi",180,0,TMath::Pi(),xi,4096,0,4096,energy_corrected);
+              if (perp) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_perp",4096,0,4096,energy_corrected);
+              if (para) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_para",4096,0,4096,energy_corrected);
+              // obj.FillHistogram(dirname, Form("gam_dop_sgl_xibin_%d",(int) (xi/TMath::Pi()*5)),4096,0,4096,energy_corrected);
+              // obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("prompt_gamma_dop_vs_xi_%d",cryID),180,0,TMath::Pi(),xi,4096,0,4096, energy_corrected);
               // if (myFP == 0) {
               //   obj.FillHistogram(dirname, "new!=main_new",4096,0,4096, new_energy_corrected);
               //   obj.FillHistogram(dirname, "new!=main_main",4096,0,4096, energy_corrected);

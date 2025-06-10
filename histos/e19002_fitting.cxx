@@ -31,6 +31,30 @@ std::map<int,int> detMap = {
   {49,40}, {57,41}, {65,42}, {81,43}, {45,44}, {61,45}, {69,46}, {77,47}
 };
 
+int thetaGate(double angle){
+  //attmpet 1
+  // if (angle <	0.919) return 0;
+  // else if (0.919 < angle && angle < 1.055) return 1;
+  // else if (1.055 < angle && angle < 1.189) return 2;
+  // else if (1.189 < angle && angle <	1.31)  return 3;
+  // else if (1.31	< angle && angle < 1.446)  return 4;
+  // else if (1.446 < angle && angle < 1.576) return 5;
+  // else if (1.576 < angle && angle < 1.726) return 6;
+  // else if (1.726 < angle && angle < 3) return 7;
+  //attempt 2
+  // if (0.701 <= angle && angle < 0.933) return 0;
+  // else if (0.933 <= angle && angle < 1.094) return 1;
+  // else if (1.094 <= angle && angle < 1.275) return 2;
+  // else if (1.275 <= angle && angle <	1.597)  return 3;
+  // else if (1.597	<= angle && angle < 2.02)  return 4;
+  if (0.701 <= angle && angle < 0.933) return 0;
+  else if (0.933 <= angle && angle < 1.094) return 1;
+  else if (1.094 <= angle && angle < 1.275) return 2;
+  else if (1.275 <= angle && angle <	1.485)  return 3;
+  else if (1.485 <= angle && angle <	1.73)  return 4;
+  else if (1.73	<= angle && angle < 2.02)  return 5;
+}
+
 bool efficiencyCorrection(TRandom3 *rand, const TGretinaHit &hit1, int nNeighborHits=-1){
   double thresh_param1 = GValue::Value(Form("DET%i_THRESH1",detMap[hit1.GetCrystalId()]));
   double thresh_param2 = GValue::Value(Form("DET%i_THRESH2",detMap[hit1.GetCrystalId()]));
@@ -124,16 +148,16 @@ void MakeHistograms(TRuntimeObjects& obj) {
     obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   }
   // double SIGMA = (2.1*TMath::Exp(-0.1*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
-  // double SIGMA = 0.85*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
-  // double SIGMA = 0.87*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
-  double SIGMA = 0.89*(2.1*TMath::Exp(-0.04*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
-  if(SIGMA > 3.8) {
-    SIGMA = 3.8;
-  }
-  if(gammaEn < 150.) {
+  double SIGMA = 1.2*(2.21*TMath::Exp(-0.135*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0)); //0.92
+  // double SIGMA = 0.9*(2.21*TMath::Exp(-0.135*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0));
+  // double SIGMA = 2.1*TMath::Exp(-0.15*gammaEn/1000.0) + 60.0*TMath::Exp(-10.2*gammaEn/1000.0);
+  if(SIGMA > 6.0) {
     SIGMA = 6.0;
   }
-
+  // if(gammaEn < 150.) {
+  //   SIGMA = 6.0;
+  // }
+  // std::vector<double> sigmas = {1.66,1.68,1.7,1.72};
   //SINGLES
   int gSize = gretina->Size();
   for (int i=0; i < gSize; i++){
@@ -142,34 +166,58 @@ void MakeHistograms(TRuntimeObjects& obj) {
     double core_energy = hit.GetCoreEnergy();
     int cryID = hit.GetCrystalId();
     int ringNum = hit.GetRingNumber();
-    // if (cryID == 77) continue;
+    if (cryID == 77) continue;
 
     double theta = hit.GetTheta();
     double phi = hit.GetPhi();
+    hit.SortSegments();
+    // hit.ComptonSort();
+    // if (rand_gen->Uniform(0,100) < 24) { //4
+    //   //pick a random interaction point
+    //   int ip = std::floor(rand_gen->Uniform(1,hit.NumberOfInteractions()-1));
+    //   bool result = hit.SwapSegments(0,ip);
+    //   if (!result) std::cout<<"AAAAAAAAAAAAAAHHHHHHG!!!"<<std::endl;
+    // }
+
+    // double sigMax = 3.0;
+    // double sigMin = 2.0;
+    // double sigStep = 0.1;
+    // double sig = sigMin;
+    // int sigBins = (sigMax-sigMin)/sigStep + 1;
+    // TVector3 local_pos_loop(hit.GetLocalPosition(0));
+    // while (sig < sigMax) {
+    //   double smear_x = local_pos_loop.X() + rand_gen->Gaus(0, sig); 
+    //   double smear_y = local_pos_loop.Y() + rand_gen->Gaus(0, sig);
+    //   double smear_z = local_pos_loop.Z() + rand_gen->Gaus(0, sig);
+    //   hit.SetPosition(0,smear_x,smear_y,smear_z);
+    //   obj.FillHistogram(dirname,"dopEn_Sig",sigBins*2,sigMin,sigMax,sig,6000,0,6000,hit.GetDoppler(beta));
+    //   sig += sigStep;
+    // }
 
     TVector3 local_pos(hit.GetLocalPosition(0));
     double smear_x = local_pos.X() + rand_gen->Gaus(0, SIGMA); 
     double smear_y = local_pos.Y() + rand_gen->Gaus(0, SIGMA);
     double smear_z = local_pos.Z() + rand_gen->Gaus(0, SIGMA);
-    if (gates && crystal_xy && crystal_zy){
-      bool inXY = crystal_xy->IsInside(smear_x,smear_y);
-      bool inZY = crystal_zy->IsInside(smear_z,smear_y);
-      obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
-      if (inXY && inZY){
-        obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_inside"),200,-100,100,smear_x,200,-100,100,smear_y); 
-        obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_inside"),200,-100,100,smear_z,200,-100,100,smear_y);
-      } else {
-        if (!inXY) obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_outside"),200,-100,100,smear_x,200,-100,100,smear_y); 
-        if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
-      }
-    }
     hit.SetPosition(0,smear_x,smear_y,smear_z); //this resets the positions also in NNaddback
-    hit.ComptonSort();
 
+    // if (gates && crystal_xy && crystal_zy){
+    //   bool inXY = crystal_xy->IsInside(smear_x,smear_y);
+    //   bool inZY = crystal_zy->IsInside(smear_z,smear_y);
+    //   obj.FillHistogram("positionsmear","inout",2,0,2,int(inXY && inZY));
+    //   if (inXY && inZY){
+    //     obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_inside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+    //     obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_inside"),200,-100,100,smear_z,200,-100,100,smear_y);
+    //   } else {
+    //     if (!inXY) obj.FillHistogram("positionsmear",Form("X_vs_Y_smear_outside"),200,-100,100,smear_x,200,-100,100,smear_y); 
+    //     if (!inZY) obj.FillHistogram("positionsmear",Form("Z_vs_Y_smear_outside"),200,-100,100,smear_z,200,-100,100,smear_y);
+    //   }
+    // }
     double dop_corrected;
 
     if (!stopped || !std::isnan(beta)){
-      dop_corrected = hit.GetDoppler(beta); 
+      // dop_corrected = hit.GetDoppler(s800sim->AdjustedBeta(beta), &track); 
+      dop_corrected = hit.GetDoppler(beta, &track); 
+      // dop_corrected = hit.GetDopplerYta(beta); 
     } 
     else{
       dop_corrected = hit.GetCoreEnergy();
@@ -184,9 +232,27 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
     // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
     
+    bool bin75 = hit.GetTheta()*TMath::RadToDeg() > 65 && hit.GetTheta()*TMath::RadToDeg() < 85;
+    bool bin100 = hit.GetTheta()*TMath::RadToDeg() > 90 && hit.GetTheta()*TMath::RadToDeg() < 115;
     //fitting hists
     obj.FillHistogram(dirname,"dopEn",10000,0,10000,dop_corrected);
-    obj.FillHistogram(dirname,"dopEn_vs_theta",180,0,TMath::Pi(),theta,10000,0,10000,dop_corrected);
+
+    if (bin75) obj.FillHistogram(dirname,"dopEn_bin75",10000,0,10000,dop_corrected);
+    if (bin100) obj.FillHistogram(dirname,"dopEn_bin100",10000,0,10000,dop_corrected);
+    obj.FillHistogram(dirname,Form("dopEn_%d",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
+    double xi = hit.GetXi(&track);
+    double simpleXi = xi;
+    if (simpleXi > TMath::Pi()/2) simpleXi = TMath::Pi() - simpleXi;
+    bool perp = simpleXi*TMath::RadToDeg() > 60 && hit.NumberOfInteractions() > 1;
+    bool para = simpleXi*TMath::RadToDeg() < 30 && hit.NumberOfInteractions() > 1;
+    if (hit.NumberOfInteractions() > 1) {
+      if (perp) obj.FillHistogram(dirname, "dopEn_xi_perp",10000,0,10000,dop_corrected);
+      if (para) obj.FillHistogram(dirname, "dopEn_xi_para",10000,0,10000,dop_corrected);
+      if (para || perp) obj.FillHistogram(dirname, "dopEn_xi_psum",10000,0,10000,dop_corrected);
+      // obj.FillHistogram(dirname,Form("dopEn_xi_%d",(int) (xi/TMath::Pi()*5)),10000,0,10000,dop_corrected); 
+      obj.FillHistogram(dirname,"dopEn_nint>1",10000,0,10000,dop_corrected);
+    }
+    // obj.FillHistogram(dirname,"dopEn_vs_theta",180,0,TMath::Pi(),theta,10000,0,10000,dop_corrected);
     if (detMap[cryID] < 4) obj.FillHistogram(dirname,"dopEn_fwd",10000,0,10000,dop_corrected);
     if (detMap[cryID] > 43) obj.FillHistogram(dirname,"dopEn_bkwd",10000,0,10000,dop_corrected);
     // if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_B&T&Y&D",10000,0,10000,dop_corrected);
@@ -194,15 +260,33 @@ void MakeHistograms(TRuntimeObjects& obj) {
     //   obj.FillHistogram(dirname,"dopEn_inside",10000,0,10000,energy_track_yta_dta);
     // else obj.FillHistogram(dirname,"dopEn_outside",10000,0,10000,energy_track_yta_dta);
 
+    //angular distributions
+    // obj.FillHistogram("polarization",Form("dopEn_vs_theta_%d",cryID),180,0,TMath::Pi(),hit.GetTheta(),10000,0,10000,dop_corrected);
+    // if (isFEP) obj.FillHistogram(dirname, "fep_ringnum",6,4,16,hit.GetRingNumber());
+    // obj.FillHistogram("angdist", "dopEn_vs_ringnum",6,4,16,hit.GetRingNumber(),10000,0,10000,dop_corrected);
+    // if (hit.NumberOfInteractions() > 1) obj.FillHistogram("poldist", "dopEn_vs_ringnum",6,4,16,hit.GetRingNumber(),10000,0,10000,dop_corrected);
+
     //SUMMARY SPECTRUM
-    obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,dop_corrected);    
+    // obj.FillHistogram(dirname,"dop_btyd_summary",48,0,48,detMap[cryID],3000,0,3000,dop_corrected);    
     
     if (isFEP){ //full energy peak event
-      obj.FillHistogram(dirname,"dopEn_fep",10000,0,10000,dop_corrected);     
-      if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_fep",10000,0,10000,dop_corrected);     
+      obj.FillHistogram(dirname,"dopEn_fep",10000,0,10000,dop_corrected); 
+      if (bin75) obj.FillHistogram(dirname,"dopEn_bin75_fep",10000,0,10000,dop_corrected);
+      if (bin100) obj.FillHistogram(dirname,"dopEn_bin100_fep",10000,0,10000,dop_corrected);
+      if (perp) obj.FillHistogram(dirname, "dopEn_xi_perp_fep",10000,0,10000,dop_corrected);
+      if (para) obj.FillHistogram(dirname, "dopEn_xi_para_fep",10000,0,10000,dop_corrected);
+      if (para || perp) obj.FillHistogram(dirname, "dopEn_xi_psum_fep",10000,0,10000,dop_corrected);
+      obj.FillHistogram(dirname,Form("theta_%d_fep",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
+      // if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_fep",10000,0,10000,dop_corrected);     
     } else {
       obj.FillHistogram(dirname,"dopEn_bg",10000,0,10000,dop_corrected);
-      if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_bg",10000,0,10000,dop_corrected);
+      if (bin75 && gSize == 1) obj.FillHistogram(dirname,"dopEn_bin75_bg",10000,0,10000,dop_corrected);
+      if (bin100 && gSize == 1) obj.FillHistogram(dirname,"dopEn_bin100_bg",10000,0,10000,dop_corrected);
+      if (perp) obj.FillHistogram(dirname, "dopEn_xi_perp_bg",10000,0,10000,dop_corrected);
+      if (para) obj.FillHistogram(dirname, "dopEn_xi_para_bg",10000,0,10000,dop_corrected);
+      if (para || perp) obj.FillHistogram(dirname, "dopEn_xi_psum_bg",10000,0,10000,dop_corrected);
+      obj.FillHistogram(dirname,Form("dopEn_%d_bg",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
+      // if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_bg",10000,0,10000,dop_corrected);
     }
   }
 
