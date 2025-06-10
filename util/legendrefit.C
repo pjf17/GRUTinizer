@@ -2,10 +2,12 @@
 #include "TF1.h"
 
 double LegendreDoppler (double *x, double *par){
-  double cosThCM = (std::cos(x[0]*TMath::DegToRad()) - par[3])/(1 - par[3]*std::cos(x[0]*TMath::DegToRad()));
+  double theta = x[0];
+  double cosThCM = (std::cos(theta) - par[3])/(1 - par[3]*std::cos(theta));
   double leg2 = 0.5*(3*pow(cosThCM,2) - 1);
   double leg4 = 0.125*(35*pow(cosThCM,4) - 30*pow(cosThCM,2) +3);
-  return par[0]*(1 + par[1]*leg2 + par[2]*leg4)*(1-par[3]*par[3])/pow(par[3]*TMath::Cos(x[0]*TMath::DegToRad())-1,2);
+  // return par[0]*(1 + par[1]*leg2 + par[2]*leg4)*(1-par[3]*par[3])/pow(par[3]*TMath::Cos(theta)-1,2);
+  return par[4]*(par[0] + par[1]*leg2 + par[2]*leg4)*(1-par[3]*par[3])/pow(par[3]*TMath::Cos(theta)-1,2);
 }
 
 double polarization(double *x, double *par){
@@ -22,5 +24,5 @@ double thetaCM(double theta,double beta){
   return TMath::ACos((cosT - beta)/(1 - beta*cosT));
 }
 
-TF1 *flegendre = new TF1("fitleg",LegendreDoppler,45,95,4);
+TF1 *flegendre = new TF1("fitleg",LegendreDoppler,0,TMath::Pi(),5);
 TF1 *fPol = new TF1("fpol",polarization,0,180,2);

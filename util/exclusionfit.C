@@ -89,13 +89,22 @@ class ExclusionFit {
             else        return par[0] + par[1]*x[0] + par[2]*x[0]*x[0] + par[3]*x[0]*x[0]*x[0];
         }
         
-        void Fit(TH1D *h, int order, double elo, double ehi, double xlo, double xhi){
+        void Fit(int order, double elo, double ehi, double xlo, double xhi){
             AddRegion(elo,ehi);
-            Fit(h,order,xlo,xhi);
+            Fit(order,xlo,xhi);
             regions.pop_back();
         }
         
-        void Fit(TH1D *h, int order, double xlo, double xhi){
+        void Fit(int order, double xlo, double xhi){
+            //get the active histogram
+            TH1D *h;
+            TIter iter(gPad->GetListOfPrimitives());
+            while(TObject *obj=iter.Next()) {
+                if(obj->InheritsFrom(TH1::Class())) {
+                    h = (TH1D*)obj;
+                }
+            }
+
             //get current hist name
             bool newName = false;
             if (currentHistName != std::string(h->GetName())) {
