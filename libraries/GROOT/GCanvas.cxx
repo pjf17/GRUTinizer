@@ -768,14 +768,13 @@ bool GCanvas::ProcessNonHistKeyboardPress(Event_t* event, UInt_t* keysym) {
       edited = true;
     case kKey_F4:
     {
-      if (fMarkers.size() != 2) break;
+      if (!(fMarkers.size() == 2 || fMarkers.size() == 4)) break;
       //get the histograms on the canvas
       std::vector<TH1 *> hh;
       TIter iter(this->GetListOfPrimitives());
-      TPad *pad;
       while(TObject *obj = iter.Next()) {
         if(obj->InheritsFrom(TPad::Class())) {
-          pad = (TPad*)obj;
+          TPad * pad = (TPad*)obj;
           TIter iter2(pad->GetListOfPrimitives());
           while(TObject *obj2=iter2.Next()) {
             if(obj2->InheritsFrom(TH1::Class())) {
@@ -785,7 +784,7 @@ bool GCanvas::ProcessNonHistKeyboardPress(Event_t* event, UInt_t* keysym) {
         }
       }
       if (hh.size() == 0 || hh.size() > 2) {std::cout<<"Cannot find two histograms\n"; break; }
-      if (hh.size() == 2 && fBackgroundMarkers.size() != 2) break;
+      if (hh.size() == 2 && fMarkers.size() != 4) break;
 
       //get binning and group mode options
       std::string htitle = std::string(hh.back()->GetTitle());
@@ -817,34 +816,46 @@ bool GCanvas::ProcessNonHistKeyboardPress(Event_t* event, UInt_t* keysym) {
       }
 
       //input data and get the xiratio
-      int binlow = fMarkers.at(fMarkers.size()-1)->binx;
-      int binhigh = fMarkers.at(fMarkers.size()-2)->binx;
-      if(binlow > binhigh)  std::swap(binlow, binhigh);
+      //ORDER OF MARKER **PLACEMENT** MUST BE DATA FIRST THEN SOURCE IF DOING SOURCE NORMALIZATION
+      int srcBinLo = -1, srcBinHi = -1, datBinLo = -1, datBinHi = -1;
+      if (fMarkers.size() == 4){
+        srcBinLo = fMarkers.at(fMarkers.size()-1)->binx;
+        srcBinHi = fMarkers.at(fMarkers.size()-2)->binx;
+        datBinLo = fMarkers.at(fMarkers.size()-3)->binx;
+        datBinHi = fMarkers.at(fMarkers.size()-4)->binx;
+
+        
+        if(srcBinLo > srcBinHi)  std::swap(srcBinLo, srcBinHi);
+        if(datBinLo > datBinHi)  std::swap(datBinLo, datBinHi);
+
+      } else {
+        datBinLo = fMarkers.at(fMarkers.size()-1)->binx;
+        datBinHi = fMarkers.at(fMarkers.size()-2)->binx;
+        if(datBinLo > datBinHi)  std::swap(datBinLo, datBinHi);
+      }
+
+      int bkgBinLo = -1, bkgBinHi = -1;
+      if (fBackgroundMarkers.size() > 0) {
+        bkgBinLo = fBackgroundMarkers.at(fBackgroundMarkers.size()-1)->binx;
+        bkgBinHi = fBackgroundMarkers.at(fBackgroundMarkers.size()-2)->binx;
+        if(bkgBinLo > bkgBinHi)  std::swap(bkgBinLo, bkgBinHi);
+      }
       
       GPolAnalyzer gpa; 
       if (hh.size() == 2) 
-        gpa = GPolAnalyzer(hh[sorcIdx],hh[beamIdx],fBackgroundMarkers.at(0)->binx,fBackgroundMarkers.at(1)->binx,fMarkers.at(fMarkers.size()-1)->binx,fMarkers.at(fMarkers.size()-2)->binx);
+        gpa = GPolAnalyzer(hh[sorcIdx],hh[beamIdx],srcBinLo,srcBinHi,datBinLo,datBinHi,bkgBinLo,bkgBinHi);
       else
         gpa = GPolAnalyzer(hh[0],fMarkers.at(fMarkers.size()-1)->binx,fMarkers.at(fMarkers.size()-2)->binx);
       GH1D *hratio, *hbeam, *hsource;
       gpa.GetXiRatio(hratio,hsource,hbeam,binning,polOpt);
 
-      if (hh.size() == 2) {
-        this->cd(1);
-        hsource->Draw();
-        hbeam->Draw("same");
-        this->cd(2);
-        hratio->Draw();
-      } 
-      else {
-        pad->Clear();
-        pad->Divide(1,2);
-        pad->cd(1);
-        hsource->Draw();
-        hbeam->Draw("same");
-        pad->cd(2);
-        hratio->Draw();
-      }
+      this->Clear();
+      this->Divide(1,2);
+      this->cd(1);
+      hsource->Draw();
+      hbeam->Draw("same");
+      this->cd(2);
+      hratio->Draw();
     }
 
     edited = true;

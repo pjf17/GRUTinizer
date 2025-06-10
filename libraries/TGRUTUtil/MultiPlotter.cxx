@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "TFile.h"
+#include "TText.h"
 #include "TH1.h"
 #include "TKey.h"
 #include "TLegend.h"
@@ -167,7 +168,7 @@ void MultiPlotter::SetYrange(double ylo, double yhi){
     mYhi = yhi;
 }
 
-void MultiPlotter::SetRange(double xlo, double xhi){
+void MultiPlotter::SetXrange(double xlo, double xhi){
     mXlo = xlo;
     mXhi = xhi;
 }
@@ -191,9 +192,12 @@ void MultiPlotter::ResetRange(){
     mXhi = -123;
 }
 
-void MultiPlotter::SetHistFill(double alpha){
-    mFillAlpha = alpha;
-    mDrawFill = true;
+void MultiPlotter::SetFill(double alpha){
+    if (alpha < 0.0) mDrawFill = false;
+    else {
+        mFillAlpha = alpha;
+        mDrawFill = true;
+    }
 }
 
 void MultiPlotter::IterateLineStyle(){
@@ -325,9 +329,198 @@ void MultiPlotter::FitPeak(double xlo, double xhi, Option_t *opt){
     }
 }
 
+void MultiPlotter::Integral(double lo, double hi) {
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    while (it != end){
+        int xlo = it->second->FindBin(lo);
+        int xhi = it->second->FindBin(hi);
+        printf("%-30s %6.2f\n",it->second->GetName(),it->second->Integral(xlo,xhi));
+        it++;
+    }
+}
+
+void MultiPlotter::Add(std::string key, double scale){
+    if (!Exists(key)) return;
+    mYMax = 0;
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    TH1 *hadd = (TH1*) mHistos[key]->Clone("htemp");
+    mHistos.erase(key);
+    while (it != end){
+        it->second->Add(hadd,scale);
+        it++;
+    }
+    gFile->Delete("htemp");
+    return;
+}
+
 // void MultiPlotter::Draw(std::string opt, std::string key){
 //     if (Exists(key)) mHistos[key]->Draw("hist");
 // }
+
+void MultiPlotter::Draw(int nx, int ny, int wx, int wy, bool mergeX, bool mergeY){
+    gStyle->SetPadTickX(1);
+    gStyle->SetPadTickY(1);
+    // gStyle->SetPadTopMargin(0.05);
+    // gStyle->SetPadRightMargin(0.05);
+    // gStyle->SetPadBottomMargin(0.16);
+    // gStyle->SetPadLeftMargin(0.12);
+    // gStyle->SetPadBorderMode(0);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(0);
+    
+    if (nx*ny != mNHistos) {
+        printf("ERROR: NUMBER OF HISTOGRAMS DOES NOT MATCH DIMENSIONS\n");
+        return;
+    }
+    
+    //list the histograms
+    std::map<std::string, TH1*>::iterator it = mHistos.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos.end();
+    while (it != end){
+        std::cout<<it->first<<std::endl;
+        it++;
+    }
+
+    //show the canvas layout
+    std::string outformat = "";
+    int nplots = 1;
+    for (int yy=0; yy < ny; yy++){
+        outformat += "|";
+        for (int xx=0; xx < nx; xx++){
+            outformat += std::string(Form("%3d |",nplots));
+            nplots++;
+        }
+        outformat += "\n";
+    }
+    nplots--;
+    std::cout<<outformat;
+    
+    //assign the plots to the layout
+    printf("\nAssign the histos to the layout\n");
+    it = mHistos.begin();
+    std::vector<std::pair<int,TH1*>> drawingstack;
+    while (it != end){
+        std::cout<<it->first;
+        int digit;
+        std::cout<<" -> ";
+        std::cin>>digit;
+        drawingstack.push_back(std::make_pair(digit,it->second));
+        it++;
+    }
+    std::sort(drawingstack.begin(),drawingstack.end());
+
+    //validate
+    for (int i=0; i < nplots; i++){
+        if (i+1 != drawingstack[i].first) {
+            printf("ERROR: USER INPUT INDICES ARE NOT UNIQUE\n");
+            return;
+        }
+    }
+    
+    TCanvas *c1 = new TCanvas("canv","canv",wx,wy);
+    CanvasPartition(c1,nx,ny,0.15,0.15,0.15,0.05);
+    std::vector<TPad *> pads;
+    int iplt = 0;
+    for (Int_t i = 0; i < nx; i++) {
+        for (Int_t j = 0; j < ny; j++) {
+            TH1 *h = drawingstack[iplt].second;
+            c1->cd(0);
+
+            // Get the pads previously created.
+            TPad *ipad = (TPad *)c1->FindObject(TString::Format("pad_%d_%d", i, j).Data());
+            pads.push_back(ipad);
+            pads.back()->Draw();
+            pads.back()->SetFillStyle(4000);
+            pads.back()->SetFrameFillStyle(4000);
+            pads.back()->cd();
+
+            // Size factors
+            Float_t xFactor = pads.front()->GetAbsWNDC() / pads.back()->GetAbsWNDC();
+            Float_t yFactor = pads.front()->GetAbsHNDC() / pads.back()->GetAbsHNDC();
+
+            TH1F *hFrame = (TH1F *)h->Clone(TString::Format("h_%d_%d", i, j).Data());
+
+            // y axis range
+            hFrame->SetMinimum(0.0001); // do not show 0
+            hFrame->SetMaximum(1.2 * h->GetMaximum());
+
+            // Format for y axis
+            hFrame->GetYaxis()->SetLabelFont(43);
+            hFrame->GetYaxis()->SetLabelSize(16);
+            hFrame->GetYaxis()->SetLabelOffset(0.02);
+            hFrame->GetYaxis()->SetTitleFont(43);
+            hFrame->GetYaxis()->SetTitleSize(16);
+            hFrame->GetYaxis()->SetTitleOffset(2);
+
+            hFrame->GetYaxis()->CenterTitle();
+            hFrame->GetYaxis()->SetNdivisions(505);
+
+            // TICKS Y Axis
+            hFrame->GetYaxis()->SetTickLength(xFactor * 0.04 / yFactor);
+
+            // Format for x axis
+            hFrame->GetXaxis()->SetLabelFont(43);
+            hFrame->GetXaxis()->SetLabelSize(16);
+            hFrame->GetXaxis()->SetLabelOffset(0.02);
+            hFrame->GetXaxis()->SetTitleFont(43);
+            hFrame->GetXaxis()->SetTitleSize(16);
+            hFrame->GetXaxis()->SetTitleOffset(1);
+            hFrame->GetXaxis()->CenterTitle();
+            hFrame->GetXaxis()->SetNdivisions(505);
+
+            // TICKS X Axis
+            hFrame->GetXaxis()->SetTickLength(yFactor * 0.06 / xFactor);
+
+            // Draw cloned histogram with individual settings
+            hFrame->Draw();
+
+            iplt++;
+        //   TText text;
+        //   text.SetTextAlign(31);
+        //   text.SetTextFont(43);
+        //   text.SetTextSize(10);
+        //   text.DrawTextNDC(XtoPad(0.9), YtoPad(0.8), gPad->GetName());
+        }
+    }
+    c1->cd();
+
+    /*
+    TCanvas *c1 = new TCanvas("canv","canv",wx,wy);
+    if (mergeX || mergeY) 
+        c1->Divide(nx,ny,0.0,0.0);
+    else 
+        c1->Divide(nx,ny);
+
+    // c1->cd(0);
+    // c1->SetLeftMargin(0.2);
+    // c1->SetRightMargin(0.2);
+    int iplt = 0;
+    for (int yy=0; yy < ny; yy++){
+        for (int xx=0; xx < nx; xx++){
+            c1->cd(iplt+1);
+            if (yy == 0){
+                gPad->SetTopMargin(0.1);
+            }
+            if (yy == ny-1) {
+                gPad->SetBottomMargin(0.15);
+            }
+            // gPad->SetLeftMargin(0.1);
+            // gPad->SetRightMargin(0.1);
+            if (mXhi != mXlo) drawingstack[iplt].second->GetXaxis()->SetRangeUser(mXlo,mXhi);
+            if (mYhi != mYlo) drawingstack[iplt].second->GetYaxis()->SetRangeUser(mYlo,mYhi);
+            if (mXLabelSize != 0.04) drawingstack[iplt].second->GetXaxis()->SetLabelSize(mXLabelSize);
+            if (mYLabelSize != 0.04) drawingstack[iplt].second->GetYaxis()->SetLabelSize(mYLabelSize);
+            if (mXtitle != "") drawingstack[iplt].second->GetXaxis()->SetTitle(mXtitle.c_str());
+            if (mYtitle != "") drawingstack[iplt].second->GetYaxis()->SetTitle(mYtitle.c_str());
+            drawingstack[iplt].second->Draw();
+            iplt++;
+        }
+    }
+    c1->Update();
+    */
+}
 
 void MultiPlotter::Draw(std::string opt, std::string key){
     if (key.compare("") != 0 && Exists(key)) {
@@ -350,7 +543,18 @@ void MultiPlotter::Draw(std::string opt, std::string key){
     if (mUseDefaultLegend) mLeg = new TLegend(xlo,ylo,0.99,0.99);
     gStyle->SetOptStat(0);
 
+    //check for an X axis divisible by pi, if so make the axis units of pi
     IsDivisibleByPi();
+
+    //apply typical gamma spec labels y = counts / kev, x = energy [kev]
+    if (mGammaSpecLabels) {
+        mXtitle = "Energy [keV]";
+        int bw = max->second->GetBinWidth(1);
+        if (bw > 1) 
+            mYtitle = Form("Counts / %d keV",bw);
+        else
+            mYtitle = "Counts / keV";
+    }
 
     //draw all histos
     std::map<std::string, TH1*>::iterator it = max;
@@ -363,11 +567,20 @@ void MultiPlotter::Draw(std::string opt, std::string key){
         }
         
         if (!mCustomColors) it->second->SetLineColor(mColors[nloops%12]);
-        if (!mCustomColors && mDrawFill) it->second->SetFillColorAlpha(mColors[nloops%12],mFillAlpha);
+        if (mDrawFill) it->second->SetFillColorAlpha(it->second->GetLineColor(),mFillAlpha);
         if (mUseDefaultLegend) mLeg->AddEntry(it->second,it->second->GetName(),"l");
 
         if (mXhi != mXlo) it->second->GetXaxis()->SetRangeUser(mXlo,mXhi);
         if (mYhi != mYlo) it->second->GetYaxis()->SetRangeUser(mYlo,mYhi);
+
+        if (mXtitle != "") it->second->GetXaxis()->SetTitle(mXtitle.c_str());
+        if (mYtitle != "") it->second->GetYaxis()->SetTitle(mYtitle.c_str());
+        it->second->GetXaxis()->SetLabelSize(mXLabelSize);
+        it->second->GetYaxis()->SetLabelSize(mYLabelSize);
+        it->second->GetXaxis()->SetTitleOffset(mXtitleOffset);
+        it->second->GetYaxis()->SetTitleOffset(mYtitleOffset);
+        it->second->GetXaxis()->SetTitleSize(mXtitleSize);
+        it->second->GetYaxis()->SetTitleSize(mYtitleSize);
         
         if (nloops == 0){
             it->second->Draw(opt.c_str());
@@ -380,6 +593,20 @@ void MultiPlotter::Draw(std::string opt, std::string key){
             it->second->Draw(tempOpt.c_str());
             it++;
             nloops++;
+        }
+    }
+
+    //draw peak labels if available
+    if (mPeaksToLabel.size() > 0){
+        int PTL = mPeaksToLabel.size();
+        for (int i=0; i < PTL; i++){
+            double X = std::stoi(mPeaksToLabel[i]);
+            double Y = max->second->GetBinContent(max->second->FindBin(X)) + 0.2*max->second->GetYaxis()->GetXmax();
+            TText *tt = new TText(X,Y,mPeaksToLabel[i].c_str());
+            tt->SetTextAngle(90);
+            tt->SetTextFont(42);
+            tt->SetTextSize(0.035);
+            tt->Draw("same");
         }
     }
 
@@ -535,4 +762,83 @@ bool MultiPlotter::IsDivisibleByPi(){
         it++;
     }
     return true;
+}
+
+void MultiPlotter::CanvasPartition(TCanvas *C, const Int_t Nx, const Int_t Ny, Float_t lMargin, Float_t rMargin, Float_t bMargin, Float_t tMargin){
+   if (!C)
+      return;
+ 
+   // Setup Pad layout:
+   Float_t vSpacing = 0.0;
+   Float_t vStep = (1. - bMargin - tMargin - (Ny - 1) * vSpacing) / Ny;
+ 
+   Float_t hSpacing = 0.0;
+   Float_t hStep = (1. - lMargin - rMargin - (Nx - 1) * hSpacing) / Nx;
+ 
+   Float_t vposd, vposu, vmard, vmaru, vfactor;
+   Float_t hposl, hposr, hmarl, hmarr, hfactor;
+ 
+   for (Int_t i = 0; i < Nx; i++) {
+ 
+      if (i == 0) {
+         hposl = 0.0;
+         hposr = lMargin + hStep;
+         hfactor = hposr - hposl;
+         hmarl = lMargin / hfactor;
+         hmarr = 0.0;
+      } else if (i == Nx - 1) {
+         hposl = hposr + hSpacing;
+         hposr = hposl + hStep + rMargin;
+         hfactor = hposr - hposl;
+         hmarl = 0.0;
+         hmarr = rMargin / (hposr - hposl);
+      } else {
+         hposl = hposr + hSpacing;
+         hposr = hposl + hStep;
+         hfactor = hposr - hposl;
+         hmarl = 0.0;
+         hmarr = 0.0;
+      }
+ 
+      for (Int_t j = 0; j < Ny; j++) {
+ 
+         if (j == 0) {
+            vposd = 0.0;
+            vposu = bMargin + vStep;
+            vfactor = vposu - vposd;
+            vmard = bMargin / vfactor;
+            vmaru = 0.0;
+         } else if (j == Ny - 1) {
+            vposd = vposu + vSpacing;
+            vposu = vposd + vStep + tMargin;
+            vfactor = vposu - vposd;
+            vmard = 0.0;
+            vmaru = tMargin / (vposu - vposd);
+         } else {
+            vposd = vposu + vSpacing;
+            vposu = vposd + vStep;
+            vfactor = vposu - vposd;
+            vmard = 0.0;
+            vmaru = 0.0;
+         }
+ 
+         C->cd(0);
+ 
+         auto name = TString::Format("pad_%d_%d", i, j);
+         auto pad = (TPad *)C->FindObject(name.Data());
+         if (pad)
+            delete pad;
+         pad = new TPad(name.Data(), "", hposl, vposd, hposr, vposu);
+         pad->SetLeftMargin(hmarl);
+         pad->SetRightMargin(hmarr);
+         pad->SetBottomMargin(vmard);
+         pad->SetTopMargin(vmaru);
+ 
+         pad->SetFrameBorderMode(0);
+         pad->SetBorderMode(0);
+         pad->SetBorderSize(0);
+ 
+         pad->Draw();
+      }
+   }
 }
