@@ -559,6 +559,26 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
   if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
     if (!beam) beam = new TVector3(0,0,1);
 
+    //get interaction points
+    TVector3 interaction1 = GetIntPosition(p1); 
+    TVector3 interaction2 = GetIntPosition(p2);
+
+    //calculate xi
+    TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
+    TVector3 reactionPlaneNorm = beam->Cross(interaction1);
+    double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
+    
+    // TVector3 basisNorm = reactionPlaneNorm.Cross(interaction1);
+    // if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+
+    return xi;
+  }
+}
+
+double TGretinaHit::GetXi(double rpLo, double rpHi, double cpLo, double cpHi, bool &gateCondition, const TVector3 *beam, int p1, int p2) const{
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    if (!beam) beam = new TVector3(0,0,1);
+
     //calculate the phase of the crystal wrt the reaction plane
     /*
     TVector3 pos = TGretina::CrystalToGlobal(fCrystalId,0,0,0);
@@ -572,6 +592,10 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     //get interaction points and rotate
     TVector3 interaction1 = GetIntPosition(p1); 
     TVector3 interaction2 = GetIntPosition(p2);
+
+    gateCondition = true;
+    if (GetScatterAngle() < cpLo*TMath::DegToRad() || GetScatterAngle() > cpHi*TMath::DegToRad()) gateCondition = false;
+    if (beam->Angle(interaction1) < rpLo*TMath::DegToRad() || beam->Angle(interaction1) > rpHi*TMath::DegToRad()) gateCondition = false;
 
     // if (beam->Angle(interaction1)*TMath::RadToDeg() < 5 || beam->Angle(interaction1)*TMath::RadToDeg() > 175) return -10; 
 

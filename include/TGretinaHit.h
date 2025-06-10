@@ -120,7 +120,8 @@ public:
   double GetThetaDeg(int point = 0) const { return GetTheta(point)*TMath::RadToDeg(); }
   double GetAlpha(int p1=0, int p2=1) const; //get the angle between two interaction points
   double GetScatterAngle(int p1=0, int p2=1) const; //get the polar compton scattering angle 
-  double GetXi(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
+  double GetXi(const TVector3 *beam=nullptr,int p1=0, int p2=1) const;
+  double GetXi(double rpLo, double rpHi, double cpLo, double cpHi, bool &gateCondition, const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
   double GetXiChris(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
 
   Int_t Compare(const TObject *obj) const { 
@@ -186,6 +187,11 @@ public:
   bool IsClean() const { return !fPad; }
 
   void ScaleIntEng();
+  bool SwapSegments(int s1, int s2) { 
+    if (s1 >= fNumberOfInteractions || s2 >= fNumberOfInteractions) return false;
+    std::swap(fSegments.at(s1),fSegments.at(s2));
+    return true;
+  }
   void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
   void ReverseSegments() { std::reverse(fSegments.begin(),fSegments.end());}
   void ComptonSort();
@@ -197,7 +203,7 @@ private:
  * -------------------
   Int_t     type;       // endiness identifier; droppped.
   Int_t     crystal_id; //                                      -> TGreintaHit.fCrystalId
-  Int_t     num;        // number of interactions of error code -> TGreintaHit.fNumberOfINteractions
+  Int_t     num;        // number of interactions of error code -> TGreintaHit.fNumberOfInteractions
   Float_t   tot_e;      // energy used for decomp               -> TGretinaHit.fCoreEnergy   
   Int_t     core_e[4];  // charge reported at dig for each gain -> TGretinaHit.fCoreCharge[4]
   Long_t    timestamp;  // timestamp for the hit                -> TDetectorHit.fTimestamp
