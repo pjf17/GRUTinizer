@@ -431,8 +431,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit hitMain, hitTrack;
             hit.Copy(hitMain);
             hit.Copy(hitTrack);
-            hit.ComptonSort();
-            hitTrack.TrackerSort();
+            hit.PICCSort();
+            hitTrack.TrackingSort();
             // hit.SortSegments();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
@@ -681,9 +681,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit nnhitMain, nnhitTrack;
             nnhit.Copy(nnhitMain);
             nnhit.Copy(nnhitTrack);
-            nnhit.ComptonSort();
+            nnhit.PICCSort();
             nnhitMain.SortSegments();
-            nnhitTrack.TrackerSort();
+            nnhitTrack.TrackingSort();
             // nnhit.ComptonSort();
             // int cryID = nnhit.GetCrystalId();
             // int ringNum = nnhit.GetRingNumber();

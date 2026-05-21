@@ -120,7 +120,9 @@ public:
   double GetThetaDeg(int point = 0) const { return GetTheta(point)*TMath::RadToDeg(); }
   double GetAlpha(int p1=0, int p2=1) const; //get the angle between two interaction points
   double GetScatterAngle(int p1=0, int p2=1) const; //get the polar compton scattering angle 
-  double GetXi(const TVector3 *beam=nullptr,int p1=0, int p2=1) const;
+  double GetScatterCosine(int p1=0, int p2=1) const; //get the cosine of the polar compton scattering angle 
+  double GetXi(const TVector3 *beam=nullptr,bool extend=false,int p1=0, int p2=1) const;
+  double GetXiSimple(const TVector3 *beam=nullptr, int p1=0, int p2=1) const;
   double GetXi(double rpLo, double rpHi, double cpLo, double cpHi, bool &gateCondition, const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
   double GetXiChris(const TVector3 *beam=nullptr,int p1=0, int p2=1) const; //get the azimuthal compton scattering angle
 
@@ -194,7 +196,9 @@ public:
   }
   void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
   void ReverseSegments() { std::reverse(fSegments.begin(),fSegments.end());}
-  void ComptonSort();
+  void PICCSort();
+  double TrackingSort();
+  std::map<int,int> EquivalentPointMap(const TGretinaHit &comp);
 
 private:
   void SortHits();

@@ -222,7 +222,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit &hit = gretina->GetGretinaHit(i);
       TGretinaHit hitMain;
       hit.Copy(hitMain);
-      hit.ComptonSort();
+      hit.PICCSort();
       if (hit.GetPad() != 0) continue;
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();

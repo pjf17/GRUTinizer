@@ -393,8 +393,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             TGretinaHit hitMain, hitTrack;
             hit.Copy(hitMain);
             hit.Copy(hitTrack);
-            hit.ComptonSort();
-            double tFOM = hitTrack.TrackerSort();
+            hit.PICCSort();
+            // double tFOM = hitTrack.TrackingSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_track = hitTrack.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);

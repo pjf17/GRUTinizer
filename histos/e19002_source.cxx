@@ -261,8 +261,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
       TGretinaHit hitTrack;
       hit.Copy(hitMain);
       hit.Copy(hitTrack);
-      hitTrack.TrackerSort();
-      hit.ComptonSort();
+      hitTrack.TrackingSort();
+      hit.PICCSort();
       double core_energy = hit.GetCoreEnergy();
       double theta = hit.GetTheta();
       double phi = hit.GetPhi();

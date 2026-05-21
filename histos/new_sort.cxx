@@ -360,7 +360,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
         double BETA = GValue::Value("BETA");
         for (int i=0; i < gSize; i++){
           TGretinaHit &hit = gretina->GetGretinaHit(i);
-          hit.ComptonSort();
+          hit.PICCSort();
           double theta = hit.GetTheta();
           double phi = hit.GetPhi();
           double core_energy = hit.GetCoreEnergy();

@@ -341,7 +341,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             if (hit.GetPad() > 0) continue;
             TGretinaHit hitMain;
             hit.Copy(hitMain);
-            hit.ComptonSort();
+            hit.PICCSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double core_energy = hit.GetCoreEnergy();

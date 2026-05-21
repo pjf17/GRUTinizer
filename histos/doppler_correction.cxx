@@ -206,7 +206,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           //BETA CORRECTION
           for (int g=0; g < nGretina; g++){
             TGretinaHit &hit = gretina->GetGretinaHit(g);
-            hit.ComptonSort();
+            hit.PICCSort();
             int cryID = hit.GetCrystalId();
             int ringnum = hit.GetRingNumber();
             

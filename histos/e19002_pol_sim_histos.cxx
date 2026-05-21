@@ -603,7 +603,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
     EnergySmear(hitCopy,rand_gen);
     
     hitCopy.Copy(hitTrack);
-    hitTrack.TrackerSort();
+    hitTrack.TrackingSort();
     auto TrackToMain = hitCopy.EquivalentPointMap(hitTrack);
     
     int nInteractions = hit.NumberOfInteractions();

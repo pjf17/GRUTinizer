@@ -555,7 +555,37 @@ double TGretinaHit::GetScatterAngle(int p1, int p2) const {
   else return -100;
 }
 
-double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
+double TGretinaHit::GetScatterCosine(int p1, int p2) const {
+  if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
+    TVector3 v1 = GetIntPosition(p1);
+    TVector3 diff = GetIntPosition(p2) - v1;
+    return v1.Dot(diff)/diff.Mag()/v1.Mag();
+  }
+  else return -2;
+}
+
+double TGretinaHit::GetXiSimple(const TVector3 *beam, int p1, int p2) const{
+  if (fNumberOfInteractions == 1 || p1 >= fNumberOfInteractions || p2 >= fNumberOfInteractions) 
+    return -1;
+
+  if (!beam) beam = new TVector3(0,0,1);
+
+  //get interaction points
+  TVector3 interaction1 = GetIntPosition(p1); 
+  TVector3 interaction2 = GetIntPosition(p2);
+
+  //get angle between plane norms
+  TVector3 comptonPlaneNorm = interaction1.Cross(interaction2);
+  TVector3 reactionPlaneNorm = beam->Cross(interaction1);
+  double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
+
+  //domain only matters from 0 to 90
+  if (xi > TMath::Pi()/2) xi = TMath::Pi() - xi;
+  
+  return xi;
+}
+
+double TGretinaHit::GetXi(const TVector3 *beam, bool extend, int p1, int p2) const{
   if (fNumberOfInteractions > 1 && p1 < fNumberOfInteractions && p2 < fNumberOfInteractions) {
     if (!beam) beam = new TVector3(0,0,1);
 
@@ -568,8 +598,10 @@ double TGretinaHit::GetXi(const TVector3 *beam, int p1, int p2) const{
     TVector3 reactionPlaneNorm = beam->Cross(interaction1);
     double xi = reactionPlaneNorm.Angle(comptonPlaneNorm);
     
-    // TVector3 basisNorm = reactionPlaneNorm.Cross(interaction1);
-    // if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+    if (extend){
+      TVector3 basisNorm = reactionPlaneNorm.Cross(interaction1);
+      if (basisNorm.Angle(comptonPlaneNorm) > TMath::PiOver2()) xi = TMath::TwoPi() - xi;
+    }
 
     return xi;
   }
@@ -659,8 +691,72 @@ double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
   }
   else return -10;
 }
+ 
+double TGretinaHit::TrackingSort(){
+  if (fNumberOfInteractions > 7 || fNumberOfInteractions < 2) return -1;
+  
+  std::array<int,7> indices;
+  std::array<int,7> best_order;
+  for (int i=0; i < fNumberOfInteractions; i++) {
+    indices[i] = i;
+    best_order[i] = i;
+  }
 
-void TGretinaHit::ComptonSort(){
+  double Etot = GetCoreEnergy();
+  double Esum = 0; //sum int point energies to scale them
+  
+  //store the interaction point positions and energies
+  std::array<TVector3,7> pos;
+  std::array<double,7> eng;
+  for (int i=0; i < fNumberOfInteractions; i++) {
+    pos[i] = GetIntPosition(i);
+    eng[i] = fSegments[i].fEng;
+    Esum += eng[i];
+  }
+  
+  // scale energies in case Esum =/= Etot
+  double scaleFactor = Etot/Esum;
+  for (int i=0; i < fNumberOfInteractions; i++) eng[i] *= scaleFactor;
+
+  // go over all permutations to find the optimal order
+  double chi2 = 1e22;
+  do {
+    double Eg = Etot;
+    double temp_chi2 = 0;
+    for (int i=0; i < fNumberOfInteractions-1; i++) {
+      //get the "energy" cosine
+      double Eprime = Eg - eng[indices[i]];
+      double cosE = 1 - 511/Eg * (Eg/Eprime - 1);
+      Eg = Eprime;
+      
+      //get the scattering angle cos
+      TVector3 posdiff = pos[indices[i+1]] - pos[indices[i]];
+      double cosV = posdiff.Dot(pos[indices[i]])/pos[indices[i]].Mag()/posdiff.Mag();
+      
+      //compare the two via chi2
+      double cosDiff = cosE - cosV;
+      temp_chi2 += cosDiff*cosDiff;
+    }
+
+    // temp_chi2 = TMath::Sqrt(temp_chi2)/(fNumberOfInteractions-1); // Torben's FOM
+    temp_chi2 = temp_chi2/fNumberOfInteractions; // Dirk's FOM
+
+    if (temp_chi2 < chi2){
+      chi2 = temp_chi2;
+      for (int i=0; i < fNumberOfInteractions; i++) best_order[i] = indices[i];
+    }
+
+  } while (std::next_permutation(indices.begin(), indices.begin() + fNumberOfInteractions));
+
+  std::array<interaction_point, 7> tmp;
+  int point_order = 0;
+  for (int i = 0; i < fNumberOfInteractions; ++i) tmp[i] = fSegments[best_order[i]];
+  for (int i = 0; i < fNumberOfInteractions; ++i) fSegments[i] = tmp[i];
+
+  return chi2;
+}
+
+void TGretinaHit::PICCSort(){
   if (fNumberOfInteractions < 2) return;
   
   double FOM = 1e10;
@@ -670,25 +766,30 @@ void TGretinaHit::ComptonSort(){
   
   //scale the interaction points so they match the core energy
   double scaleFactor = 0;
-  for (int i=0; i < fNumberOfInteractions; i++) scaleFactor += GetSegmentEng(i);
+  for (int i=0; i < fNumberOfInteractions; i++) scaleFactor += fSegments[i].fEng;
   scaleFactor = E/scaleFactor;
 
   //find the best first two interaction points that satisfy the minimization function
   for (int fp=0; fp < fNumberOfInteractions; fp++){
     double E1 = fSegments[fp].fEng*scaleFactor;
-    double er = 511.0/E * E1/(E - E1);
+    double cosE = 1 - 511.0/E * E1/(E - E1);
+    double z1 = GetLocalPosition(fp).Z();
+    // double lp1 = lastPointPenalty(E1);
+    double er = (E - E1)/E; 
 
     for (int sp=0; sp < fNumberOfInteractions; sp++){
       if (fp == sp) continue;
-      
-      double cosp = TMath::Cos(GetScatterAngle(fp,sp));
+      double scatter_angle = GetScatterAngle(fp,sp);
+      double cosP = TMath::Cos(scatter_angle);
+      double sinP = TMath::Sin(scatter_angle);
       double E2 = fSegments[sp].fEng*scaleFactor;
-      double x = er + cosp;
-      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(GetScatterAngle(fp,sp)),2) );
-      // double xi = GetXi(fp,sp);
-      double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
-      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*GetLocalPosition(fp).Z()*GetAlpha(fp,sp)*kn*TMath::Sin(GetTheta(fp));
-      ffom *= std::pow(E/E2,2) * GetLocalPosition(sp).Z();
+      double z2 = GetLocalPosition(sp).Z();
+      double diff = std::abs(cosE - cosP);
+      double kn = er*er*(er + 1./er - sinP*sinP); 
+      // double lp2 = lastPointPenalty(E2);
+      double ffom = std::pow(diff,2.0/3)*GetAlpha(fp,sp)*kn //compton scattering
+              *std::pow(E/E1,3)*std::pow(E/E2,2) //energies
+              *z1*z2; //depth
 
       if (ffom < FOM) {
         FOM = ffom;
@@ -712,4 +813,27 @@ void TGretinaHit::ComptonSort(){
   fSegments.insert(fSegments.begin(),ipFP);
 
   return;
+}
+
+std::map<int,int> TGretinaHit::EquivalentPointMap(const TGretinaHit &comp) {
+  std::map<int,int> outmap;
+
+  if (fNumberOfInteractions != comp.NumberOfInteractions()) return outmap;
+
+  for (int i=0; i < fNumberOfInteractions; i++){
+    for (int j=0; j < fNumberOfInteractions; j++){
+      TVector3 posdiff = GetLocalPosition(i) - comp.GetLocalPosition(j);
+      if (GetSegmentEng(i) == comp.GetSegmentEng(j) && posdiff.Mag() == 0) {
+        outmap.insert(std::pair<int,int> (j,i)); //keys are the comp indeces
+        break;
+      }
+    }
+  }
+
+  if (fNumberOfInteractions != (int) outmap.size()) {
+    outmap.clear();
+    return outmap;
+  }
+
+  return outmap;
 }
