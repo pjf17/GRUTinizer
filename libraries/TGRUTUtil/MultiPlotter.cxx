@@ -144,12 +144,25 @@ void MultiPlotter::List(){
     }
 }
 
+void MultiPlotter::ListBackup(){
+    std::map<std::string, TH1*>::iterator it = mHistos_bak.begin();
+    std::map<std::string, TH1*>::iterator end = mHistos_bak.end();
+    while (it != end){
+        std::cout<<it->first<<std::endl;
+        it++;
+    }
+}
+
 TH1* MultiPlotter::GetClone(std::string key){
     return (TH1*) mHistos[key]->Clone();
 }
 
 TH1* MultiPlotter::Get(std::string key){
     return mHistos[key];
+}
+
+TH1* MultiPlotter::GetBackup(std::string key){
+    return mHistos_bak[key];
 }
 
 void MultiPlotter::SetLineWidth(int w){ 
@@ -187,6 +200,13 @@ void MultiPlotter::SetLegendEntry(std::string key, std::string label, std::strin
     mLeg->AddEntry(mHistos[key],label.c_str(),opt.c_str());
 }
 
+void MultiPlotter::SetLegendCoordinates(double x1, double y1, double x2, double y2){
+    mLeg->SetX1(x1);
+    mLeg->SetY1(y1);
+    mLeg->SetX2(x2);
+    mLeg->SetY2(y2);
+}
+
 void MultiPlotter::ResetRange(){
     mXlo = -123;
     mXhi = -123;
@@ -213,22 +233,39 @@ void MultiPlotter::IterateLineStyle(){
 
 void MultiPlotter::Norm(std::string mode){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
-    std::map<std::string, TH1*>::iterator end = mHistos.end();
 
-    if (!it->second->GetSumw2()) it->second->Sumw2();
+    int nHists = mHistos.size();
 
-    double norm = 0.0;
-    if (mode == "area") norm = it->second->Integral();
-    else if (mode == "height") norm = it->second->GetMaximum();
-    else if (mode == "unit") {norm = it->second->GetNbinsX(); it->second->Scale(norm/it->second->Integral());}
-    it++;
-    while (it != end){ 
-        double scaleFactor = 0.0;
-        if (mode == "area" || mode == "unit") scaleFactor = it->second->Integral();
-        else if (mode == "height") scaleFactor = it->second->GetMaximum();
-        it->second->Scale(norm/scaleFactor);
-        it++;
+    //get all the scale factors for each histogram
+    std::vector<std::pair<std::string,double>> scaleFactors(nHists);
+    for (int i=0; i < nHists; ++i) { 
+        if (!it->second->GetSumw2()) it->second->Sumw2();
+        double value = 0;
+        if (mode == "area" || mode == "unit") 
+            value = it->second->Integral();
+        else if (mode == "height")
+            value = it->second->GetMaximum();
+        else if (mode == "counts")
+            value = it->second->GetEntries();
+
+        scaleFactors[i] = std::make_pair(it->first,value);
+        ++it;
     }
+
+    //scale everything by the smallest value, the norm is the first entry
+    std::sort(scaleFactors.begin(),scaleFactors.end(),
+    [](const std::pair<std::string,double> a, const std::pair<std::string,double> b){
+        return a.second < b.second;
+    });
+
+    //if doing unit histograms, make scaling the number of bins
+    if (mode == "unit") {
+        mHistos[scaleFactors[0].first]->Scale(mHistos[scaleFactors[0].first]->GetNbinsX()/scaleFactors[0].second);
+        scaleFactors[0].second = mHistos[scaleFactors[0].first]->GetNbinsX();
+    }
+
+    //scale all histograms to norm factor
+    for (int i=1; i < nHists; ++i) mHistos[scaleFactors[i].first]->Scale(scaleFactors[0].second/scaleFactors[i].second);
 
     //reset the max hist parameter
     mYMax = 0.0;
@@ -332,9 +369,17 @@ void MultiPlotter::FitPeak(double xlo, double xhi, Option_t *opt){
 void MultiPlotter::Integral(double lo, double hi) {
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
+    int xlo, xhi;
+    if (lo == hi) {
+        xlo = 1;
+        xhi = it->second->GetNbinsX();
+    } 
+    else {
+        xlo = it->second->FindBin(lo);
+        xhi = it->second->FindBin(hi);
+    }
+
     while (it != end){
-        int xlo = it->second->FindBin(lo);
-        int xhi = it->second->FindBin(hi);
         printf("%-30s %6.2f\n",it->second->GetName(),it->second->Integral(xlo,xhi));
         it++;
     }
@@ -345,6 +390,7 @@ void MultiPlotter::Add(std::string key, double scale){
     mYMax = 0;
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator end = mHistos.end();
+    mHistos_bak[key] = (TH1*) mHistos[key]->Clone(mHistos[key]->GetName());
     TH1 *hadd = (TH1*) mHistos[key]->Clone("htemp");
     mHistos.erase(key);
     while (it != end){
@@ -645,8 +691,12 @@ void MultiPlotter::RatioToHist(std::string key){
     std::map<std::string, TH1*>::iterator it = mHistos.begin();
     std::map<std::string, TH1*>::iterator div = mHistos.find(key);
     std::map<std::string, TH1*>::iterator end = mHistos.end();
+    div->second->Sumw2();
     while (it != end){
-        if (it != div) it->second->Divide(div->second);
+        if (it != div) {
+            it->second->Sumw2();
+            it->second->Divide(div->second);
+        }
         it++;
     }
     mHistos.erase(key);

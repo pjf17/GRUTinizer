@@ -16,6 +16,7 @@ class MultiPlotter{
         //variables
         int mNHistos = 0;
         std::map<std::string, TH1*> mHistos;
+        std::map<std::string, TH1*> mHistos_bak;
         TLegend *mLeg = 0;
         bool mUseDefaultLegend = true;
 
@@ -66,9 +67,11 @@ class MultiPlotter{
         THStack *CreateStack();
         void Erase(std::string key);
         void List();
+        void ListBackup();
 
         TH1 *GetClone(std::string key);
         TH1 *Get(std::string key);
+        TH1 *GetBackup(std::string key);
 
         void LabelPeaks(std::vector<std::string> peaks) {mPeaksToLabel = peaks;}
         
@@ -93,6 +96,7 @@ class MultiPlotter{
         void SetGammaSpecLabels(bool setting=true) {mGammaSpecLabels = setting;}
 
         void SetLegendEntry(std::string key, std::string label, std::string opt="l");
+        void SetLegendCoordinates(double x1, double y1, double x2, double y2);
         void ResetRange();
         void IterateLineStyle();
         void Integral(double lo=-1, double hi=-1);
@@ -111,7 +115,7 @@ class MultiPlotter{
         
         void Draw(std::string opt="hist",std::string key="");
         void Draw(int nx, int ny, int wx, int wy, bool mergeX=false, bool mergeY=false);
-
+        
         void Add(std::string key, double scale=1.0);
         // void Draw(int ndraw=100000, int noffset=0);
 
