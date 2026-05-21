@@ -107,48 +107,45 @@ double lastPointPenalty(double x){
   return val + 1;
 }
 
-void comptonSort(const TGretinaHit &ghit, int &FP, int &SP) {
-  double FOM = 1e10;
+void comptonSortParts(const TGretinaHit &ghit, int &FP, int &SP, int PART=1) {
   int N = ghit.NumberOfInteractions();
-  double ipFactor = 308.76*std::pow(N,-0.542);
+  if (N < 2) return;
+  
+  double FOM = 1e10;
+  FP = 0; 
+  SP = 1;
+  double E = ghit.GetCoreEnergy();
+  
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < N; i++) scaleFactor += ghit.GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
+
+  //find the best first two interaction points that satisfy the minimization function
   for (int fp=0; fp < N; fp++){
-    double E = ghit.GetCoreEnergy();
-    double E1 = ghit.GetSegmentEng(fp);
+    double E1 = ghit.GetSegmentEng(fp)*scaleFactor;
     double er = 511.0/E * E1/(E - E1);
+
     for (int sp=0; sp < N; sp++){
       if (fp == sp) continue;
+      
       double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
-      double E2 = ghit.GetSegmentEng(sp);
+      double E2 = ghit.GetSegmentEng(fp)*scaleFactor;
       double x = er + cosp;
-      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
-      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z(); //*std::pow(E/E2,1.0/3);
-      ffom *= std::pow(E/E2,2)*TMath::Sqrt(ghit.GetLocalPosition(sp).Z());
-      // ffom /= TMath::Sqrt(abs(E1-125)*abs(E2-125))/E;
-      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2);
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2));
+      
+      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,3); //compton scattering
+      if (PART>=2) ffom *= kn;
+      if (PART>=3) ffom *= std::pow(E/E2,2)*lastPointPenalty(E1)*lastPointPenalty(E2);
+      if (PART>=4) ffom *= ghit.GetLocalPosition(fp).Z()*ghit.GetLocalPosition(sp).Z();
 
       if (ffom < FOM) {
         FOM = ffom;
         FP = fp;
         SP = sp;
       }
-      // if (fp == sp) continue;
-      // double E2 = ghit.GetSegmentEng(sp);
-      // double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
-      // double x = er + cosp;
-      // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
-      // // double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
-      // // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*kn*E/E1;
-      // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,2)*std::pow(E/E2,1.0/3)*kn;
-      // // double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,2)*kn;
-
-      // if (ffom < FOM) {
-      //   FOM = ffom;
-      //   FP = fp;
-      //   SP = sp;
-      // }
     }
   }
-  return;
 }
 
 void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
@@ -393,11 +390,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
             //skip if padnum is not 0
             if (hit.GetPad() > 0) continue;
 
-            TGretinaHit hitMain;
+            TGretinaHit hitMain, hitTrack;
             hit.Copy(hitMain);
+            hit.Copy(hitTrack);
             hit.ComptonSort();
+            double tFOM = hitTrack.TrackerSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double energy_corrected_track = hitTrack.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             // double energy = hit.GetDoppler(outgoingBeta);
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
@@ -417,11 +417,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
               total_corrected_energy += energy_corrected;
               total_core_energy += core_energy;
 
-              // //phi correction
-              // double phiCorr = (s800->Azita() + hit.GetPhi())*TMath::RadToDeg();
-              // if (phiCorr > 360) phiCorr -= 360;
-              // obj.FillHistogram(dirname, "phi_correction_before",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta));
-              // obj.FillHistogram(dirname, "phi_correction_after",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta,&track));
+              //phi correction
+              double phiCorr = (s800->Azita() + hit.GetPhi())*TMath::RadToDeg();
+              if (phiCorr > 360) phiCorr -= 360;
+              obj.FillHistogram(dirname, "phi_correction_before",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta));
+              obj.FillHistogram(dirname, "phi_correction_after",360,0,360,phiCorr,400,1350,1750,hit.GetDoppler(outgoingBeta,&track));
 
               obj.FillHistogram(dirname, "gretina_theta_vs_phi",360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
               //summary spectra
@@ -438,11 +438,46 @@ void MakeHistograms(TRuntimeObjects& obj) {
               //   beta_lo += beta_step;
               // }
 
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta",85,35*TMath::DegToRad(),120*TMath::DegToRad(),theta,1000,1000,2000,energy_corrected);
-              obj.FillHistogram(dirname, "gam_core_sgl_prompt_vs_theta",85,35*TMath::DegToRad(),120*TMath::DegToRad(),theta,1000,1000,2000,core_energy);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_theta",85,35,120,theta*TMath::RadToDeg(),1000,1000,2000,energy_corrected);
+              obj.FillHistogram(dirname, "gam_core_sgl_prompt_vs_theta",85,35,120,theta*TMath::RadToDeg(),1000,1000,2000,core_energy);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_crdc1x",300,-300,300, crdc_1_x,2000,0,8000,energy_corrected);
+
+              // obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_FOM",400,0,4,tFOM,4096,0,8192, energy_corrected);
 
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt",10000,0,10000, energy_corrected);
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main",8192,0,8192, energy_corrected_main);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main",10000,0,10000, energy_corrected_main);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track",10000,0,10000, energy_corrected_track);
+              TVector3 diffMain = hit.GetPosition() - hitMain.GetPosition();
+              TVector3 diffTrack = hit.GetPosition() - hitTrack.GetPosition();
+              // if (diff1.Mag() != 0 || diff2.Mag() != 0){
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_ORGATE",8192,0,8192, energy_corrected);
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main_ORGATE",8192,0,8192, energy_corrected_main);
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track_ORGATE",8192,0,8192, energy_corrected_track);
+              // } else {
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_NOTORGATE",8192,0,8192, energy_corrected);
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main_NOTORGATE",8192,0,8192, energy_corrected_main);
+              //   obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track_NOTORGATE",8192,0,8192, energy_corrected_track);
+              // }
+              if (diffMain.Mag() != 0) {
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_diff_picc_main",8192,0,8192, energy_corrected);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_diff_main",8192,0,8192, energy_corrected_main);
+              }
+              if (diffTrack.Mag() != 0) {
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_diff_picc_track",8192,0,8192, energy_corrected);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_diff_track",8192,0,8192, energy_corrected_track);
+              }
+              
+              if (nInteractions > 1){
+                obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_NINT>1",4096,0,4096, energy_corrected);
+                obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_main_NINT>1",4096,0,4096, energy_corrected_main);
+                int partfp = 0, partsp = 1;
+                comptonSortParts(hitMain,partfp,partsp,4);
+                if (partfp != 0) {
+                  obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_NINT>1_diff",4096,0,4096, energy_corrected);
+                  obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_main_NINT>1_diff",4096,0,4096, energy_corrected_main);
+                }
+              }
+
               obj.FillHistogram(dirname, "gam_core_sgl_prompt",8192,0,8192, core_energy);
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_nInteraction",10,0,10,nInteractions,1024,0,4096, energy_corrected);
               obj.FillHistogram(dirname, "gam_dop_sgl_vs_ringnum",6,4,16,hit.GetRingNumber(),10000,0,10000, energy_corrected);
@@ -608,10 +643,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
           //NNADDBACK
           
-          int nnSize = gretina->NNAddbackSize();
+          int nnSize = gretina->NewNNAddbackSize();
           std::vector<TGretinaHit> goodNNGretHit;
           for (int i=0; i < nnSize; i++) if (gretina->GetNNAddbackHit(i).GetABDepth() < 3) goodNNGretHit.push_back(gretina->GetNNAddbackHit(i));
           int nGood = goodNNGretHit.size();
+          // for (int i=0; i < nGood; i++) goodNNGretHit[i].SortSegments();
+          // for (int i=0; i < nGood; i++) goodNNGretHit[i].ComptonSort();
           for (int i=0; i < nGood; i++){
             //get hit and hit data 
             TGretinaHit nnhit = goodNNGretHit[i];

@@ -137,13 +137,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
   double beta = GValue::Value("BETA");
   double simBeta = simHit.GetBeta();
   bool isFEP = simHit.IsFEP();
-  obj.FillHistogram("ucgretina","beta_sim",200,0.3,0.6,simBeta);
+  obj.FillHistogram("ucgretina","beta_sim",600,0.0,0.6,simBeta);
   //S800 coordinates
   if (!stopped){
     obj.FillHistogram("s800sim","ata", 600,-0.1,0.1, s800sim->GetS800SimHit(0).GetATA());
     obj.FillHistogram("s800sim","bta", 600,-0.1,0.1, s800sim->GetS800SimHit(0).GetBTA());
     obj.FillHistogram("s800sim","yta", 1000,-0.003,0.003, s800sim->GetS800SimHit(0).GetYTA());
     obj.FillHistogram("s800sim","dta", 1000,-0.5,0.5, s800sim->GetS800SimHit(0).GetDTA());
+    obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   } else {
     obj.FillHistogram("gretsim","Sim Energies",10000,0,10000,simHit.GetEn());
   }
@@ -162,6 +163,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
   int gSize = gretina->Size();
   for (int i=0; i < gSize; i++){
     TGretinaHit &hit = gretina->GetGretinaHit(i);
+    if (!efficiencyCorrection(rand_gen,hit)) continue;
 
     double core_energy = hit.GetCoreEnergy();
     int cryID = hit.GetCrystalId();
@@ -214,10 +216,12 @@ void MakeHistograms(TRuntimeObjects& obj) {
     // }
     double dop_corrected;
 
-    if (!stopped || !std::isnan(beta)){
-      // dop_corrected = hit.GetDoppler(s800sim->AdjustedBeta(beta), &track); 
-      dop_corrected = hit.GetDoppler(beta, &track); 
-      // dop_corrected = hit.GetDopplerYta(beta); 
+    if (!stopped && !std::isnan(beta)){
+      // dop_corrected = hit.GetDoppler(s800sim->AdjustedBeta(beta), &track); // for S41 sims
+      dop_corrected = hit.GetDoppler(beta, &track); // for Ar sims
+    } 
+    else if (stopped && !std::isnan(beta)){
+      dop_corrected = hit.GetDoppler(beta);
     } 
     else{
       dop_corrected = hit.GetCoreEnergy();
@@ -226,8 +230,9 @@ void MakeHistograms(TRuntimeObjects& obj) {
     obj.FillHistogram(dirname,"HitPhi_v_HitTheta",180,0,180,180-theta*TMath::RadToDeg(),360,0,360,phi*TMath::RadToDeg());
     // obj.FillHistogram(dirname,Form("HitPhi_v_HitTheta_Smeared_c%d",detMap[cryID]),180,0,180,180-theta_smear*TMath::RadToDeg(),360,0,360,phi_smear*TMath::RadToDeg());
     obj.FillHistogram(dirname,"CoreEnergy",10000,0,10000,core_energy);
+    if (isFEP) obj.FillHistogram(dirname,"CoreEnergy_FEP",10000,0,10000,core_energy);
 
-    obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",4000,0,4000,dop_corrected,100,0,3,hit.GetTheta());
+    obj.FillHistogram(dirname,"Theta_vs_Energy_btyd",1000,0,4000,dop_corrected,82,35,117,hit.GetTheta()*TMath::RadToDeg());
     if (hit.NumberOfInteractions() > 1 && isFEP) obj.FillHistogram(dirname,"Fep_dopEn_vs_xi",360,0,TMath::TwoPi(),hit.GetXi(),4000,0,4000,dop_corrected);
 
     // obj.FillHistogram(dirname,"EmissionAngle_vs_DetectedAngle",180,0,180,hit.GetTheta()*TMath::RadToDeg(),180,0,180,simHit.GetTheta()*TMath::RadToDeg());
@@ -240,7 +245,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
     if (bin75) obj.FillHistogram(dirname,"dopEn_bin75",10000,0,10000,dop_corrected);
     if (bin100) obj.FillHistogram(dirname,"dopEn_bin100",10000,0,10000,dop_corrected);
     obj.FillHistogram(dirname,Form("dopEn_%d",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
-    double xi = hit.GetXi(&track);
+    double xi = 0; 
+    if (stopped)
+      xi = hit.GetXi();
+    else 
+      xi = hit.GetXi(&track);
     double simpleXi = xi;
     if (simpleXi > TMath::Pi()/2) simpleXi = TMath::Pi() - simpleXi;
     bool perp = simpleXi*TMath::RadToDeg() > 60 && hit.NumberOfInteractions() > 1;
@@ -276,7 +285,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
       if (perp) obj.FillHistogram(dirname, "dopEn_xi_perp_fep",10000,0,10000,dop_corrected);
       if (para) obj.FillHistogram(dirname, "dopEn_xi_para_fep",10000,0,10000,dop_corrected);
       if (para || perp) obj.FillHistogram(dirname, "dopEn_xi_psum_fep",10000,0,10000,dop_corrected);
-      obj.FillHistogram(dirname,Form("theta_%d_fep",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
+      obj.FillHistogram(dirname,Form("dopEn_%d_fep",thetaGate(hit.GetTheta())),10000,0,10000,dop_corrected);
       // if (cryID > 40) obj.FillHistogram(dirname,"dopEn_90qds_fep",10000,0,10000,dop_corrected);     
     } else {
       obj.FillHistogram(dirname,"dopEn_bg",10000,0,10000,dop_corrected);

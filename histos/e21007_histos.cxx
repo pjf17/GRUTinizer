@@ -173,7 +173,7 @@ void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
       double x = er + cosp;
       double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2) );
       double ffom = std::pow(std::abs(1-x),2.0/3) + std::pow(E1/E - 1/(1+511/E/(1-cosp)),2);
-      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,2)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
+      ffom *= lastPointPenalty(E1)*lastPointPenalty(E2)*std::pow(E/E1,3)*ghit.GetLocalPosition(fp).Z()*ghit.GetAlpha(fp,sp)*kn;
       ffom *= std::pow(E/E2,2) * ghit.GetLocalPosition(sp).Z();
 
       if (ffom < FOM) {
@@ -184,6 +184,47 @@ void comptonSortTest(const TGretinaHit &ghit, int &FP, int &SP) {
     }
   }
   return;
+}
+
+void comptonSortParts(const TGretinaHit &ghit, int &FP, int &SP, int PART=1) {
+  int N = ghit.NumberOfInteractions();
+  if (N < 2) return;
+  
+  double FOM = 1e10;
+  FP = 0; 
+  SP = 1;
+  double E = ghit.GetCoreEnergy();
+  
+  //scale the interaction points so they match the core energy
+  double scaleFactor = 0;
+  for (int i=0; i < N; i++) scaleFactor += ghit.GetSegmentEng(i);
+  scaleFactor = E/scaleFactor;
+
+  //find the best first two interaction points that satisfy the minimization function
+  for (int fp=0; fp < N; fp++){
+    double E1 = ghit.GetSegmentEng(fp)*scaleFactor;
+    double er = 511.0/E * E1/(E - E1);
+
+    for (int sp=0; sp < N; sp++){
+      if (fp == sp) continue;
+      
+      double cosp = TMath::Cos(ghit.GetScatterAngle(fp,sp));
+      double E2 = ghit.GetSegmentEng(fp)*scaleFactor;
+      double x = er + cosp;
+      double kn = pow((E - E1)/E,2)*((E-E1)/E + E/(E-E1) - pow(TMath::Sin(ghit.GetScatterAngle(fp,sp)),2));
+      
+      double ffom = std::pow(std::abs(1-x),2.0/3)*ghit.GetAlpha(fp,sp)*std::pow(E/E1,3); //compton scattering
+      if (PART>=2 && PART != 5 && PART != 6) ffom *= kn;
+      if (PART>=3 && PART != 6) ffom *= std::pow(E/E2,2)*lastPointPenalty(E1)*lastPointPenalty(E2);
+      if (PART>=4) ffom *= ghit.GetLocalPosition(fp).Z()*ghit.GetLocalPosition(sp).Z();
+
+      if (ffom < FOM) {
+        FOM = ffom;
+        FP = fp;
+        SP = sp;
+      }
+    }
+  }
 }
 
 TVector3 *randomBeam(TRandom3 *rand){
@@ -387,12 +428,15 @@ void MakeHistograms(TRuntimeObjects& obj) {
           double total_core_energy = 0;
           for (int i=0; i < gSize; i++){
             TGretinaHit &hit = gretina->GetGretinaHit(i);
-            TGretinaHit hitMain;
+            TGretinaHit hitMain, hitTrack;
             hit.Copy(hitMain);
+            hit.Copy(hitTrack);
             hit.ComptonSort();
+            hitTrack.TrackerSort();
             // hit.SortSegments();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double energy_corrected_track = hitTrack.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy = hit.GetDoppler(outgoingBeta);
             double core_energy = hit.GetCoreEnergy();
             double theta = hit.GetTheta();
@@ -411,6 +455,22 @@ void MakeHistograms(TRuntimeObjects& obj) {
               total_corrected_energy += energy_corrected;
               total_core_energy += core_energy;
 
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt",8192,0,8192, energy_corrected);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main",8192,0,8192, energy_corrected_main);
+              obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track",8192,0,8192, energy_corrected_track);
+              TVector3 diff1 = hit.GetPosition() - hitMain.GetPosition();
+              TVector3 diff2 = hit.GetPosition() - hitTrack.GetPosition();
+
+              if (diff1.Mag() != 0 || diff2.Mag() != 0){
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_ORGATE",8192,0,8192, energy_corrected);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main_ORGATE",8192,0,8192, energy_corrected_main);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track_ORGATE",8192,0,8192, energy_corrected_track);
+              } else {
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_NOTORGATE",8192,0,8192, energy_corrected);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main_NOTORGATE",8192,0,8192, energy_corrected_main);
+                obj.FillHistogram(dirname, "gam_dop_sgl_prompt_track_NOTORGATE",8192,0,8192, energy_corrected_track);
+              }
+
               obj.FillHistogram(dirname, "gretina_theta_vs_phi",360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
               // obj.FillHistogram(dirname, Form("gretina_theta_vs_phi_rn%02d",hit.GetRingNumber()),360,0,360,phi*TMath::RadToDeg(),180,0,180,theta*TMath::RadToDeg());
               
@@ -419,12 +479,21 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "summary_core_energy_prompt",48,0,48,detMapRing[cryID],4096,0,4096, core_energy);
               // if ( !((1002 < energy_corrected && energy_corrected < 1034) || (1064 < energy_corrected && energy_corrected < 1094) ||
               //      (712 < energy_corrected && energy_corrected < 764)) )
-              
-              obj.FillHistogram(dirname, "gam_dop_sgl_prompt",8192,0,8192, energy_corrected);
+
               if (nInteractions > 1) {
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_nint>1",8192,0,8192, energy_corrected);
                 obj.FillHistogram(dirname, "gam_dop_sgl_prompt_main_nint>1",8192,0,8192, energy_corrected_main);
               }
+              if (nInteractions > 1){
+                obj.FillHistogram(dirname, "PART_gam_dop_sgl_prompt_NINT>2",10000,0,10000, energy_corrected);
+                obj.FillHistogram(dirname, "PART_gam_dop_sgl_prompt_main_NINT>2",8192,0,8192, energy_corrected_main);
+                for (int PART=1; PART<=6; PART++){
+                  int partfp = 0, partsp = 1;
+                  comptonSortParts(hitMain,partfp,partsp,PART);
+                  obj.FillHistogram(dirname, Form("PART%d_gam_dop_sgl_prompt",PART),4096,0,4096, hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track, partfp));
+                }
+              }
+
               obj.FillHistogram(dirname, "gam_dop_sgl_prompt_vs_nInteraction",10,0,10,nInteractions,1024,0,4096, energy_corrected);
               // obj.FillHistogram(dirname, Form("gam_dop_sgl_prompt_rn%02d",hit.GetRingNumber()),4096,0,4096, energy_corrected);
 
@@ -435,6 +504,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
               //   double energy_corrected2 = hit2.GetDopplerYta(s800->AdjustedBeta(outgoingBeta), s800->GetYta(), &track);
               //   obj.FillHistogram(dirname, "gamma_gamma",2048,0,4096,energy_corrected2,2048,0,4096,energy_corrected);
               // }
+              if (nInteractions == 1 || (hit.GetXiSimple(&track)*TMath::RadToDeg() > 80 && hit.GetAlpha()*TMath::RadToDeg() < 2 && nInteractions < 3))
+                obj.FillHistogram(dirname, "gam_dop_sngl_super_filtered",4096,0,4096, energy_corrected);
 
               if (nInteractions > 1){
                 // int myFP, mySP;
@@ -442,11 +513,14 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 double myxi = hit.GetXi(&track);
                 
                 obj.FillHistogram(dirname, "gam_sngl_vs_xi",180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
-                for (int ri=0; ri<400; ri++) {
-                  double randXi = hit.GetXi(randomBeam(rand_gen));
-                  obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
-                  obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
-                }
+                if (myxi*TMath::RadToDeg() > 120) obj.FillHistogram(dirname, "gam_sngl_vs_xi>120",4096,0,4096, energy_corrected);
+                if (myxi*TMath::RadToDeg() < 60) obj.FillHistogram(dirname, "gam_sngl_vs_xi<60",4096,0,4096, energy_corrected);
+                
+                // for (int ri=0; ri<400; ri++) {
+                //   double randXi = hit.GetXi(randomBeam(rand_gen));
+                //   obj.FillHistogram(dirname, "gam_sngl_vs_xirand",180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                //   obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xirand_%d",cryID),180,0,TMath::Pi(),randXi,4096,0,4096, energy_corrected);
+                // }
                 // for (int ri=0; ri < 1000; ri++) obj.FillHistogram(dirname, "gam_sngl_vs_xi_rand",180,0,TMath::Pi(),hit.GetXi(randomBeam(rand_gen)),4096,0,4096, energy_corrected);
                 // if (myxi > TMath::PiOver2())
                 //   obj.FillHistogram(dirname, "gam_sngl_xi>90",4096,0,4096, energy_corrected);
@@ -458,7 +532,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
                 // else
                 //   obj.FillHistogram(dirname, "gam_sngl_xi_rand<90",4096,0,4096, energy_corrected);
 
-                obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
+                // obj.FillHistogram(Form("polarization_%s",gates["outgoing"].at(ind_out)->GetName()), Form("gam_sngl_vs_xi_%d",cryID),180,0,TMath::Pi(),myxi,4096,0,4096, energy_corrected);
                 // if (nInteractions < 4) obj.FillHistogram(dirname, "new_gam_sngl_vs_new_xi<4intp",360,0,TMath::TwoPi(),myxi,4096,0,4096, new_energy);
                 // obj.FillHistogram(dirname, "new_gam_sngl",4096,0,4096, new_energy);
 
@@ -599,14 +673,23 @@ void MakeHistograms(TRuntimeObjects& obj) {
           if (total_core_energy > 0) obj.FillHistogram(dirname,"total_core_energy_vs_prompt_multi",20,0,20,nPromptGamma,2048,0,8192,total_core_energy);
 
           //NNADDBACK
+          
           int nnSize = gretina->NNAddbackSize();
           for (int i=0; i < nnSize; i++){
             //get hit and hit data 
             TGretinaHit nnhit = gretina->GetNNAddbackHit(i);
+            TGretinaHit nnhitMain, nnhitTrack;
+            nnhit.Copy(nnhitMain);
+            nnhit.Copy(nnhitTrack);
+            nnhit.ComptonSort();
+            nnhitMain.SortSegments();
+            nnhitTrack.TrackerSort();
             // nnhit.ComptonSort();
             // int cryID = nnhit.GetCrystalId();
             // int ringNum = nnhit.GetRingNumber();
             double nnEnergy_corrected = nnhit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double nnEnergy_corrected_main = nnhitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
+            double nnEnergy_corrected_track = nnhitTrack.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double nnCore_energy = nnhit.GetCoreEnergy();
             // double theta = nnhit.GetThetaDeg();
             // double phi = nnhit.GetPhiDeg();
@@ -621,6 +704,8 @@ void MakeHistograms(TRuntimeObjects& obj) {
             
             if (nnhit.GetABDepth() < 3) {
               obj.FillHistogram(dirname, "gamma_corrected_addback_prompt", 8192,0,8192, nnEnergy_corrected);
+              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_main", 8192,0,8192, nnEnergy_corrected_main);
+              obj.FillHistogram(dirname, "gamma_corrected_addback_prompt_track", 8192,0,8192, nnEnergy_corrected_track);
               // GAMMA GAMMA CORRELATION
               for (int j=0; j < nnSize; j++){
                 if (i==j) continue;
