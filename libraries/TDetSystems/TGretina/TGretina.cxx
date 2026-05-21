@@ -83,6 +83,172 @@ void TGretina::BuildAddback(int EngRange) const {
     }
   }
 }
+/*
+void TGretina::NewBuildNNAddback(int EngRange) const {
+  int nHits = gretina_hits.size();
+  if( nn_hits.size() > 0 || nHits == 0) {
+    return;
+  }
+
+  //simple case for 1 hit in the event
+  if (nHits == 1) {
+    nn_hits.push_back(gretina_hits[0]);
+    nn_hits.back().SetABDepth(0);
+    return;
+  }
+
+  //now get the temp hits
+  std::vector<TGretinaHit> temp_hits = gretina_hits;
+
+  if(EngRange>=0 && EngRange<4){
+    for(auto& hit : temp_hits) {
+      hit.SetCoreEnergy(hit.GetCoreEnergy(EngRange));
+    }
+  }
+
+  //cache all the of crystal ids
+  std::vector<int> xtalIds;
+  for (int i=0; i < nHits; i++) xtalIds.push_back(temp_hits[i].GetCrystalId());
+
+  //build a vector of sets for each hit
+  //sets where there are two matches are n1
+  //sets where there are 3 matches are n2
+  std::vector<std::set<int>> sequences;
+
+  for(int i=0; i < nHits; i++){
+    std::set<int> tempset;
+    for(int j=0; j < nHits; j++){
+      if (IsNeighbor(xtalIds[i],xtalIds[j])) {
+        tempset.insert(j);
+      }
+    }
+
+    if (tempset.size() == 0) { //n0, we can handle this easy
+      nn_hits.push_back(temp_hits[i]);
+      nn_hits.back().SetABDepth(0);
+    }
+    else { //otherwise compare the sets
+      tempset.insert(i); //add the point idx itself for the sequence
+      sequences.push_back(tempset);
+    }
+  }
+
+  std::vector<int> matches;
+  for (int i=sequences.size()-1; i >= 0; --i){
+    for (int j= i-1; j >= 0; --j){
+      if (sequences[i] == sequences[j]) matches.push_back(j);
+    }
+    int depth = sequences[i].size() - 1; //dont count self
+    
+    //found a sequence match, add all the hits together
+    if (matches.size() > 0 && depth < 3){ 
+      auto sq = sequences[i].begin();
+      nn_hits.push_back(temp_hits[*sq]);
+      ++sq;
+      while (sq != sequences[i].end()) {
+        nn_hits.back().NNAdd(temp_hits[*sq]);
+        ++sq;
+      }
+      nn_hits.back().SetABDepth(depth);
+    }
+    // no matches, it's not n0, n1, or n2, so ng
+    else {
+      for (auto sq=sequences[i].begin(); sq != sequences[i].end(); ++sq){
+        nn_hits.push_back(temp_hits[*sq]);
+        nn_hits.back().SetABDepth(3);
+      }
+    }
+
+    //erase the other matches, and it goes from biggest idx to smallest
+    for (int j=0; j < (int) matches.size(); ++j){
+      sequences.erase(sequences.begin() + matches[j]);
+    }
+    matches.clear();
+  }
+  
+}
+*/
+
+void TGretina::NewBuildNNAddback(int EngRange) const {
+  int nHits = gretina_hits.size();
+  if( nn_hits.size() > 0 || nHits == 0) {
+    return;
+  }
+  if (nHits == 1) {
+    nn_hits.push_back(gretina_hits[0]);
+    nn_hits.back().SetABDepth(0);
+    return;
+  }
+
+  std::vector<TGretinaHit> temp_hits = gretina_hits;
+  if(EngRange>=0 && EngRange<4){
+    for(auto& hit : temp_hits) {
+      hit.SetCoreEnergy(hit.GetCoreEnergy(EngRange));
+    }
+  }
+
+  // Cache crystal IDs
+  std::vector<int> xtalIds;
+  xtalIds.reserve(nHits);
+  for (int i=0; i < nHits; i++) {
+    xtalIds.push_back(temp_hits[i].GetCrystalId());
+  }
+
+  // Use vector to get sequences of neighboring crystals
+  std::vector<std::vector<int>> sequences;
+  sequences.reserve(nHits);
+  
+  for(int i=0; i < nHits; i++){
+    std::vector<int> tempseq;
+    tempseq.reserve(6); // Reserve typical max neighbors
+    
+    //find all possible neighbors for the current hit
+    for(int j=0; j < nHits; j++){
+      if (IsNeighbor(xtalIds[i], xtalIds[j])) {
+        tempseq.push_back(j);
+      }
+    }
+    
+    if (tempseq.size() == 0) { // n0
+      nn_hits.push_back(temp_hits[i]);
+      nn_hits.back().SetABDepth(0);
+    }
+    else {
+      tempseq.push_back(i); // Add self
+      std::sort(tempseq.begin(), tempseq.end()); // Sort for comparison
+      sequences.push_back(tempseq);
+    }
+  }
+
+  // Group identical sequences using a map where the key is the vector sequence
+  std::map<std::vector<int>, std::vector<int>> sequenceGroups;
+  for (int i=0; i < (int)sequences.size(); i++) {
+    sequenceGroups[sequences[i]].push_back(i);
+  }
+
+  // Process each unique sequence once 
+  for (std::map<std::vector<int>, std::vector<int>>::iterator it = sequenceGroups.begin(); it != sequenceGroups.end(); ++it) {
+    const std::vector<int>& seq = it->first;
+    
+    int depth = seq.size() - 1; // Don't count self
+    
+    if (depth < 3) { // n1 or n2
+      nn_hits.push_back(temp_hits[seq[0]]);
+      for (int j=1; j < (int)seq.size(); j++) {
+        nn_hits.back().NNAdd(temp_hits[seq[j]]);
+      }
+      nn_hits.back().SetABDepth(depth);
+    }
+    else { // ng
+      for (int k=0; k < (int)seq.size(); k++) {
+        nn_hits.push_back(temp_hits[seq[k]]);
+        nn_hits.back().SetABDepth(3);
+      }
+    }
+  }
+
+  return;
+}
 
 void TGretina::BuildNNAddback(int SortDepth, int EngRange) const {
   //See D. Weisshaar et al., Nucl. Instrum. Methods Phys. Res., Sect. A 847, 18, (2017). Sec 3.3 for details

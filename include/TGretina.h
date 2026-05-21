@@ -24,6 +24,7 @@ public:
   virtual size_t Size() const { return gretina_hits.size(); }
   virtual Int_t AddbackSize(int EngRange=-1) { BuildAddback(EngRange); return addback_hits.size(); }
   virtual Int_t NNAddbackSize(int SortDepth=6, int EngRange=-1) { BuildNNAddback(SortDepth,EngRange); return nn_hits.size(); }
+  virtual Int_t NewNNAddbackSize(int EngRange=-1) { NewBuildNNAddback(EngRange); return nn_hits.size(); }
   void ResetAddback() { addback_hits.clear();}
 
   virtual void InsertHit(const TDetectorHit& hit);
@@ -91,6 +92,7 @@ public:
 private:
   void BuildAddback(int EngRange=-1) const;
   void BuildNNAddback(int SortDepth=6, int EngRange=-1) const;
+  void NewBuildNNAddback(int EngRange=-1) const;
 #ifndef __CINT__ 
   static std::function<bool(const TGretinaHit&,const TGretinaHit&)> fAddbackCondition;  
 #endif
