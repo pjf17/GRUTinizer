@@ -1072,6 +1072,32 @@ bool GCanvas::Process1DKeyboardPress(Event_t *event,UInt_t *keysym) {
       edited = true;
       break;
 
+    case kKey_A:
+      if(GetNMarkers() == 0) {
+        break;
+      }
+      RemoveMarker("all");
+      edited = true;
+      break;
+
+    case kKey_a:
+      if(GetNMarkers()<2) {
+        break;
+      }
+      gHist=0;
+      for(auto hist : hists){
+        if(hist->InheritsFrom(GH1::Class())){
+          gHist = (GH1D*)hist;
+          break;
+        }
+      }
+      if (gHist){
+        int binlow = fMarkers.at(fMarkers.size()-1)->binx;
+        int binhigh = fMarkers.at(fMarkers.size()-2)->binx;
+        if(binlow > binhigh)  std::swap(binlow, binhigh);
+        printf("%3.0f %3.0f\n",gHist->GetBinCenter(binlow),gHist->GetBinCenter(binhigh-1));
+      }
+
     case kKey_m:
       SetMarkerMode(true);
       break;
