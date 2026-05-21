@@ -197,7 +197,7 @@ public:
   void SortSegments() { std::sort(fSegments.begin(),fSegments.end());}
   void ReverseSegments() { std::reverse(fSegments.begin(),fSegments.end());}
   void PICCSort();
-  double TrackingSort(int maxInteractions=7);
+  double TrackingSort();
   std::map<int,int> EquivalentPointMap(const TGretinaHit &comp);
 
 private:
