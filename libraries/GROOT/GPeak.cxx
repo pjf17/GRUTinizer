@@ -280,8 +280,7 @@ Bool_t GPeak::Fit(TH1 *fithist,Option_t *opt) {
   TFitResultPtr fitres = fithist->Fit(this,Form("%sLRSME",options.Data()));
 
   //fitres.Get()->Print();
-  printf("chi^2/NDF = %.02f\n",this->GetChisquare()/(double)this->GetNDF());
-
+  if (!noprint) printf("chi^2/NDF = %.02f\n",this->GetChisquare()/(double)this->GetNDF());
   
   
   if(!fitres.Get()->IsValid() && !noprint) {
@@ -365,7 +364,7 @@ Bool_t GPeak::Fit(TH1 *fithist,Option_t *opt) {
   if (!noprint) printf("sum after subtraction: %02f\n",fSum);
 
 
-  if(!verbose) {
+  if(!noprint) {
     printf("hist: %s\n",fithist->GetName());
     Print();/*
     printf("BG Area:         %.02f\n",bgArea);
