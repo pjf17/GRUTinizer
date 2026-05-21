@@ -692,8 +692,9 @@ double TGretinaHit::GetXiChris(const TVector3 *beam, int p1, int p2) const{
   else return -10;
 }
  
-double TGretinaHit::TrackingSort(){
-  if (fNumberOfInteractions > 7 || fNumberOfInteractions < 2) return -1;
+double TGretinaHit::TrackingSort(int maxInteractions){ //default maxInteractions = 7
+  if (fNumberOfInteractions > maxInteractions) return -1;
+  if (fNumberOfInteractions < 2) return 0;
   
   std::array<int,7> indices;
   std::array<int,7> best_order;
