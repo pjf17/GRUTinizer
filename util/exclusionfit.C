@@ -90,21 +90,34 @@ class ExclusionFit {
         }
         
         void Fit(int order, double elo, double ehi, double xlo, double xhi){
-            AddRegion(elo,ehi);
-            Fit(order,xlo,xhi);
-            regions.pop_back();
-        }
-        
-        void Fit(int order, double xlo, double xhi){
             //get the active histogram
-            TH1D *h;
+            TH1D *hh;
             TIter iter(gPad->GetListOfPrimitives());
             while(TObject *obj=iter.Next()) {
                 if(obj->InheritsFrom(TH1::Class())) {
-                    h = (TH1D*)obj;
+                    hh = (TH1D*)obj;
                 }
             }
 
+            AddRegion(elo,ehi);
+            Fit(hh,order,xlo,xhi);
+            regions.pop_back();
+        }
+
+        void Fit(int order, double xlo, double xhi){
+            //get the active histogram
+            TH1D *hh;
+            TIter iter(gPad->GetListOfPrimitives());
+            while(TObject *obj=iter.Next()) {
+                if(obj->InheritsFrom(TH1::Class())) {
+                    hh = (TH1D*)obj;
+                }
+            }
+
+            Fit(hh,order,xlo,xhi);            
+        }
+        
+        void Fit(TH1D *h, int order, double xlo, double xhi){
             //get current hist name
             bool newName = false;
             if (currentHistName != std::string(h->GetName())) {
