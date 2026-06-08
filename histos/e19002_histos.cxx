@@ -394,7 +394,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
             hit.Copy(hitMain);
             hit.Copy(hitTrack);
             hit.PICCSort();
-            // double tFOM = hitTrack.TrackingSort();
+            double tFOM = hitTrack.TrackingSort();
             double energy_corrected = hit.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_main = hitMain.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);
             double energy_corrected_track = hitTrack.GetDopplerYta(outgoingBeta, s800->GetYta(), &track);

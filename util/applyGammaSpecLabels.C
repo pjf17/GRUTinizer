@@ -163,16 +163,14 @@ void quickFormat(int wx=800, int wy=500, std::string xtitle ="", std::string yti
     
 
     //if titles are blank do default spec labels
-    if (xtitle == "") xtitle = "Energy [keV]";
-    if (ytitle == "") {
-        ytitle = "Counts / keV";
-        if ( hh[0]->GetBinWidth(1) > 1)
-            ytitle = std::string(Form("Counts %d / keV",(int) hh[0]->GetBinWidth(1)));
-    }
+    if (xtitle == "") xtitle = "Energy (keV)";
+    if (ytitle == "") 
+        ytitle = (hh[0]->GetBinWidth(1) > 1) ? std::string(Form("Counts/%d keV",(int) hh[0]->GetBinWidth(1))) : "Counts / keV";
 
     int nHists = hh.size();
     for (int i=0; i < nHists; i++){
         hh[i]->GetXaxis()->SetTitle(xtitle.c_str());
+        hh[i]->GetXaxis()->CenterTitle();
         hh[i]->GetXaxis()->SetTitleFont(43);
         hh[i]->GetXaxis()->SetTitleSize(25);
         hh[i]->GetXaxis()->SetTitleOffset(0.9);
@@ -182,6 +180,7 @@ void quickFormat(int wx=800, int wy=500, std::string xtitle ="", std::string yti
         hh[i]->GetXaxis()->SetLabelOffset(0.01);
 
         hh[i]->GetYaxis()->SetTitle(ytitle.c_str());
+        hh[i]->GetYaxis()->CenterTitle();
         hh[i]->GetYaxis()->SetTitleFont(43);
         hh[i]->GetYaxis()->SetTitleSize(25);
         hh[i]->GetYaxis()->SetTitleOffset(0.95);
@@ -198,7 +197,7 @@ void ggQuickFormat() {
     // int wx=800;
     // int wy=400;
     int wx=600;
-    int wy=400;
+    int wy=350;
     
     //get the histograms on the canvas
     std::vector<TH1 *> hh;
@@ -210,7 +209,7 @@ void ggQuickFormat() {
     }
     gPad->GetCanvas()->SetWindowSize(wx,wy);
     gPad->SetTopMargin(0.0175);
-    gPad->SetBottomMargin(0.145);
+    gPad->SetBottomMargin(0.18);
     gPad->SetLeftMargin(0.11);
     gPad->SetRightMargin(0.04);
     // gPad->SetLeftMargin(0.1);
@@ -218,14 +217,15 @@ void ggQuickFormat() {
     double max = hh[0]->GetMaximum();
 
     //if titles are blank do default spec labels
-    std::string xtitle = "Energy [keV]";
+    std::string xtitle = "Energy (keV)";
     std::string ytitle = "Counts / keV";
     if ( hh[0]->GetBinWidth(1) > 1)
-        ytitle = std::string(Form("Counts %d / keV",(int) hh[0]->GetBinWidth(1)));
+        ytitle = std::string(Form("Counts/%d keV",(int) hh[0]->GetBinWidth(1)));
 
     int nHists = hh.size();
     for (int i=0; i < nHists; i++){
         hh[i]->GetXaxis()->SetTitle(xtitle.c_str());
+        hh[i]->GetXaxis()->CenterTitle();
         hh[i]->GetXaxis()->SetTitleFont(43);
         hh[i]->GetXaxis()->SetTitleSize(25);
         hh[i]->GetXaxis()->SetTitleOffset(0.9);
@@ -234,9 +234,10 @@ void ggQuickFormat() {
         hh[i]->GetXaxis()->SetLabelOffset(0.01);
 
         hh[i]->GetYaxis()->SetTitle(ytitle.c_str());
+        hh[i]->GetYaxis()->CenterTitle();
         hh[i]->GetYaxis()->SetTitleFont(43);
         hh[i]->GetYaxis()->SetTitleSize(25);
-        hh[i]->GetYaxis()->SetTitleOffset(0.7);
+        hh[i]->GetYaxis()->SetTitleOffset(0.65);
         hh[i]->GetYaxis()->SetLabelFont(43);
         hh[i]->GetYaxis()->SetLabelSize(22);
         hh[i]->GetYaxis()->SetLabelOffset(0.01);
@@ -246,22 +247,61 @@ void ggQuickFormat() {
     gPad->Update();
 }
 
-void readEnergies(std::string filename, std::vector<std::pair<int,bool>> &energies){
-    std::ifstream inFile(filename);
-    std::string line;
-    while (std::getline(inFile,line)){
-        std::stringstream ss = std::stringstream(line);
-        int eng;
-        bool scheme;
-        ss >> eng >> scheme;
-        energies.push_back(std::make_pair(eng,scheme));
+void readSpecFile(const std::string& filename, std::vector<std::pair<int,bool>> &energies, std::map<int, std::vector<int>> &coincidences) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open file: " + filename);
     }
-    inFile.close();
+
+    std::string line;
+    bool readGammas = false; //flag to switch modes
+    bool readCoincidences = false;
+
+    while (std::getline(file, line)) {
+        if (line == "GAMMAS") { readGammas = true; readCoincidences = false; continue; }
+        if (line == "COINCIDENCES") { readGammas = false; readCoincidences = true; continue; }
+        if (line.empty() || line.find("#") == 0) continue;
+
+        if (readGammas) { //read in the gamma energies
+            std::stringstream ss = std::stringstream(line);
+            int eng;
+            bool scheme;
+            ss >> eng >> scheme;
+            energies.push_back(std::make_pair(eng,scheme));
+        }
+        if (readCoincidences) { //read in the coincidences
+            std::istringstream lineStream(line);
+            std::string keyPart;
+
+            if (!std::getline(lineStream, keyPart, ':')) continue;
+
+            int key = std::stoi(keyPart);
+            std::vector<int> values;
+
+            std::string valuesPart;
+            if (std::getline(lineStream, valuesPart)) {
+                std::istringstream valuesStream(valuesPart);
+                std::string token;
+                while (std::getline(valuesStream, token, ',')) {
+                    if (!token.empty()) {
+                        values.push_back(std::stoi(token));
+                    }
+                }
+            }
+
+            coincidences[key] = std::move(values);
+        }
+    }
+
     return;
 }
 
-void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includeHighlight = true, std::string filename="") {
-    if (filename == "") filename = "peak_labels.txt";
+void labelPeaks(std::string filename, int includeMode = 0, int includeHighlight = true, std::vector<int> highlight = {}) {
+    std::vector<std::pair<int,bool>> peaks;
+    std::map<int, std::vector<int>> coincs;
+
+    readSpecFile(filename,peaks,coincs);
+    std::sort(peaks.begin(), peaks.end());
 
     //get the histograms on the canvas
     std::vector<TH1 *> hh;
@@ -280,10 +320,6 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
         }
     }
 
-    std::vector<std::pair<int,bool>> peaks;
-    readEnergies(filename,peaks);
-    std::sort(peaks.begin(), peaks.end());
-
     //x range
     double xmin = h->GetBinCenter(h->GetXaxis()->GetFirst());     
     double xmax = h->GetBinCenter(h->GetXaxis()->GetLast());
@@ -291,7 +327,7 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
     //y range
     double ymax = h->GetMaximum();
     double rescaleYaxis = ymax*1.25;
-    double labelHeight = ymax*0.85;
+    double labelHeight = ymax*0.82;
     // h->GetYaxis()->SetRangeUser(0,rescaleYaxis);
 
     //find peak index range and the gated peak
@@ -306,29 +342,31 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
     }
 
     //figure out which peak is being gated on and don't include it if this is gamma-gamma
-    std::string hname(h->GetName());
+    std::string htitle(h->GetTitle());
     int gatedPeak = -1;
-    bool is_gammagamma = hname.find("gamma_gamma") != std::string::npos;  
+    bool is_gammagamma = htitle.find("gamma_gamma") != std::string::npos;  
     if (is_gammagamma) {
         std::vector <std::string> tokens;
-        stringstream check1(hname);
+        stringstream check1(htitle);
         string intermediate;
 
-        while(getline(check1, intermediate, '_')) tokens.push_back(intermediate);
-        int binLo = std::stoi(tokens[tokens.size()-2]);
-        int binHi = std::stoi(tokens[tokens.size()-1]);
-        gatedPeak = (h->GetBinCenter(binLo/2) + h->GetBinCenter(binHi/2))*1.0/2;
+        while(getline(check1, intermediate, '[')) tokens.push_back(intermediate);
+        float Elo = std::stof(tokens[1].substr(0,tokens[1].find("]")));
+        float Ehi = std::stoi(tokens[2].substr(0,tokens[2].find("]")));
+        float estPeak = (Ehi + Elo)/2;
+        float smallestDiff = 1000;
+        
         int gpi = -1;
-        double smallestDiff = 1000;
-
         for (int i=0; i < nPeaks-1; i++) {
-            if (std::abs(peaks[i].first - gatedPeak) < smallestDiff ){
-                smallestDiff = std::abs(peaks[i].first - gatedPeak);
+            if (std::abs(peaks[i].first - estPeak) < smallestDiff ){
+                smallestDiff = std::abs(peaks[i].first - estPeak);
                 gpi = i;
             }
         }
         gatedPeak = peaks[gpi].first;
     }
+
+    if (highlight.size() == 0) highlight = coincs[gatedPeak];
 
     std::vector<TLine *> peakLines;
     for (int i=idxLo; i < idxHi+1; i++) {
@@ -378,9 +416,9 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
 
         bool isShortPeak = true;
         double Xshift = 0.0;
-        if (std::abs(peakHeight - ymax)/ymax < 0.05) {
+        if (std::abs(peakHeight - ymax)/ymax < 0.2) {
             isShortPeak = false;
-            Xshift = -0.02*canvWidthKeV;
+            Xshift = -0.01*canvWidthKeV;
         }
 
         // peakLines.push_back( new TLine(peaks[i].first,peakHeight+0.02*rescaleYaxis,peaks[i].first,peakYmax) );
@@ -390,7 +428,7 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
         if (isShortPeak) peakLines.back()->Draw("same");
 
         // TText *tt = new TText(peaks[i].first,peakYmax,Form("%d",peaks[i].first));
-        TText *tt = new TText(peaks[i].first,labelHeight*clip_factor,Form("%d",peaks[i].first));
+        TText *tt = new TText(peaks[i].first+Xshift,labelHeight*clip_factor,Form("%d",peaks[i].first));
         // double ttSize = 0.04; //normal size
         
         // check neighbors for close peaks
@@ -416,7 +454,7 @@ void labelPeaks(int includeMode = 0, std::vector<int> highlight = {}, int includ
         tgated.SetTextFont(43);
         tgated.SetTextSize(22);
         tgated.SetTextAlign(33);
-        tgated.DrawLatexNDC(0.93,0.96,Form("#gamma_{gate} %d",gatedPeak));
+        tgated.DrawLatexNDC(0.93,0.96,Form("#gamma-gate: %d", gatedPeak));
         gPad->Update();
     }
 }

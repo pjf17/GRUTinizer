@@ -142,11 +142,11 @@ void MakeHistograms(TRuntimeObjects& obj) {
 
       std::map<std::string,TGretinaHit> sortTypes;
       sortTypes["MainInt"] = TGretinaHit(hit);
-      sortTypes["ComptonSort"] = TGretinaHit(hit);
+      sortTypes["PICCSort"] = TGretinaHit(hit);
       sortTypes["Tracking"] = TGretinaHit(hit);
       
       //run sorting algorithms
-      sortTypes["ComptonSort"].PICCSort();
+      sortTypes["PICCSort"].PICCSort();
       sortTypes["Tracking"].TrackingSort();
 
       //add to list
@@ -208,7 +208,7 @@ void MakeHistograms(TRuntimeObjects& obj) {
           for (auto it = correlations.begin(); it != correlations.end(); ++it) {
             if (it->second != -1 && it->second != i) { //only do if correlated hit exists and is not self
               TGretinaHit hitTemp = gretina->GetGretinaHit(it->second);
-              if (stHit->first == "ComptonSort") hitTemp.PICCSort();
+              if (stHit->first == "PICCSort") hitTemp.PICCSort();
               else if (stHit->first == "Tracking") hitTemp.TrackingSort();
               TVector3 g1dir = hitTemp.GetPosition();
 

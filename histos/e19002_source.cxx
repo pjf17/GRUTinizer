@@ -296,24 +296,24 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // obj.FillHistogram(dirname, Form("%s_theta_bin100",timeflag.c_str()),180,0,180, hit.GetTheta()*TMath::RadToDeg());
         // }
     
-        if (hit.NumberOfInteractions() > 1){
-          for (auto it = correlations.begin(); it != correlations.end(); ++it) {
-            if (it->second != -1 && it->second != i) {
-              TVector3 g1dir = (gretina->GetGretinaHit(it->second)).GetPosition();
-              double xi = hit.GetXi(&g1dir)*TMath::RadToDeg();
-              double xiMain = hitMain.GetXi(&g1dir)*TMath::RadToDeg();
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_vs_xi",timeflag.c_str(),it->first.c_str()),180,0,180,xi,1024,0,1024,core_energy);
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_vs_ximain",timeflag.c_str(),it->first.c_str()),180,0,180,xiMain,1024,0,1024,core_energy);
+        // if (hit.NumberOfInteractions() > 1){
+        //   for (auto it = correlations.begin(); it != correlations.end(); ++it) {
+        //     if (it->second != -1 && it->second != i) {
+        //       TVector3 g1dir = (gretina->GetGretinaHit(it->second)).GetPosition();
+        //       double xi = hit.GetXi(&g1dir)*TMath::RadToDeg();
+        //       double xiMain = hitMain.GetXi(&g1dir)*TMath::RadToDeg();
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_vs_xi",timeflag.c_str(),it->first.c_str()),180,0,180,xi,1024,0,1024,core_energy);
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_vs_ximain",timeflag.c_str(),it->first.c_str()),180,0,180,xiMain,1024,0,1024,core_energy);
 
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy",timeflag.c_str(),it->first.c_str()), 4096, 0, 4096, core_energy);
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_%s",timeflag.c_str(),it->first.c_str(),polCode(hit.GetXiSimple(&g1dir)).c_str()),4096,0,4096,core_energy);
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_main_%s",timeflag.c_str(),it->first.c_str(),polCode(hitMain.GetXiSimple(&g1dir)).c_str()),4096,0,4096,core_energy);
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy",timeflag.c_str(),it->first.c_str()), 4096, 0, 4096, core_energy);
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_%s",timeflag.c_str(),it->first.c_str(),polCode(hit.GetXiSimple(&g1dir)).c_str()),4096,0,4096,core_energy);
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_main_%s",timeflag.c_str(),it->first.c_str(),polCode(hitMain.GetXiSimple(&g1dir)).c_str()),4096,0,4096,core_energy);
 
-            } else if (it->second != -1) {
-              obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_remain",timeflag.c_str(),it->first.c_str()), 4096, 0, 4096, core_energy);
-            }
-          }
-        }
+        //     } else if (it->second != -1) {
+        //       obj.FillHistogram(dirname, Form("%s_crrl_%s_core_energy_remain",timeflag.c_str(),it->first.c_str()), 4096, 0, 4096, core_energy);
+        //     }
+        //   }
+        // }
 
         obj.FillHistogram(dirname, Form("%s_core_energy_%d",timeflag.c_str(),thetaGate(hit.GetTheta())), 8192,0,8192, core_energy);
         // obj.FillHistogram(dirname, Form("%s_core_energy_%d_vs_theta",timeflag.c_str(),thetaGate(hit.GetTheta())), 180, 0, 180, theta*TMath::RadToDeg(), 8192,0,8192, core_energy);
@@ -337,8 +337,10 @@ void MakeHistograms(TRuntimeObjects& obj) {
           // double xi = hit.GetXi(nullptr,myFP,mySP);
           // bool goodXi;
           // double xi = hit.GetXi(nullptr);
-          // bool perp = hit.GetXiSimple(nullptr)*TMath::RadToDeg() > 60;
-          // bool para = hit.GetXiSimple(nullptr)*TMath::RadToDeg() < 30;
+          bool perp = hit.GetXiSimple(nullptr)*TMath::RadToDeg() > 60;
+          bool para = hit.GetXiSimple(nullptr)*TMath::RadToDeg() < 30;
+          if (para) obj.FillHistogram(dirname, Form("%s_core_energy_para",timeflag.c_str()),8192,0,8192,core_energy);
+          if (perp) obj.FillHistogram(dirname, Form("%s_core_energy_perp",timeflag.c_str()),8192,0,8192,core_energy);
           // if (perp) {
           //   obj.FillHistogram(dirname, Form("%s_core_energy_perp",timeflag.c_str()),8192,0,8192,core_energy);
           //   // if (hit.NumberOfInteractions() < 5) 

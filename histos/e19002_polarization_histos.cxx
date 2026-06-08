@@ -395,28 +395,22 @@ void MakeHistograms(TRuntimeObjects& obj) {
               obj.FillHistogram(dirname, "gam_sngl_nint>1",nXiPlotEbins,XiPlotLo,XiPlotHi, energy_corrected);
 
               obj.FillHistogram(dirname, "gam_sngl_cosxiprime_vs_cosxi",200,-1,1,TMath::Cos(hit.GetXi(&track,false,0,1)),200,-1,1,TMath::Cos(hit.GetXi(&track,false,1,0)));
-              double xi = hitMain.GetXiSimple(&track); //EDIT THIS BACK!!!!!
+              double xi = hit.GetXiSimple(&track); 
               bool perp = xi*TMath::RadToDeg() > 60;
               bool para = xi*TMath::RadToDeg() < 30;
               if (perp) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_perp",10000,0,10000,energy_corrected);
-              if (para) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_para",10000,0,10000,energy_corrected); //THESE ARE THE GOOD ONES, SWITCH BACK EVENTUALLY
-              // if (perp) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_perp",10000,0,10000,energy_corrected_main);
-              // if (para) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_para",10000,0,10000,energy_corrected_main);
+              if (para) obj.FillHistogram(dirname, "prompt_gamma_dop_xi_para",10000,0,10000,energy_corrected);
 
               double ximain = hitMain.GetXiSimple(&track);
               if (ximain*TMath::RadToDeg() > 60) 
                 obj.FillHistogram(dirname, "prompt_gamma_dop_xi_main_perp",10000,0,10000,energy_corrected_main);
               if (ximain*TMath::RadToDeg() < 30) 
                 obj.FillHistogram(dirname, "prompt_gamma_dop_xi_main_para",10000,0,10000,energy_corrected_main);
-
-              obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_NINT>1",4096,0,4096, energy_corrected);
-              obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_main_NINT>1",4096,0,4096, energy_corrected_main);
-              int partfp = 0, partsp = 1;
-              comptonSortParts(hitMain,partfp,partsp,4);
-              if (partfp != 0) {
-                obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_NINT>1_diff",4096,0,4096, energy_corrected);
-                obj.FillHistogram(dirname, "COMP_gam_dop_sgl_prompt_main_NINT>1_diff",4096,0,4096, energy_corrected_main);
-              }
+            
+              if (hitMain.GetXi(&track)*TMath::RadToDeg() > 90) 
+                obj.FillHistogram(dirname, "prompt_gamma_dop_xi>90",10000,0,10000,energy_corrected_main);
+              else 
+                obj.FillHistogram(dirname, "prompt_gamma_dop_xi<90",10000,0,10000,energy_corrected_main);
 
               // for (int mg=0; mg < 5; mg++) {
                 // if (momentum_gates[mg]) {
